@@ -31,7 +31,7 @@ data/Cyl_flow_thing
 *.out
 *.sh
 *.so
-
+*.txt
 
 scripts
 mpi_output

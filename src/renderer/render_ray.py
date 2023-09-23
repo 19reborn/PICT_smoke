@@ -207,8 +207,6 @@ def render(H, W, K, model, N_samples = 64, chunk=1024*32, rays=None, c2w=None, n
     else:
         # use provided ray batch
         rays_o, rays_d = rays
-
-
     sh = rays_d.shape # [..., 3]
     
     if ndc:
@@ -237,7 +235,7 @@ def render(H, W, K, model, N_samples = 64, chunk=1024*32, rays=None, c2w=None, n
         else:
             ret = render_rays(rays[i:i+chunk], model, N_samples = N_samples, perturb = perturb, chunk = netchunk)
             
-            
+        
         # merge results   
         for k in ret:
             if torch.is_tensor(ret[k]):
@@ -726,10 +724,11 @@ def render_rays(ray_batch,
     rays_t_bc = torch.reshape(rays_t, [-1,1,1]).expand([N_rays, N_samples, 1])
     rays_d = torch.reshape(rays_d, [-1,1,3]).expand([N_rays, N_samples, 3])
     pts = torch.cat([pts, rays_d, rays_t_bc], dim = -1)
-
+    
     def get_raw(fn, pts):
         static_raw, smoke_raw = None, None
 
+     
         ## get static raw
         # static_raw = fn.forward_static(pts[..., :-1])
         static_raw = batchify(fn.forward_static, chunk)(pts[..., :-1])
@@ -819,7 +818,6 @@ def render_path(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
 
     t = time.time()
     cur_timestep = None
-
     for i, c2w in enumerate(tqdm(render_poses)):
         print(i, time.time() - t)
         if render_steps is not None:

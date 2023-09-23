@@ -304,7 +304,7 @@ def train(args):
                 
 
             rendering_loss, rendering_loss_dict = get_rendering_loss(args, model, rgb, target_s, bg_color, extras, time_locate, global_step)
-            loss += 0.1 * rendering_loss
+            loss += rendering_loss
 
 
 

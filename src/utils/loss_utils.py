@@ -262,7 +262,7 @@ def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, 
     return rendering_loss, rendering_loss_dict
 
 
-
+# @profile
 def get_velocity_loss(args, model, training_samples, training_stage):
 
 
@@ -298,10 +298,11 @@ def get_velocity_loss(args, model, training_samples, training_stage):
     
     # todo:: ignore some operations unecessary for diff stages
     
-    training_samples_ref = training_samples.clone().detach().requires_grad_(True) 
-    _den_ref, _d_x_ref, _d_y_ref, _d_z_ref, _d_t_ref = den_model_ref.density_with_jacobian(training_samples_ref)
-    
-    
+    if training_stage == 2 or training_stage == 3:
+        training_samples_ref = training_samples.clone().detach().requires_grad_(True) 
+        _den_ref, _d_x_ref, _d_y_ref, _d_z_ref, _d_t_ref = den_model_ref.density_with_jacobian(training_samples_ref)
+        
+        
     vel_loss_dict = {}
     vel_loss = 0.0
 
@@ -365,7 +366,7 @@ def get_velocity_loss(args, model, training_samples, training_stage):
             Dd_Dt, Du_Dt)
         
         # density transport, feature continuity, velocitt divergence, scale regularzation, Dd_Dt, Du_Dt
-        split_nse_wei = [2.0, 1.0, 1e-3, 1e-3, 1e-3, 1e-3] 
+        split_nse_wei = [0.0, 1.0, 1e-3, 1e-3, 1e-3, 1e-3] 
         
 
     else:

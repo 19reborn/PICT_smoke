@@ -1,4 +1,4 @@
-expname = cyl/0922_v9_from_start
+expname = cyl/0923_v2_check_time
 basedir = ./log
 
 ### data info
@@ -51,7 +51,7 @@ multires_neus = 6
 anneal_end = 50000
 
 i_img = 1000
-i_test = 1000000
+i_test = 5000
 i_weights = 5000
 N_iter = 400000
 
@@ -75,9 +75,10 @@ uniform_sample_step = 100000
 smoke_recon_delay = 5000
 
 stage2_finish_init_lagrangian = 20000
-stage3_finish_init_feature = 50000
+stage3_finish_init_feature = 10000
 
-
+model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0923_v1_check_stage4_only_trainImg/090000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v9_from_start/085000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v3_stage1_recon/010000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v4_stage2_3/015000.tar
 # model_path =/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v5_stage3/020000.tar
