@@ -17,7 +17,7 @@ from src.renderer.render_ray import render, render_path, prepare_rays
 from src.utils.args import config_parser
 from src.utils.training_utils import set_rand_seed, save_log
 from src.utils.coord_utils import BBox_Tool, Voxel_Tool
-from src.utils.loss_utils import get_rendering_loss, get_velocity_loss
+from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight
 from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -177,6 +177,7 @@ def train(args):
     trainVel_using_rendering_samples = False
     trainImg = False
 
+    total_loss_fading = 1.0
 
     for global_step in trange(start, N_iters + 1):
 
@@ -200,6 +201,7 @@ def train(args):
         elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature:
             # start learn feature, add its relevant constrain
             # but still only learn from reference density and color , do not use image
+            total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian, 10000) # 
             training_stage = 3
             trainImg = False
             trainVel = True
@@ -208,6 +210,7 @@ def train(args):
         else:
             # start learn feature, add its relevant constrain
             # but still only learn from reference density and color , do not use image
+            total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature, 10000) # 
             training_stage = 4
             trainImg = True
             trainVel = True
@@ -337,7 +340,7 @@ def train(args):
 
             loss += vel_loss
 
-                
+        loss = loss * total_loss_fading         
 
         loss.backward()
         ## grad clip

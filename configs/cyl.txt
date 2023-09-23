@@ -1,4 +1,4 @@
-expname = cyl/0923_v2_check_time
+expname = cyl/0923_v4_add_loss_fading
 basedir = ./log
 
 ### data info
@@ -45,7 +45,7 @@ bbox_max = 1.0
 
 ## for neus
 ekW = 0.1
-i_weights = 10000
+i_weights = 5000
 i_embed_neus = 0
 multires_neus = 6
 anneal_end = 50000
@@ -77,7 +77,7 @@ smoke_recon_delay = 5000
 stage2_finish_init_lagrangian = 20000
 stage3_finish_init_feature = 10000
 
-model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0923_v1_check_stage4_only_trainImg/090000.tar
+model_path = /HPS/dynamic_ngp_neus/work/pinf_clean/log/cyl/0922_v9_from_start/080000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v9_from_start/085000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v3_stage1_recon/010000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v4_stage2_3/015000.tar
