@@ -359,6 +359,15 @@ def get_velocity_loss(args, model, training_samples, training_stage):
 
 
     elif training_stage == 4:
+        # # only train density
+        # split_nse = PDE_stage4(
+        #     _f_t, _f_x, _f_y, _f_z,
+        #     _vel, _u_x, _u_y, _u_z, 
+        #     Dd_Dt)
+        
+        # # feature continuity, Dd_Dt,
+        # split_nse_wei = [1.0, 1e-3] 
+        
         split_nse = PDE_stage3(
             _f_t, _f_x, _f_y, _f_z,
             _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
@@ -366,7 +375,7 @@ def get_velocity_loss(args, model, training_samples, training_stage):
             Dd_Dt, Du_Dt)
         
         # density transport, feature continuity, velocitt divergence, scale regularzation, Dd_Dt, Du_Dt
-        split_nse_wei = [0.0, 1.0, 1e-3, 1e-3, 1e-3, 1e-3] 
+        split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3, 1e-3] 
         
 
     else:
@@ -512,7 +521,7 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
     
     eqs += [transport]
     
-    feature = f_t + (u*f_x + v*f_y + w*f_z) # feature continuous constrain
+    feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
     eqs += [feature]
 
@@ -525,6 +534,20 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
     eqs += [Dd_Dt]
     
     eqs += [Du_Dt]
+    
+    
+    return eqs
+
+
+def PDE_stage4(f_t, f_x, f_y, f_z, U, U_x, U_y, U_z, Dd_Dt):
+    eqs = []
+    u,v,w = U.split(1, dim=-1) # (N,1)
+
+    feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
+    
+    eqs += [feature]
+
+    eqs += [Dd_Dt]
     
     
     return eqs

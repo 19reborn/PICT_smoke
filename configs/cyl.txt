@@ -1,4 +1,4 @@
-expname = cyl/0923_v4_add_loss_fading
+expname = cyl/0924_v2_stage4_velocity_detached
 basedir = ./log
 
 ### data info
@@ -71,13 +71,13 @@ inside_sdf = 0.02
 # boundary_delay = 10000
 
 stage1_finish_recon = 50000
-uniform_sample_step = 100000
+uniform_sample_step = 10000000
 smoke_recon_delay = 5000
 
 stage2_finish_init_lagrangian = 20000
-stage3_finish_init_feature = 10000
+stage3_finish_init_feature = 50000
 
-model_path = /HPS/dynamic_ngp_neus/work/pinf_clean/log/cyl/0922_v9_from_start/080000.tar
+model_path = /HPS/dynamic_ngp_neus/work/pinf_clean/log/cyl/0922_v9_from_start/120000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v9_from_start/085000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v3_stage1_recon/010000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v4_stage2_3/015000.tar

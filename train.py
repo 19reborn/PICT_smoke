@@ -210,7 +210,8 @@ def train(args):
         else:
             # start learn feature, add its relevant constrain
             # but still only learn from reference density and color , do not use image
-            total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature, 10000) # 
+            # total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature, 10000) # 
+            total_loss_fading = 1.0
             training_stage = 4
             trainImg = True
             trainVel = True

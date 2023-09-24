@@ -159,8 +159,14 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
                 p.requires_grad = False
             for name, p in self.dynamic_model_siren.named_parameters():
                 p.requires_grad = False
+            # for name, p in self.dynamic_model_lagrangian.named_parameters():
+                # p.requires_grad = True
+
             for name, p in self.dynamic_model_lagrangian.named_parameters():
-                p.requires_grad = True
+                if "position_map" in name or "density_map" in name or 'color_model' in name:
+                    p.requires_grad = True
+                else:
+                    p.requires_grad = False
 
         else:
             AssertionError("training stage should be set to 1,2,3,4")
