@@ -201,7 +201,8 @@ def train(args):
         elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature:
             # start learn feature, add its relevant constrain
             # but still only learn from reference density and color , do not use image
-            total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian, 10000) # 
+            # total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian, 10000) # 
+            total_loss_fading = 1.0 # 
             training_stage = 3
             trainImg = False
             trainVel = True
@@ -222,8 +223,8 @@ def train(args):
     
 
 
-        if training_stage == 1:
-            model.update_fading_step(global_step) # progressive training for siren smoke
+        # if training_stage == 1:
+        model.update_fading_step(min(args.stage1_finish_recon, global_step)) # progressive training for siren smoke
         
         if trainImg and global_step >= args.uniform_sample_step:
             update_occ_grid(args, model, global_step, update_interval = 1000)
@@ -345,7 +346,7 @@ def train(args):
 
         loss.backward()
         ## grad clip
-        # torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
         optimizer.step()
     
 
@@ -498,7 +499,7 @@ def train(args):
                     writer.add_scalar('Loss/density_mapping_loss', density_mapping_loss.item(), global_step)
 
 
-        if (global_step - 1) % args.i_img==0:
+        if (global_step) % args.i_img==0:
           
                 voxel_den_list = voxel_writer.get_voxel_density_list(model, 0.5, args.chunk, 
                     middle_slice=False)[::-1]

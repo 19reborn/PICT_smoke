@@ -1,4 +1,4 @@
-expname = cyl/0924_v2_stage4_velocity_detached
+expname = cyl/0924_4090_v10_clip_grad
 basedir = ./log
 
 ### data info
@@ -50,9 +50,9 @@ i_embed_neus = 0
 multires_neus = 6
 anneal_end = 50000
 
-i_img = 1000
-i_test = 5000
-i_weights = 5000
+i_img = 100
+i_test = 1000
+i_weights = 1000
 N_iter = 400000
 
 cuda_ray = True
@@ -68,16 +68,24 @@ boundaryW = 0.5
 train_vel_uniform_sample = 2
 inside_sdf = 0.02
 
+
 # boundary_delay = 10000
 
-stage1_finish_recon = 50000
+stage1_finish_recon = 10000
 uniform_sample_step = 10000000
 smoke_recon_delay = 5000
 
-stage2_finish_init_lagrangian = 20000
-stage3_finish_init_feature = 50000
+stage2_finish_init_lagrangian = 2000
+stage3_finish_init_feature = 2000
 
-model_path = /HPS/dynamic_ngp_neus/work/pinf_clean/log/cyl/0922_v9_from_start/120000.tar
+# nseW = 1e-4
+
+
+model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/014000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start_debug/014000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/016000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v2_stage2_train_feature/060000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/120000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v9_from_start/085000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v3_stage1_recon/010000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v4_stage2_3/015000.tar

@@ -113,7 +113,7 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         return self.static_model.up_sample(rays_o, rays_d, z_vals, n_importance, up_sample_steps, embed_fn)
   
     def update_fading_step(self, global_step):
-        self.dynamic_model.fading_step = global_step
+        self.dynamic_model_siren.fading_step = global_step
 
     def update_model_type(self, training_stage):
 
@@ -141,10 +141,13 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
                 p.requires_grad = False
 
             for name, p in self.dynamic_model_lagrangian.named_parameters():
-                if "position_map" in name or "density_map" in name or 'color_model' in name:
-                    p.requires_grad = True
-                else:
-                    p.requires_grad = False
+                p.requires_grad = True
+
+            # for name, p in self.dynamic_model_lagrangian.named_parameters():
+            #     if "position_map" in name or "density_map" in name or 'color_model' in name:
+            #         p.requires_grad = True
+            #     else:
+            #         p.requires_grad = False
 
         elif training_stage == 3:
             for name, p in self.static_model.named_parameters():
@@ -153,20 +156,29 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
                 p.requires_grad = False
             for name, p in self.dynamic_model_lagrangian.named_parameters():
                 p.requires_grad = True
+                # if 'color_model' in name:
+                #     p.requires_grad = True
+                # else:
+                #     p.requires_grad = False
 
         elif training_stage == 4:
             for name, p in self.static_model.named_parameters():
                 p.requires_grad = False
             for name, p in self.dynamic_model_siren.named_parameters():
                 p.requires_grad = False
-            # for name, p in self.dynamic_model_lagrangian.named_parameters():
-                # p.requires_grad = True
-
             for name, p in self.dynamic_model_lagrangian.named_parameters():
-                if "position_map" in name or "density_map" in name or 'color_model' in name:
-                    p.requires_grad = True
-                else:
-                    p.requires_grad = False
+                p.requires_grad = True
+                # if "density_map" in name or 'color_model' in name:
+                #     p.requires_grad = True
+                # else:
+                #     p.requires_grad = False
+                    
+
+            # for name, p in self.dynamic_model_lagrangian.named_parameters():
+            #     if "position_map" in name or "density_map" in name or 'color_model' in name:
+            #         p.requires_grad = True
+            #     else:
+            #         p.requires_grad = False
 
         else:
             AssertionError("training stage should be set to 1,2,3,4")
