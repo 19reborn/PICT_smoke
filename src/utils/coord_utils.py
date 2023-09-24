@@ -5,7 +5,7 @@ import torch, torchvision
 from torch import optim, nn
 import torch.nn.functional as F
 
-from src.utils.training_utils import batchify
+from src.utils.training_utils import batchify, batchify_func
 
 
 #####################################################################
@@ -242,7 +242,8 @@ class Voxel_Tool(object):
         world_v = []
         for i in range(0, pts_N, chunk):
             input_i = cur_pts[i:i+chunk]
-            vel_i = batchify(model, chunk)(input_i)
+            # vel_i = batchify(model, chunk)(input_i)
+            vel_i = batchify_func(model.dynamic_model.vel_model, chunk, not model.training)(input_i)
             world_v.append(vel_i)
         world_v = torch.cat(world_v, 0)
         return world_v
@@ -342,7 +343,8 @@ class Voxel_Tool(object):
             pts_flat = torch.cat([pts_flat,input_t], dim=-1)
 
 
-        world_v = self.get_velocity_flat(model.dynamic_model.vel_model, pts_flat, chunk)
+        # world_v = self.get_velocity_flat(model.dynamic_model.vel_model, pts_flat, chunk)
+        world_v = self.get_velocity_flat(model, pts_flat, chunk)
         reso_scale = [self.W*scale,self.H*scale,self.D*scale]
         target_v = vel_world2smoke(world_v, self.s_w2s, self.s_scale, reso_scale)
 
@@ -553,3 +555,43 @@ class Voxel_Tool(object):
             # to save some space
             voxel_vel = np.float16(voxel_vel)
             np.savez_compressed(vel_path, vel=voxel_vel)
+
+
+def jacobian3D(x):
+    # x, (b,)d,h,w,ch, pytorch tensor
+    # return jacobian and curl
+
+    dudx = x[:,:,:,1:,0] - x[:,:,:,:-1,0]
+    dvdx = x[:,:,:,1:,1] - x[:,:,:,:-1,1]
+    dwdx = x[:,:,:,1:,2] - x[:,:,:,:-1,2]
+    dudy = x[:,:,1:,:,0] - x[:,:,:-1,:,0]
+    dvdy = x[:,:,1:,:,1] - x[:,:,:-1,:,1]
+    dwdy = x[:,:,1:,:,2] - x[:,:,:-1,:,2]
+    dudz = x[:,1:,:,:,0] - x[:,:-1,:,:,0]
+    dvdz = x[:,1:,:,:,1] - x[:,:-1,:,:,1]
+    dwdz = x[:,1:,:,:,2] - x[:,:-1,:,:,2]
+
+    # u = dwdy[:,:-1,:,:-1] - dvdz[:,:,1:,:-1]
+    # v = dudz[:,:,1:,:-1] - dwdx[:,:-1,1:,:]
+    # w = dvdx[:,:-1,1:,:] - dudy[:,:-1,:,:-1]
+
+    dudx = torch.cat((dudx, torch.unsqueeze(dudx[:,:,:,-1], 3)), 3)
+    dvdx = torch.cat((dvdx, torch.unsqueeze(dvdx[:,:,:,-1], 3)), 3)
+    dwdx = torch.cat((dwdx, torch.unsqueeze(dwdx[:,:,:,-1], 3)), 3)
+
+    dudy = torch.cat((dudy, torch.unsqueeze(dudy[:,:,-1,:], 2)), 2)
+    dvdy = torch.cat((dvdy, torch.unsqueeze(dvdy[:,:,-1,:], 2)), 2)
+    dwdy = torch.cat((dwdy, torch.unsqueeze(dwdy[:,:,-1,:], 2)), 2)
+
+    dudz = torch.cat((dudz, torch.unsqueeze(dudz[:,-1,:,:], 1)), 1)
+    dvdz = torch.cat((dvdz, torch.unsqueeze(dvdz[:,-1,:,:], 1)), 1)
+    dwdz = torch.cat((dwdz, torch.unsqueeze(dwdz[:,-1,:,:], 1)), 1)
+
+    u = dwdy - dvdz
+    v = dudz - dwdx
+    w = dvdx - dudy
+    
+    j = torch.stack([dudx,dudy,dudz,dvdx,dvdy,dvdz,dwdx,dwdy,dwdz], -1)
+    c = torch.stack([u,v,w], -1)
+    
+    return j, c

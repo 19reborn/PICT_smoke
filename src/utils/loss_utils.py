@@ -159,6 +159,7 @@ class VGGlossTool(object):
 
 def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, global_step):
     
+
     #####  core rendering optimization loop  #####
     # allows to take derivative w.r.t. training_samples
 
@@ -298,7 +299,7 @@ def get_velocity_loss(args, model, training_samples, training_stage):
     
     # todo:: ignore some operations unecessary for diff stages
     
-    if  training_stage == 2 or training_stage == 3:
+    if training_stage == 2 or training_stage == 3:
         training_samples_ref = training_samples.clone().detach().requires_grad_(True) 
         _den_ref, _d_x_ref, _d_y_ref, _d_z_ref, _d_t_ref = den_model_ref.density_with_jacobian(training_samples_ref)
         
@@ -311,35 +312,27 @@ def get_velocity_loss(args, model, training_samples, training_stage):
         #     _d_t, _d_x, _d_y, _d_z,
         #     _vel, _u_x, _u_y, _u_z, 
         #     Ddensity_Dt, Du_Dt)
-        # split_nse = PDE_stage2(
-        #     _d_t_ref.detach(), _d_x_ref.detach(), _d_y_ref.detach(), _d_z_ref.detach(),
-        #     _vel, _u_x, _u_y, _u_z, 
-        #     Dd_Dt, Du_Dt)
-        
-        split_nse = PDE_stage3(
-            _f_t, _f_x, _f_y, _f_z,
+        split_nse = PDE_stage2(
             _d_t_ref.detach(), _d_x_ref.detach(), _d_y_ref.detach(), _d_z_ref.detach(),
             _vel, _u_x, _u_y, _u_z, 
             Dd_Dt, Du_Dt)
         
         # density transport, velocitt divergence, scale regularzation, Dd_Dt, Du_Dt
-        # split_nse_wei = [2.0, 1e-3, 1e-3, 1e-3, 1e-3]
-        split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3, 1e-3] 
- 
+        split_nse_wei = [2.0, 1e-3, 1e-3, 1e-3, 1e-3] 
         
         # loss compared with reference density and color
         
-        # density_reference_loss = smooth_l1_loss(_den, _den_ref.detach())
+        density_reference_loss = smooth_l1_loss(_den, _den_ref.detach())
         
-        # _color = model.dynamic_model.color(training_samples)
-        # _color_ref = model.dynamic_model_siren.color(training_samples)
+        _color = model.dynamic_model.color(training_samples)
+        _color_ref = model.dynamic_model_siren.color(training_samples)
         
-        # color_reference_loss = smooth_l1_loss(_color, _color_ref.detach())
+        color_reference_loss = smooth_l1_loss(_color, _color_ref.detach())
          
-        # vel_loss_dict['density_reference_loss'] = density_reference_loss
-        # vel_loss_dict['color_reference_loss'] = color_reference_loss       
+        vel_loss_dict['density_reference_loss'] = density_reference_loss
+        vel_loss_dict['color_reference_loss'] = color_reference_loss       
 
-        # vel_loss += density_reference_loss + color_reference_loss
+        vel_loss += density_reference_loss + color_reference_loss
 
     elif training_stage == 3:
         split_nse = PDE_stage3(
@@ -384,7 +377,6 @@ def get_velocity_loss(args, model, training_samples, training_stage):
         
         # density transport, feature continuity, velocitt divergence, scale regularzation, Dd_Dt, Du_Dt
         split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3, 1e-3] 
-        # split_nse_wei = [0.0, 0, 0, 0, 0, 0] 
         
 
     else:
@@ -435,22 +427,9 @@ def get_velocity_loss(args, model, training_samples, training_stage):
     vel_loss_dict['inside_loss'] = inside_loss
 
 
-    # if training_stage == 2:
-    #     # add cycle loss for lagrangian mapping
-    #     cycle_loss = None
-    
-    #     predict_xyz = vel_middle_output['mapped_xyz']
-    #     cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
-    #     vel_loss += 0.2 * cycle_loss
 
-    #     cross_cycle_loss = None
-
-    #     vel_loss_dict['feature_cycle_loss'] = cycle_loss
-    #     vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
-
-
-    # ## cycle loss for lagrangian feature
-    if training_stage == 2 or training_stage == 3 or training_stage == 4:
+    ## cycle loss for lagrangian feature
+    if training_stage == 3 or training_stage == 4:
         # add cycle loss for lagrangian mapping
         cycle_loss = None
     
@@ -480,31 +459,31 @@ def get_velocity_loss(args, model, training_samples, training_stage):
         vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
 
 
-    #     ## density mapping loss
-    #     density_mapping_loss = None
-    #     # density_in_xyz = _den
+        ## density mapping loss
+        density_mapping_loss = None
+        # density_in_xyz = _den
 
-    #     # random_warpT = torch.rand_like(training_samples[:,0:1])*6.0 - 3.0 # [-3,3]
+        # random_warpT = torch.rand_like(training_samples[:,0:1])*6.0 - 3.0 # [-3,3]
 
-    #     # cross_delta_t =  random_warpT * deltaT
+        # cross_delta_t =  random_warpT * deltaT
 
-    #     # cross_training_t = torch.ones_like(training_samples[:,0:1]) * train_time + cross_delta_t
+        # cross_training_t = torch.ones_like(training_samples[:,0:1]) * train_time + cross_delta_t
   
-    #     # cross_training_t = torch.clamp(cross_training_t, t_info[0], t_info[1]) # clamp to (0,1)
+        # cross_training_t = torch.clamp(cross_training_t, t_info[0], t_info[1]) # clamp to (0,1)
 
 
-    #     # predict_xyz_cross = map_model(training_xyzt, cross_training_t)
+        # predict_xyz_cross = map_model(training_xyzt, cross_training_t)
         
-    #     # predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
-    #     # density_in_mapped_xyz = render_kwargs_test['network_fine' if args.N_importance>0 else 'network_fn'].density_dynamic(predict_xyzt_cross.detach())
+        # predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
+        # density_in_mapped_xyz = render_kwargs_test['network_fine' if args.N_importance>0 else 'network_fn'].density_dynamic(predict_xyzt_cross.detach())
  
-    #     # density_mapping_loss = torch.mean(torch.abs(density_in_xyz - density_in_mapped_xyz))
-    #     # vel_loss += 0.1 * density_mapping_loss
+        # density_mapping_loss = torch.mean(torch.abs(density_in_xyz - density_in_mapped_xyz))
+        # vel_loss += 0.1 * density_mapping_loss
 
 
-    #     # loss += 1 * density_mapping_loss
+        # loss += 1 * density_mapping_loss
         
-    #     vel_loss_dict['density_mapping_loss'] = density_mapping_loss
+        vel_loss_dict['density_mapping_loss'] = density_mapping_loss
 
 
 

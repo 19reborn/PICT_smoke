@@ -16,8 +16,8 @@ from src.renderer.render_ray import render, render_path, prepare_rays
 
 from src.utils.args import config_parser
 from src.utils.training_utils import set_rand_seed, save_log
-from src.utils.coord_utils import BBox_Tool, Voxel_Tool
-from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight
+from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D
+from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
 from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -520,33 +520,35 @@ def train(args):
                 imageio.imwrite( os.path.join(testimgdir, 'vox_{:06d}.png'.format(global_step)), voxel_img)
             
 
-        # if global_step % args.i_video==0:
-        #     # Turn on testing mode
-        #     hwf = hwfs[0]
-        #     hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
-        #     # the path rendering can be very slow.
-        #     rgbs, disps = render_path(render_poses, hwf, Ks[0], args.test_chunk, render_kwargs_test, render_steps=render_timesteps, bkgd_color=test_bkg_color, global_step = global_step, args = args)
-        #     print('Done, saving', rgbs.shape, disps.shape)
-        #     # moviebase = os.path.join(basedir, expname, '{}_spiral_{:06d}_'.format(expname, global_step))
-        #     moviebase = os.path.join(basedir, expname, 'spiral_{:06d}_'.format(global_step))
-        #     imageio.mimwrite(moviebase + 'rgb.mp4', to8b(rgbs), fps=30, quality=8)
-        #     # imageio.mimwrite(moviebase + 'disp.mp4', to8b(disps / np.max(disps)), fps=30, quality=8)
+        if global_step % args.i_video==0:
+            model.eval()
+            # Turn on testing mode
+            hwf = hwfs[0]
+            hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
+            # the path rendering can be very slow.
+            rgbs, disps = render_path(model, render_poses, hwf, Ks[0], args.test_chunk, near, far, netchunk=args.netchunk, cuda_ray = trainImg and global_step >= args.uniform_sample_step, render_steps=render_timesteps, bkgd_color=test_bkg_color)
+            print('Done, saving', rgbs.shape, disps.shape)
+            # moviebase = os.path.join(basedir, expname, '{}_spiral_{:06d}_'.format(expname, global_step))
+            moviebase = os.path.join(basedir, expname, 'spiral_{:06d}_'.format(global_step))
+            imageio.mimwrite(moviebase + 'rgb.mp4', to8b(rgbs), fps=30, quality=8)
+            # imageio.mimwrite(moviebase + 'disp.mp4', to8b(disps / np.max(disps)), fps=30, quality=8)
             
-        #     v_deltaT = 0.025
-        #     # with torch.no_grad():
-        #     vel_rgbs = []
-        #     for _t in range(int(1.0/v_deltaT)):
-        #         # middle_slice, True: only sample middle slices for visualization, very fast, but cannot save as npz
-        #         #               False: sample whole volume, can be saved as npz, but very slow
-        #         voxel_vel = training_voxel.get_voxel_velocity(t_info[-1],_t*v_deltaT,batchify,args.chunk,vel_model,middle_slice=True)
-        #         voxel_vel = voxel_vel.view([-1]+list(voxel_vel.shape))
-        #         _, voxel_vort = jacobian3D(voxel_vel)
-        #         _vel = vel_uv2hsv(np.squeeze(voxel_vel.detach().cpu().numpy()), scale=300, is3D=True, logv=False)
-        #         _vort = vel_uv2hsv(np.squeeze(voxel_vort.detach().cpu().numpy()), scale=1500, is3D=True, logv=False)
-        #         vel_rgbs.append(np.concatenate([_vel, _vort], axis=0))
-        #     # moviebase = os.path.join(basedir, expname, '{}_volume_{:06d}_'.format(expname, global_step))
-        #     moviebase = os.path.join(basedir, expname, 'volume_{:06d}_'.format(global_step))
-        #     imageio.mimwrite(moviebase + 'velrgb.mp4', np.stack(vel_rgbs,axis=0).astype(np.uint8), fps=30, quality=8)
+            v_deltaT = 0.025
+            # with torch.no_grad():
+            vel_rgbs = []
+            for _t in range(int(1.0/v_deltaT)):
+                # middle_slice, True: only sample middle slices for visualization, very fast, but cannot save as npz
+                #               False: sample whole volume, can be saved as npz, but very slow
+                voxel_vel = training_voxel.get_voxel_velocity(model, t_info[-1], _t*v_deltaT, middle_slice=True)
+                voxel_vel = voxel_vel.view([-1]+list(voxel_vel.shape))
+                _, voxel_vort = jacobian3D(voxel_vel)
+                _vel = vel_uv2hsv(np.squeeze(voxel_vel.detach().cpu().numpy()), scale=300, is3D=True, logv=False)
+                _vort = vel_uv2hsv(np.squeeze(voxel_vort.detach().cpu().numpy()), scale=1500, is3D=True, logv=False)
+                vel_rgbs.append(np.concatenate([_vel, _vort], axis=0))
+            # moviebase = os.path.join(basedir, expname, '{}_volume_{:06d}_'.format(expname, global_step))
+            moviebase = os.path.join(basedir, expname, 'volume_{:06d}_'.format(global_step))
+            imageio.mimwrite(moviebase + 'velrgb.mp4', np.stack(vel_rgbs,axis=0).astype(np.uint8), fps=30, quality=8)
+            model.train()
 
         if global_step % args.i_testset==0 and global_step > 0:
             model.eval()
