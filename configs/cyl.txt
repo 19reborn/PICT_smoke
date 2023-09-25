@@ -1,4 +1,4 @@
-expname = cyl/0924_4090_v11_test_previous_design
+expname = cyl/0924_mpi_v1_50000steps_recon
 basedir = ./log
 
 ### data info
@@ -72,12 +72,12 @@ inside_sdf = 0.02
 
 # boundary_delay = 10000
 
-stage1_finish_recon = 10000
+stage1_finish_recon = 50000
 uniform_sample_step = 10000000
-smoke_recon_delay = 5000
+smoke_recon_delay = 1000
 
-stage2_finish_init_lagrangian = 2000
-stage3_finish_init_feature = 2000
+stage2_finish_init_lagrangian = 5000
+stage3_finish_init_feature = 5000
 
 # nseW = 1e-4
 
