@@ -1,0 +1,257 @@
+import os, sys
+import imageio
+import numpy as np
+import torch
+import torch.nn.functional as F
+
+from tqdm import trange
+
+from src.dataset.load_dryice import load_dryice_data
+from src.dataset.load_pinf import load_pinf_frame_data
+
+from src.network.hybrid_model import create_model
+
+from src.renderer.occupancy_grid import init_occ_grid, update_occ_grid
+from src.renderer.render_ray import render, render_path, prepare_rays
+
+from src.utils.args import config_parser
+from src.utils.training_utils import set_rand_seed, save_log
+from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D
+from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
+from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, cuda_ray, gt_images):
+
+    os.makedirs(testsavedir, exist_ok=True)
+    update_occ_grid(args, model)
+    print('RENDER ONLY')
+
+    print('test poses shape', render_poses.shape)
+
+    rgbs, _ = render_path(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
+    print('Done rendering', testsavedir)
+    imageio.mimwrite(os.path.join(testsavedir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
+
+
+def output_voxel(args, model, testsavedir, voxel_writer, t_info):
+    model.eval()
+
+    print('OUTPUT VOLUME ONLY')
+    savenpz = True # need a large space
+    savejpg = True 
+    save_vort = True # (vel_model is not None) and (savenpz) and (savejpg)
+    # with torch.no_grad():
+
+
+
+    t_list = list(np.arange(t_info[0],t_info[1],t_info[-1]))
+    frame_N = len(t_list)
+    noStatic = False
+    if args.full_vol_output:
+        frame_list = range(0,frame_N, 1)
+        testsavedir + "_full_frame"
+    else:
+        frame_list = range(frame_N//10,frame_N, 10)
+        
+    os.makedirs(testsavedir, exist_ok=True)
+    
+    for frame_i in frame_list:
+
+        print(frame_i, frame_N)
+        cur_t = t_list[frame_i]
+        voxel_writer.save_voxel_den_npz(model, os.path.join(testsavedir,"d_%04d.npz"%frame_i), cur_t,  chunk=args.chunk, save_npz=savenpz, save_jpg=savejpg, noStatic=noStatic)
+        noStatic = True
+        
+        voxel_writer.save_voxel_vel_npz_with_grad(model, os.path.join(testsavedir,"v_%04d.npz"%frame_i), t_info[-1], cur_t, args.chunk, savenpz, savejpg, save_vort)
+    
+    print('Done output', testsavedir)
+
+    return
+
+def test(args):
+    # Create log dir and copy the config file
+    basedir = args.basedir
+    expname = args.expname
+    logdir, writer = save_log(args)
+
+    # Load data
+    cam_info_others = None
+    ## todo:: organize dataloader
+    if args.dataset_type == "dryice":
+        images, masks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, cam_info_others = load_dryice_data(args, args.datadir, args.half_res, args.testskip, args.trainskip)
+        Ks = []
+        for img_i in range(len(images)):
+            _cam_id = cam_info_others["cam_ids"][img_i]
+            _cam_info = cam_info_others["cam_%d"%_cam_id]
+            focals = _cam_info["focal"]
+            principles = _cam_info["princpt"]
+            K = [
+                [focals[0], 0, principles[0]],
+                [0, focals[1], principles[1]],
+                [0, 0, 1]
+            ]
+            Ks.append(K)
+    else:
+        images, masks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, data_extras = load_pinf_frame_data(args, args.datadir, args.half_res, args.testskip, args.trainskip)
+        Ks = [
+            [
+            [hwf[-1], 0, 0.5*hwf[1]],
+            [0, hwf[-1], 0.5*hwf[0]],
+            [0, 0, 1]
+            ] for hwf in hwfs
+        ]
+    voxel_tran_inv = np.linalg.inv(voxel_tran)
+    print('Loaded pinf frame data', images.shape, render_poses.shape, hwfs[0], args.datadir)
+    print('Loaded voxel matrix', voxel_tran, 'voxel scale',  voxel_scale)
+
+    args.time_size = len(list(np.arange(t_info[0],t_info[1],t_info[-1])))
+
+    voxel_tran_inv = torch.Tensor(voxel_tran_inv)
+    voxel_tran = torch.Tensor(voxel_tran)
+    voxel_scale = torch.Tensor(voxel_scale)
+
+    i_train, i_val, i_test = i_split
+    if bkg_color is not None:
+        args.white_bkgd = torch.Tensor(bkg_color).to(device)
+        print('Scene has background color', bkg_color, args.white_bkgd)
+
+
+    # Create Bbox model from smoke perspective
+    bbox_model = None
+
+    # this bbox in in the smoke simulation coordinate
+    in_min = [float(_) for _ in args.bbox_min.split(",")]
+    in_max = [float(_) for _ in args.bbox_max.split(",")]
+    bbox_model = BBox_Tool(voxel_tran_inv, voxel_scale, in_min, in_max)
+
+
+    # Create model
+    model, optimizer, start = create_model(args = args, bbox_model = bbox_model, device=device)
+
+    global_step = start
+
+
+    
+
+    # tempoInStep = max(0,args.tempo_delay) if "hybrid" in args.net_model else 0
+    # velInStep = max(0,args.vel_delay) if args.nseW > 1e-8 else 0 # after tempoInStep
+    # BoundaryInStep = max(0,args.boundary_delay) if args.boundaryW > 1e-8 else 0 # after velInStep
+    
+    # if args.net_model != "nerf":
+    #     model_fading_update(all_models, start, tempoInStep, velInStep, "hybrid" in args.net_model)
+
+    # Move testing data to GPU
+    render_poses = torch.Tensor(render_poses).to(device)
+    render_timesteps = torch.Tensor(render_timesteps).to(device)
+
+    test_bkg_color = np.float32([0.0, 0.0, 0.3])
+    # test_bkg_color = np.float32([1.0, 1.0, 1.0])
+
+    # Prepare raybatch tensor if batching random rays
+    N_rand = args.N_rand
+    use_batching = not args.no_batching
+    if (use_batching) or (N_rand is None):
+        print('Not supported!')
+        return
+
+    # Prepare Loss Tools (VGG, Den2Vel)
+    ###############################################
+    # vggTool = VGGlossTool(device)
+
+    # Move to GPU, except images
+    poses = torch.Tensor(poses).to(device)
+    time_steps = torch.Tensor(time_steps).to(device)
+
+    N_iters = args.N_iter
+
+    print('Begin')
+    print('TRAIN views are', i_train)
+    print('TEST views are', i_test)
+    print('VAL views are', i_val)
+
+    # Prepare Voxel Sampling Tools for Image Summary (voxel_writer), Physical Priors (training_voxel), Data Priors Represented by D2V (den_p_all)
+    # voxel_writer: to sample low resolution data for for image summary 
+    resX = 64 # complexity O(N^3)
+    resY = int(resX*float(voxel_scale[1])/voxel_scale[0]+0.5)
+    resZ = int(resX*float(voxel_scale[2])/voxel_scale[0]+0.5)
+    voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
+
+    # training_voxel: to sample data for for velocity NSE training
+    # training_voxel should have a larger resolution than voxel_writer
+    # note that training voxel is also used for visualization in testing
+    min_ratio = float(64+4*2)/min(voxel_scale[0],voxel_scale[1],voxel_scale[2])
+    minX = int(min_ratio*voxel_scale[0]+0.5)
+    trainX = max(args.vol_output_W,minX) # a minimal resolution of 64^3
+    trainY = int(trainX*float(voxel_scale[1])/voxel_scale[0]+0.5)
+    trainZ = int(trainX*float(voxel_scale[2])/voxel_scale[0]+0.5)
+    training_voxel = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,trainZ,trainY,trainX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
+    training_pts = torch.reshape(training_voxel.pts, (-1,3)) 
+
+    ## spatial alignment from wolrd coord to simulation coord
+    train_reso_scale = torch.Tensor([256*t_info[-1],256*t_info[-1],256*t_info[-1]])
+
+  
+
+    testimgdir = os.path.join(basedir, expname, "imgs_"+logdir)
+    os.makedirs(testimgdir, exist_ok=True)
+    # some loss terms 
+    
+
+    init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None if not args.use_mask else masks[i_train])
+
+    model.update_model_type(4)
+    
+    if args.output_voxel:
+
+        resX = args.vol_output_W
+        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
+        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
+        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
+
+        testsavedir = os.path.join(basedir, expname, 'volumeout_{:06d}'.format(start+1))
+        output_voxel(args, model, testsavedir, voxel_writer, t_info)
+    elif args.render_only:
+        testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('test' if args.render_test else 'path', start+1))
+        
+        hwf = hwfs[0]
+        hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
+        K = Ks[0]
+            
+        # with torch.no_grad():
+        if args.render_test:
+            # render_test switches to test poses
+            images = images[i_test]
+            hwf = hwfs[i_test[0]]
+            hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
+            K = Ks[i_test[0]]
+        elif args.render_train:
+            # render_train switches to train poses
+            images = images[i_train]
+            hwf = hwfs[i_train[0]]
+            hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
+            K = Ks[i_train[0]]
+        else:
+            # Default is smoother render_poses path
+            images = None
+            
+        render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, near, far, global_step >= args.uniform_sample_step, gt_images=images)
+    else:
+        AssertionError("test mode not defined.")
+
+
+if __name__=='__main__':
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')    
+    
+    parser = config_parser()
+    args = parser.parse_args()
+    set_rand_seed(args.fix_seed)
+
+    bkg_flag = args.white_bkgd
+    args.white_bkgd = np.ones([3], dtype=np.float32) if bkg_flag else None
+    args.test_mode = True
+
+    test(args) # call train in run_nerf
+    

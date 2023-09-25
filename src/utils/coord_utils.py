@@ -6,6 +6,7 @@ from torch import optim, nn
 import torch.nn.functional as F
 
 from src.utils.training_utils import batchify, batchify_func
+from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
 
 
 #####################################################################
@@ -358,9 +359,9 @@ class Voxel_Tool(object):
         model.train()
         return target_v
 
-    def save_voxel_den_npz(self,den_path,t,use_viewdirs=False,network_query_fn=None, network_fn=None,chunk=1024*32,save_npz=True,save_jpg=False, jpg_mix=True, noStatic=False):
-        voxel_den_list = self.get_voxel_density_list(t,chunk,use_viewdirs,network_query_fn,
-            network_fn, middle_slice=not (jpg_mix or save_npz) )
+
+    def save_voxel_den_npz(self,model, den_path, t, chunk=1024*32,save_npz=True,save_jpg=False, jpg_mix=True, noStatic=False):
+        voxel_den_list = self.get_voxel_density_list(model, t, chunk, middle_slice=not (jpg_mix or save_npz) )
         
         head_tail = os.path.split(den_path)
         namepre = ["","static_"]
@@ -539,9 +540,9 @@ class Voxel_Tool(object):
             voxel_vel = np.float16(voxel_vel)
             np.savez_compressed(vel_path, vel=voxel_vel)
 
-    def save_voxel_vel_npz_with_grad(self,vel_path,deltaT,t,batchify_fn,chunk=1024*4, vel_model=None,save_npz=True,save_jpg=False,save_vort=False):
+    def save_voxel_vel_npz_with_grad(self, model, vel_path, deltaT, t, chunk, save_npz=True, save_jpg=False, save_vort=False):
         vel_scale = 160
-        voxel_vel = self.get_voxel_velocity(deltaT,t,batchify_fn,chunk,vel_model,middle_slice=not save_npz).detach().cpu().numpy()
+        voxel_vel = self.get_voxel_velocity(model, deltaT, t, chunk, middle_slice=not save_npz).detach().cpu().numpy()
         
         if save_jpg:
             jpg_path = os.path.splitext(vel_path)[0]+".jpg"
@@ -595,3 +596,45 @@ def jacobian3D(x):
     c = torch.stack([u,v,w], -1)
     
     return j, c
+
+def jacobian3D_np(x):
+    # x, (b,)d,h,w,ch
+    # return jacobian and curl
+
+    if len(x.shape) < 5:
+        x = np.expand_dims(x, axis=0)
+    dudx = x[:,:,:,1:,0] - x[:,:,:,:-1,0]
+    dvdx = x[:,:,:,1:,1] - x[:,:,:,:-1,1]
+    dwdx = x[:,:,:,1:,2] - x[:,:,:,:-1,2]
+    dudy = x[:,:,1:,:,0] - x[:,:,:-1,:,0]
+    dvdy = x[:,:,1:,:,1] - x[:,:,:-1,:,1]
+    dwdy = x[:,:,1:,:,2] - x[:,:,:-1,:,2]
+    dudz = x[:,1:,:,:,0] - x[:,:-1,:,:,0]
+    dvdz = x[:,1:,:,:,1] - x[:,:-1,:,:,1]
+    dwdz = x[:,1:,:,:,2] - x[:,:-1,:,:,2]
+
+    # u = dwdy[:,:-1,:,:-1] - dvdz[:,:,1:,:-1]
+    # v = dudz[:,:,1:,:-1] - dwdx[:,:-1,1:,:]
+    # w = dvdx[:,:-1,1:,:] - dudy[:,:-1,:,:-1]
+
+    dudx = np.concatenate((dudx, np.expand_dims(dudx[:,:,:,-1], axis=3)), axis=3)
+    dvdx = np.concatenate((dvdx, np.expand_dims(dvdx[:,:,:,-1], axis=3)), axis=3)
+    dwdx = np.concatenate((dwdx, np.expand_dims(dwdx[:,:,:,-1], axis=3)), axis=3)
+
+    dudy = np.concatenate((dudy, np.expand_dims(dudy[:,:,-1,:], axis=2)), axis=2)
+    dvdy = np.concatenate((dvdy, np.expand_dims(dvdy[:,:,-1,:], axis=2)), axis=2)
+    dwdy = np.concatenate((dwdy, np.expand_dims(dwdy[:,:,-1,:], axis=2)), axis=2)
+
+    dudz = np.concatenate((dudz, np.expand_dims(dudz[:,-1,:,:], axis=1)), axis=1)
+    dvdz = np.concatenate((dvdz, np.expand_dims(dvdz[:,-1,:,:], axis=1)), axis=1)
+    dwdz = np.concatenate((dwdz, np.expand_dims(dwdz[:,-1,:,:], axis=1)), axis=1)
+
+    u = dwdy - dvdz
+    v = dudz - dwdx
+    w = dvdx - dudy
+    
+    j = np.stack([dudx,dudy,dudz,dvdx,dvdy,dvdz,dwdx,dwdy,dwdz], axis=-1)
+    c = np.stack([u,v,w], axis=-1)
+    
+    return j, c
+

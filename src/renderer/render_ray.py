@@ -588,7 +588,7 @@ def render_rays_cuda(ray_batch,
 
     static_color = C_staticRaw[..., :3]
     static_sdf = C_staticRaw[..., 3:4]
-    static_gradients = C_staticRaw[..., 4:7]
+    static_gradients = C_staticRaw[..., 4:7].reshape(-1,3)
 
    
     ## density/sdf to alpha
