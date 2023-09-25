@@ -954,6 +954,23 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
         else:
             raise NotImplementedError
 
+def update_static_occ_grid(args, model, times=100):
+    if not args.cuda_ray:
+        return
+
+
+
+    def get_density_static(x):
+        neus = model.static_model
+        sdf = model.sdf_static(x)
+        sdf = 1.0 / (torch.abs(sdf)+1e-6)
+        return sdf
+    
+    for time in range(times):
+        model.occupancy_grid_static.update_grid(get_density_static, S = 128)
+
+    
+
 
 def init_occ_grid(args, model, poses = None, intrinsics = None, given_mask = None):
     # mark untrained grid using camera information

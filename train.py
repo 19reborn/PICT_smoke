@@ -11,7 +11,7 @@ from src.dataset.load_pinf import load_pinf_frame_data
 
 from src.network.hybrid_model import create_model
 
-from src.renderer.occupancy_grid import init_occ_grid, update_occ_grid
+from src.renderer.occupancy_grid import init_occ_grid, update_occ_grid, update_static_occ_grid
 from src.renderer.render_ray import render, render_path, prepare_rays
 
 from src.utils.args import config_parser
@@ -178,6 +178,9 @@ def train(args):
     trainImg = False
 
     total_loss_fading = 1.0
+    
+    if global_step >= args.uniform_sample_step:
+        update_static_occ_grid(args, model, 100)
 
     for global_step in trange(start, N_iters + 1):
 
