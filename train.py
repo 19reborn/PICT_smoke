@@ -229,8 +229,8 @@ def train(args):
         # if training_stage == 1:
         model.update_fading_step(min(args.stage1_finish_recon, global_step)) # progressive training for siren smoke
         
-        if training_stage == 1 and global_step >= args.uniform_sample_step:
-            update_occ_grid(args, model, global_step, update_interval = 1000)
+        if trainImg and global_step >= args.uniform_sample_step:
+            update_occ_grid(args, model, global_step, update_interval = 1000, neus_early_terminated = training_stage is not 1)
               
  
         optimizer.zero_grad()
