@@ -24,6 +24,8 @@ def config_parser():
     parser.add_argument("--uniform_sample_step", type=int, default = 20000, help="stage 1 first uniform sample steps" )
     parser.add_argument("--smoke_recon_delay", type=int, default=10000,
                         help='for hybrid models, the step to start learning the temporal dynamic component.')
+    parser.add_argument("--sdf_loss_delay", type=int, default=2000,
+                        help='for hybrid models, the step to start learning the temporal dynamic component.')
     parser.add_argument("--fading_layers", type=int, default=-1,
                         help='for siren and hybrid models, the step to finish fading model layers one by one during training.')
 

@@ -174,7 +174,7 @@ def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, 
     # tempo_fading = fade_in_weight(global_step, args.smoke_recon_delay, 10000)
     smoke_recon_fading = fade_in_weight(global_step, 0, args.smoke_recon_delay) # 
     # smoke_inside_sdf_loss_fading = fade_in_weight(global_step, args.smoke_recon_delay + 5000, 10000)
-    smoke_inside_sdf_loss_fading = fade_in_weight(global_step, args.smoke_recon_delay, 10000)
+    smoke_inside_sdf_loss_fading = fade_in_weight(global_step, args.sdf_loss_delay + args.smoke_recon_delay, 10000)
     
     img_loss = img2mse(rgb, gt_rgb)
     psnr = mse2psnr(img_loss)
