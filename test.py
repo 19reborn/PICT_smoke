@@ -24,7 +24,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, cuda_ray, gt_images):
-
+    model.eval()
     os.makedirs(testsavedir, exist_ok=True)
     update_occ_grid(args, model)
     print('RENDER ONLY')
@@ -107,6 +107,8 @@ def test(args):
     print('Loaded pinf frame data', images.shape, render_poses.shape, hwfs[0], args.datadir)
     print('Loaded voxel matrix', voxel_tran, 'voxel scale',  voxel_scale)
 
+
+        
     args.time_size = len(list(np.arange(t_info[0],t_info[1],t_info[-1])))
 
     voxel_tran_inv = torch.Tensor(voxel_tran_inv)
@@ -117,7 +119,14 @@ def test(args):
     if bkg_color is not None:
         args.white_bkgd = torch.Tensor(bkg_color).to(device)
         print('Scene has background color', bkg_color, args.white_bkgd)
-
+        
+    if args.render_test:
+        render_poses = np.array(poses[i_test])
+        render_timesteps = np.array(time_steps[i_test])
+    
+    if args.render_train:
+        render_poses = np.array(poses[i_train])
+        render_timesteps = np.array(time_steps[i_train])
 
     # Create Bbox model from smoke perspective
     bbox_model = None
@@ -236,8 +245,8 @@ def test(args):
         else:
             # Default is smoother render_poses path
             images = None
-            
-        render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, near, far, global_step >= args.uniform_sample_step, gt_images=images)
+
+        render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, global_step >= args.uniform_sample_step, gt_images=images)
     else:
         AssertionError("test mode not defined.")
 

@@ -264,7 +264,7 @@ def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, 
 
 
 # @profile
-def get_velocity_loss(args, model, training_samples, training_stage):
+def get_velocity_loss(args, model, training_samples, training_stage, global_step):
 
 
 
@@ -300,6 +300,7 @@ def get_velocity_loss(args, model, training_samples, training_stage):
     # todo:: ignore some operations unecessary for diff stages
     
     if training_stage == 2 or training_stage == 3:
+        # get renference density
         training_samples_ref = training_samples.clone().detach().requires_grad_(True) 
         _den_ref, _d_x_ref, _d_y_ref, _d_z_ref, _d_t_ref = den_model_ref.density_with_jacobian(training_samples_ref)
         
@@ -308,10 +309,7 @@ def get_velocity_loss(args, model, training_samples, training_stage):
     vel_loss = 0.0
 
     if training_stage == 2:
-        # split_nse = PDE_stage1(
-        #     _d_t, _d_x, _d_y, _d_z,
-        #     _vel, _u_x, _u_y, _u_z, 
-        #     Ddensity_Dt, Du_Dt)
+        # only train d and v first
         split_nse = PDE_stage2(
             _d_t_ref.detach(), _d_x_ref.detach(), _d_y_ref.detach(), _d_z_ref.detach(),
             _vel, _u_x, _u_y, _u_z, 
@@ -335,6 +333,7 @@ def get_velocity_loss(args, model, training_samples, training_stage):
         vel_loss += density_reference_loss + color_reference_loss
 
     elif training_stage == 3:
+        # start train feature
         split_nse = PDE_stage3(
             _f_t, _f_x, _f_y, _f_z,
             _d_t_ref.detach(), _d_x_ref.detach(), _d_y_ref.detach(), _d_z_ref.detach(),
@@ -360,14 +359,7 @@ def get_velocity_loss(args, model, training_samples, training_stage):
 
 
     elif training_stage == 4:
-        # # only train density
-        # split_nse = PDE_stage4(
-        #     _f_t, _f_x, _f_y, _f_z,
-        #     _vel, _u_x, _u_y, _u_z, 
-        #     Dd_Dt)
-        
-        # # feature continuity, Dd_Dt,
-        # split_nse_wei = [1.0, 1e-3] 
+        # start train velocity using lagrangian density, and give up siren density
         
         split_nse = PDE_stage3(
             _f_t, _f_x, _f_y, _f_z,
@@ -383,8 +375,7 @@ def get_velocity_loss(args, model, training_samples, training_stage):
         
         AssertionError("training stage should be set to 1,2,3,4")
         
-
-        
+  
     nse_errors = [mean_squared_error(x,0.0) for x in split_nse]
 
 
@@ -400,12 +391,13 @@ def get_velocity_loss(args, model, training_samples, training_stage):
     # boundary loss
     # if the sampling point's sdf < 0.05 and > -0.05, we assume it's on the boundary: The velocity along the normal direction must be zero.
     # If the sampling point's sdf < -0.05, we assume it's inside the object : The velocity should be 0.
-
     _sdf = _sdf.detach()
     _normal = _normal.detach()
 
     # boundary_sdf = 0.05
-    boundary_sdf = 0.02 * args.scene_scale
+    # boundary_sdf = 0.02 * args.scene_scale
+    # boundary_sdf = 0.00 * args.scene_scale
+    boundary_sdf = args.inside_sdf
     boundary_mask = torch.abs(_sdf) < boundary_sdf
     boundary_vel = _vel * boundary_mask
     
@@ -425,7 +417,6 @@ def get_velocity_loss(args, model, training_samples, training_stage):
 
     vel_loss_dict['boundary_loss'] = boundary_loss
     vel_loss_dict['inside_loss'] = inside_loss
-
 
 
     ## cycle loss for lagrangian feature
@@ -452,36 +443,29 @@ def get_velocity_loss(args, model, training_samples, training_stage):
         predict_xyz_cross = vel_model.mapping_forward_with_features(mapped_features, cross_training_t)
         cross_features = vel_model.feature_map(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
-        cross_cycle_loss = torch.mean(torch.abs(cross_features - mapped_features))
+        cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
         vel_loss += 0.2 * cross_cycle_loss
 
         vel_loss_dict['feature_cycle_loss'] = cycle_loss
         vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
 
+    if training_stage == 4:
+        ## density mapping loss to supervise density
+        density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 5000, 10000) # 
 
-        ## density mapping loss
         density_mapping_loss = None
-        # density_in_xyz = _den
+        density_in_xyz = _den
 
-        # random_warpT = torch.rand_like(training_samples[:,0:1])*6.0 - 3.0 # [-3,3]
+        random_warpT = torch.rand_like(training_samples[:,0:1])*6.0 - 3.0 # [-3,3]
 
-        # cross_delta_t =  random_warpT * deltaT
-
-        # cross_training_t = torch.ones_like(training_samples[:,0:1]) * train_time + cross_delta_t
-  
-        # cross_training_t = torch.clamp(cross_training_t, t_info[0], t_info[1]) # clamp to (0,1)
-
-
-        # predict_xyz_cross = map_model(training_xyzt, cross_training_t)
         
-        # predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
-        # density_in_mapped_xyz = render_kwargs_test['network_fine' if args.N_importance>0 else 'network_fn'].density_dynamic(predict_xyzt_cross.detach())
- 
-        # density_mapping_loss = torch.mean(torch.abs(density_in_xyz - density_in_mapped_xyz))
-        # vel_loss += 0.1 * density_mapping_loss
+        predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
+        density_in_mapped_xyz = den_model(predict_xyzt_cross.detach())
 
+        density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz)
+        
+        vel_loss += 0.1 * density_mapping_loss * density_mapping_fading
 
-        # loss += 1 * density_mapping_loss
         
         vel_loss_dict['density_mapping_loss'] = density_mapping_loss
 
@@ -535,20 +519,6 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
     eqs += [Dd_Dt]
     
     eqs += [Du_Dt]
-    
-    
-    return eqs
-
-
-def PDE_stage4(f_t, f_x, f_y, f_z, U, U_x, U_y, U_z, Dd_Dt):
-    eqs = []
-    u,v,w = U.split(1, dim=-1) # (N,1)
-
-    feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
-    
-    eqs += [feature]
-
-    eqs += [Dd_Dt]
     
     
     return eqs
