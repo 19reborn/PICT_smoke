@@ -326,12 +326,12 @@ class NeuS(nn.Module):
         encoding_type = 'HashGrid' if args.use_neus2_network else 'PE'
         if args.use_neus2_network:
             self.sdf_network = SDFNetwork(args = args, encoding_type = encoding_type, d_in = input_ch, d_out = sdf_output_ch, d_hidden = 64, n_layers = 2, skip_in = ())
-            # self.color_network = RenderingNetwork(args = args, d_feature = d_feature, mode = 'no_view_dir', d_in = input_ch + 3 + input_ch_views, d_out = output_ch, d_hidden = 64, n_layers = 1) # input_ch: additional input like normals
-            self.color_network = RenderingNetwork(args = args, d_feature = d_feature, mode = 'idr', d_in = input_ch + 3 + input_ch_views, d_out = output_ch, d_hidden = 64, n_layers = 1) # input_ch: additional input like normals
+            self.color_network = RenderingNetwork(args = args, d_feature = d_feature, mode = 'no_view_dir', d_in = input_ch + 3 , d_out = output_ch, d_hidden = 64, n_layers = 1) # input_ch: additional input like normals
+            # self.color_network = RenderingNetwork(args = args, d_feature = d_feature, mode = 'idr', d_in = input_ch + 3 + input_ch_views, d_out = output_ch, d_hidden = 64, n_layers = 1) # input_ch: additional input like normals
         else:
             self.sdf_network = SDFNetwork(args = args, encoding_type = encoding_type, d_in = input_ch, d_out = sdf_output_ch, d_hidden = sdf_W, n_layers = sdf_D, skip_in = sdf_skips)
-            # self.color_network = RenderingNetwork(args = args, d_feature = d_feature, mode = 'no_view_dir', d_in = input_ch + 3 + input_ch_views, d_out = output_ch, d_hidden = W, n_layers = D) # input_ch: additional input like normals
-            self.color_network = RenderingNetwork(args = args, d_feature = d_feature, mode = 'idr', d_in = input_ch + 3 + input_ch_views, d_out = output_ch, d_hidden = W, n_layers = D) # input_ch: additional input like normals
+            self.color_network = RenderingNetwork(args = args, d_feature = d_feature, mode = 'no_view_dir', d_in = input_ch + 3, d_out = output_ch, d_hidden = W, n_layers = D) # input_ch: additional input like normals
+            # self.color_network = RenderingNetwork(args = args, d_feature = d_feature, mode = 'idr', d_in = input_ch + 3 + input_ch_views, d_out = output_ch, d_hidden = W, n_layers = D) # input_ch: additional input like normals
 
         self.deviation_network = SingleVarianceNetwork(init_val = 0.3)
 
