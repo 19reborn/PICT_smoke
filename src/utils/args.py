@@ -22,7 +22,9 @@ def config_parser():
     ## Stage 1
     parser.add_argument("--stage1_finish_recon", type=int, default=50000, help="stage 1 total training steps" )
     parser.add_argument("--uniform_sample_step", type=int, default = 20000, help="stage 1 first uniform sample steps" )
-    parser.add_argument("--smoke_recon_delay", type=int, default=10000,
+    parser.add_argument("--smoke_recon_delay_start", type=int, default=0,
+                        help='for hybrid models, the step to start learning the temporal dynamic component.')
+    parser.add_argument("--smoke_recon_delay_last", type=int, default=10000,
                         help='for hybrid models, the step to start learning the temporal dynamic component.')
     parser.add_argument("--sdf_loss_delay", type=int, default=2000,
                         help='for hybrid models, the step to start learning the temporal dynamic component.')

@@ -179,7 +179,7 @@ def train(args):
 
     total_loss_fading = 1.0
     
-    if global_step >= args.uniform_sample_step:
+    if global_step > args.uniform_sample_step:
         update_static_occ_grid(args, model, 100)
 
     for global_step in trange(start, N_iters + 1):
@@ -218,8 +218,10 @@ def train(args):
             total_loss_fading = 1.0
             training_stage = 4
             trainImg = True
-            trainVel = True
-            trainVel_using_rendering_samples = False # todo:: use this
+            # trainVel = True
+            trainVel = global_step % 5 == 0
+            # trainVel_using_rendering_samples = False # todo:: use this
+            trainVel_using_rendering_samples = args.train_vel_within_rendering and not global_step % args.train_vel_uniform_sample == 0# todo:: use this
 
         model.iter_step = global_step
         model.update_model_type(training_stage)
@@ -342,7 +344,7 @@ def train(args):
                 training_t = torch.ones([training_samples.shape[0], 1])*time_locate
                 training_samples = torch.cat([training_samples,training_t], dim=-1)
 
-            vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage)
+            vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage, global_step = global_step)
 
             loss += vel_loss
 

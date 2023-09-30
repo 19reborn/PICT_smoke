@@ -172,9 +172,9 @@ def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, 
     rendering_loss = 0.0
     
     # tempo_fading = fade_in_weight(global_step, args.smoke_recon_delay, 10000)
-    smoke_recon_fading = fade_in_weight(global_step, 0, args.smoke_recon_delay) # 
+    smoke_recon_fading = fade_in_weight(global_step, args.smoke_recon_delay_start, args.smoke_recon_delay_last) # 
     # smoke_inside_sdf_loss_fading = fade_in_weight(global_step, args.smoke_recon_delay + 5000, 10000)
-    smoke_inside_sdf_loss_fading = fade_in_weight(global_step, args.sdf_loss_delay + args.smoke_recon_delay, 10000)
+    smoke_inside_sdf_loss_fading = fade_in_weight(global_step, args.sdf_loss_delay + args.smoke_recon_delay_start + args.smoke_recon_delay_last, 10000)
     
     img_loss = img2mse(rgb, gt_rgb)
     psnr = mse2psnr(img_loss)
@@ -451,20 +451,19 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
 
     if training_stage == 4:
         ## density mapping loss to supervise density
-        density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 5000, 10000) # 
+        density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 20000, 10000) # 
 
         density_mapping_loss = None
         density_in_xyz = _den
 
-        random_warpT = torch.rand_like(training_samples[:,0:1])*6.0 - 3.0 # [-3,3]
-
         
         predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
-        density_in_mapped_xyz = den_model(predict_xyzt_cross.detach())
+        # density_in_mapped_xyz = den_model(predict_xyzt_cross.detach()) ## todo:: whether detach this
+        density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
 
         density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz)
         
-        vel_loss += 0.1 * density_mapping_loss * density_mapping_fading
+        vel_loss += 0.01 * density_mapping_loss * density_mapping_fading
 
         
         vel_loss_dict['density_mapping_loss'] = density_mapping_loss
