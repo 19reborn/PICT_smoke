@@ -12,7 +12,7 @@ from src.dataset.load_pinf import load_pinf_frame_data
 from src.network.hybrid_model import create_model
 
 from src.renderer.occupancy_grid import init_occ_grid, update_occ_grid
-from src.renderer.render_ray import render, render_path, prepare_rays
+from src.renderer.render_ray import render_path, render_eval
 
 from src.utils.args import config_parser
 from src.utils.training_utils import set_rand_seed, save_log
@@ -30,10 +30,12 @@ def render_only(args, model, testsavedir, render_poses, render_timesteps, test_b
     print('RENDER ONLY')
 
     print('test poses shape', render_poses.shape)
-
-    rgbs, _ = render_path(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
+    if args.render_eval:
+        rgbs, _ = render_eval(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
+    else:
+        rgbs, _ = render_path(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
+        imageio.mimwrite(os.path.join(testsavedir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
     print('Done rendering', testsavedir)
-    imageio.mimwrite(os.path.join(testsavedir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
 
 
 def output_voxel(args, model, testsavedir, voxel_writer, t_info):
@@ -120,7 +122,7 @@ def test(args):
         args.white_bkgd = torch.Tensor(bkg_color).to(device)
         print('Scene has background color', bkg_color, args.white_bkgd)
         
-    if args.render_test:
+    if args.render_test or args.render_eval:
         render_poses = np.array(poses[i_test])
         render_timesteps = np.array(time_steps[i_test])
     
@@ -224,13 +226,16 @@ def test(args):
         output_voxel(args, model, testsavedir, voxel_writer, t_info)
     elif args.render_only:
         testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('test' if args.render_test else 'path', start+1))
+        if args.render_eval:
+            testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('eval', start+1))
+            
         
         hwf = hwfs[0]
         hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
         K = Ks[0]
             
         # with torch.no_grad():
-        if args.render_test:
+        if args.render_test or args.render_eval:
             # render_test switches to test poses
             images = images[i_test]
             hwf = hwfs[i_test[0]]

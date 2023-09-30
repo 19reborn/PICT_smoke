@@ -156,10 +156,11 @@ def config_parser():
                         help='do not optimize, reload weights and render out render_poses path')
     parser.add_argument("--render_test", action='store_true', 
                         help='render the test set instead of render_poses path')
-    parser.add_argument("--eval_mode", action='store_true', 
+    parser.add_argument("--render_eval", action='store_true', 
                         help='render the test set instead of render_poses path')
     parser.add_argument("--render_train", action='store_true', 
                         help='render the training set instead of render_poses path')
+    
     parser.add_argument("--extract_occ_grid", action='store_true', 
                         help='render the training set instead of render_poses path')
     parser.add_argument("--preload_gt_den_vol", action='store_true', 

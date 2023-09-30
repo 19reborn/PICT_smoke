@@ -868,3 +868,82 @@ def render_path(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
 
 
     return rgbs, disps
+
+def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchunk = 1024 * 64, gt_imgs=None, savedir=None, render_factor=0, render_steps=None, bkgd_color=None):
+    H, W, focal = hwf
+
+
+    if render_factor!=0:
+        # Render downsampled for speed
+        H = H//render_factor
+        W = W//render_factor
+        focal = focal/render_factor
+
+    rgbs = []
+    disps = []
+
+    t = time.time()
+    cur_timestep = None
+
+    pred_dir = os.path.join(savedir, 'pred')
+    gt_dir = os.path.join(savedir, 'gt')
+    other_dir = os.path.join(savedir, 'other')
+    os.makedirs(pred_dir, exist_ok=True)
+    os.makedirs(gt_dir, exist_ok=True)
+    os.makedirs(other_dir, exist_ok=True)
+    
+    for i, c2w in enumerate(tqdm(render_poses)):
+        print(i, time.time() - t)
+        if render_steps is not None:
+            cur_timestep = render_steps[i]
+        t = time.time()
+        rgb, disp, acc, extras = render(H, W, K, model, chunk=chunk, c2w=c2w[:3,:4], netchunk=netchunk, time_step=cur_timestep, bkgd_color=bkgd_color, near = near, far = far, cuda_ray = cuda_ray, perturb=0)
+        rgbs.append(rgb.detach().cpu().numpy())
+        disps.append(disp.detach().cpu().numpy())
+        if i==0:
+            print(rgb.shape, disp.shape)
+
+        """
+        if gt_imgs is not None and render_factor==0:
+            p = -10. * np.log10(np.mean(np.square(rgb.cpu().numpy() - gt_imgs[i])))
+            print(p)
+        """
+        
+        if savedir is not None:
+
+            # pred img
+            rgb8 = to8b(rgbs[-1])
+            filename = os.path.join(pred_dir, '{:06d}.png'.format(i))
+            imageio.imwrite(filename, rgb8)
+
+            #gt img
+            if gt_imgs is not None:
+                rgb8 = to8b(gt_imgs[i])
+                filename = os.path.join(gt_dir, '{:06d}.png'.format(i))
+                imageio.imwrite(filename, rgb8)
+
+            # other_rgbs = []
+            # if gt_imgs is not None:
+            #     other_rgbs.append(gt_imgs[i])
+            # for rgb_i in ['rgbh1','rgbh2','rgb0']: 
+            #     if rgb_i in extras:
+            #         _data = extras[rgb_i].detach().cpu().numpy()
+            #         other_rgbs.append(_data)
+            # if len(other_rgbs) >= 1:
+            #     other_rgb8 = np.concatenate(other_rgbs, axis=1)
+            #     other_rgb8 = to8b(other_rgb8)
+            #     filename = os.path.join(savedir, '_{:03d}.png'.format(i))
+            #     imageio.imwrite(filename, other_rgb8)
+
+            filename = os.path.join(other_dir, 'disp_{:03d}.png'.format(i))
+            imageio.imwrite(filename, to8b(disp.detach().cpu().numpy()))
+
+            ## acc map
+            filename = os.path.join(other_dir, 'acc_{:03d}.png'.format(i))
+            imageio.imwrite(filename, to8b(acc.detach().cpu().numpy()))
+
+
+    rgbs = np.stack(rgbs, 0)
+    disps = np.stack(disps, 0)
+
+    return rgbs, disps
