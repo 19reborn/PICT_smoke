@@ -317,7 +317,7 @@ class Voxel_Tool(object):
 
         den_list, sdf_list , _ = self.get_density_flat(model, pts_flat, chunk)
 
-        raw_list = [den_list, sdf_list]
+        raw_list = [den_list.reshape(-1,1), sdf_list.reshape(-1,1)]
 
         # import pdb
         return_list = []

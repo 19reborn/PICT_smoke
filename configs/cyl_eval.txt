@@ -1,4 +1,4 @@
-expname = cyl/0925_4090_v2_occ_grid
+expname = cyl/0928_zxy_v5_less_density_mapping_loss_from_start_no_relu_true
 basedir = ./log
 
 ### data info
@@ -74,7 +74,6 @@ inside_sdf = 0.02
 
 stage1_finish_recon = 50000
 uniform_sample_step = 10000000
-smoke_recon_delay = 1000
 
 stage2_finish_init_lagrangian = 5000
 stage3_finish_init_feature = 5000

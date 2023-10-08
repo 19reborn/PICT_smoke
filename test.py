@@ -90,16 +90,18 @@ def output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = F
         for _t in range(int(1.0/v_deltaT)):
             frame_rgb = []
             voxel_den_list = voxel_writer.get_voxel_density_list(model, _t*v_deltaT, args.chunk, 
-                    middle_slice=False)
+                    middle_slice=True)
             for voxel in voxel_den_list:
-                frame_rgb.append(den_scalar2rgb(voxel.detach().cpu().numpy(), scale=None, is3D=True, logv=False, mix=True))
+                frame_rgb.append(den_scalar2rgb(voxel.detach().cpu().numpy(), scale=None, is3D=True, logv=False, mix=False))
             # middle_slice, True: only sample middle slices for visualization, very fast, but cannot save as npz
             #               False: sample whole volume, can be saved as npz, but very slow
             voxel_vel = voxel_writer.get_voxel_velocity(model, t_info[-1], _t*v_deltaT, middle_slice=True)
             voxel_vel = voxel_vel.view([-1]+list(voxel_vel.shape))
             _, voxel_vort = jacobian3D(voxel_vel)
-            frame_rgb.append(vel_uv2hsv(np.squeeze(voxel_vel.detach().cpu().numpy()), scale=300, is3D=True, logv=False))
-            frame_rgb.append(vel_uv2hsv(np.squeeze(voxel_vort.detach().cpu().numpy()), scale=1500, is3D=True, logv=False))
+            # frame_rgb.append(vel_uv2hsv(np.squeeze(voxel_vel.detach().cpu().numpy()), scale=300, is3D=True, logv=False))
+            # frame_rgb.append(vel_uv2hsv(np.squeeze(voxel_vort.detach().cpu().numpy()), scale=1500, is3D=True, logv=False))
+            frame_rgb.append(vel_uv2hsv(np.squeeze(voxel_vel.detach().cpu().numpy()), scale=300, is3D=True, logv=False, mix=False))
+            frame_rgb.append(vel_uv2hsv(np.squeeze(voxel_vort.detach().cpu().numpy()), scale=1500, is3D=True, logv=False, mix=False))
             vel_rgbs.append(np.concatenate(frame_rgb, axis=0))
             # vel_rgbs.append(np.concatenate([_vel, _vort], axis=0))
         # moviebase = os.path.join(basedir, expname, '{}_volume_{:06d}_'.format(expname, global_step))
