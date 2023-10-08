@@ -16,12 +16,54 @@ from src.renderer.render_ray import render_path, render_eval
 
 from src.utils.args import config_parser
 from src.utils.training_utils import set_rand_seed, save_log
-from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D
+from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D, get_voxel_pts
 from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
-from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
+from src.utils.visualize_utils import draw_mapping, vel_uv2hsv, den_scalar2rgb
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
+def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
+
+    model.eval()
+    print('vis_mapping ONLY')
+
+
+    t_list = list(np.arange(t_info[0],t_info[1],t_info[-1]))
+    frame_N = len(t_list)
+    
+
+    frame_N = args.frame_num
+    delta_T = 1.0 / frame_N
+    
+    if args.full_frame_output:
+        frame_list = range(0,frame_N, 1)
+        testsavedir += "_full_frame"
+    else:
+        frame_list = range(frame_N//10,frame_N, 10)
+        
+    
+    os.makedirs(testsavedir, exist_ok=True)
+
+    
+    change_feature_interval = 50
+    sample_pts = 32
+    mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
+       
+    
+    # draw grid_xyz on image
+    grid_yz = mapping_xyz[..., [1,2]].permute(1,0,2)
+    draw_mapping(os.path.join(testsavedir, f'vis_map_yz_interval{change_feature_interval}.png'), grid_yz.cpu().numpy())
+    
+    grid_xy = mapping_xyz[..., [0,1]].permute(1,0,2)
+    draw_mapping(os.path.join(testsavedir, f'vis_map_xy_interval{change_feature_interval}.png'), grid_xy.cpu().numpy())
+    
+    grid_xz = mapping_xyz[..., [0,2]].permute(1,0,2)
+    draw_mapping(os.path.join(testsavedir, f'vis_map_xz_interval{change_feature_interval}.png'), grid_xz.cpu().numpy())
+
+    print('Done output', testsavedir)
+
+    exit(0)
 
 def render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, cuda_ray, gt_images):
     model.eval()
@@ -37,38 +79,59 @@ def render_only(args, model, testsavedir, render_poses, render_timesteps, test_b
         imageio.mimwrite(os.path.join(testsavedir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
     print('Done rendering', testsavedir)
 
-
-def output_voxel(args, model, testsavedir, voxel_writer, t_info):
+def output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = False):
     model.eval()
 
     print('OUTPUT VOLUME ONLY')
-    savenpz = True # need a large space
-    savejpg = True 
-    save_vort = True # (vel_model is not None) and (savenpz) and (savejpg)
-    # with torch.no_grad():
-
-
-
-    t_list = list(np.arange(t_info[0],t_info[1],t_info[-1]))
-    frame_N = len(t_list)
-    noStatic = False
-    if args.full_vol_output:
-        frame_list = range(0,frame_N, 1)
-        testsavedir + "_full_frame"
+    if voxel_video:
+        v_deltaT = 0.025
+        # with torch.no_grad():
+        vel_rgbs = []
+        for _t in range(int(1.0/v_deltaT)):
+            frame_rgb = []
+            voxel_den_list = voxel_writer.get_voxel_density_list(model, _t*v_deltaT, args.chunk, 
+                    middle_slice=False)
+            for voxel in voxel_den_list:
+                frame_rgb.append(den_scalar2rgb(voxel.detach().cpu().numpy(), scale=None, is3D=True, logv=False, mix=True))
+            # middle_slice, True: only sample middle slices for visualization, very fast, but cannot save as npz
+            #               False: sample whole volume, can be saved as npz, but very slow
+            voxel_vel = voxel_writer.get_voxel_velocity(model, t_info[-1], _t*v_deltaT, middle_slice=True)
+            voxel_vel = voxel_vel.view([-1]+list(voxel_vel.shape))
+            _, voxel_vort = jacobian3D(voxel_vel)
+            frame_rgb.append(vel_uv2hsv(np.squeeze(voxel_vel.detach().cpu().numpy()), scale=300, is3D=True, logv=False))
+            frame_rgb.append(vel_uv2hsv(np.squeeze(voxel_vort.detach().cpu().numpy()), scale=1500, is3D=True, logv=False))
+            vel_rgbs.append(np.concatenate(frame_rgb, axis=0))
+            # vel_rgbs.append(np.concatenate([_vel, _vort], axis=0))
+        # moviebase = os.path.join(basedir, expname, '{}_volume_{:06d}_'.format(expname, global_step))
+        imageio.mimwrite(testsavedir + 'volume_video.mp4', np.stack(vel_rgbs,axis=0).astype(np.uint8), fps=30, quality=8)
     else:
-        frame_list = range(frame_N//10,frame_N, 10)
-        
-    os.makedirs(testsavedir, exist_ok=True)
-    
-    for frame_i in frame_list:
+        savenpz = True # need a large space
+        savejpg = True 
+        save_vort = True # (vel_model is not None) and (savenpz) and (savejpg)
+        # with torch.no_grad():
 
-        print(frame_i, frame_N)
-        cur_t = t_list[frame_i]
-        voxel_writer.save_voxel_den_npz(model, os.path.join(testsavedir,"d_%04d.npz"%frame_i), cur_t,  chunk=args.chunk, save_npz=savenpz, save_jpg=savejpg, noStatic=noStatic)
-        noStatic = True
+
+
+        t_list = list(np.arange(t_info[0],t_info[1],t_info[-1]))
+        frame_N = len(t_list)
+        noStatic = False
+        if args.full_vol_output:
+            frame_list = range(0,frame_N, 1)
+            testsavedir + "_full_frame"
+        else:
+            frame_list = range(frame_N//10,frame_N, 10)
+            
+        os.makedirs(testsavedir, exist_ok=True)
         
-        voxel_writer.save_voxel_vel_npz_with_grad(model, os.path.join(testsavedir,"v_%04d.npz"%frame_i), t_info[-1], cur_t, args.chunk, savenpz, savejpg, save_vort)
-    
+        for frame_i in frame_list:
+
+            print(frame_i, frame_N)
+            cur_t = t_list[frame_i]
+            voxel_writer.save_voxel_den_npz(model, os.path.join(testsavedir,"d_%04d.npz"%frame_i), cur_t,  chunk=args.chunk, save_npz=savenpz, save_jpg=savejpg, noStatic=noStatic)
+            noStatic = True
+            
+            voxel_writer.save_voxel_vel_npz_with_grad(model, os.path.join(testsavedir,"v_%04d.npz"%frame_i), t_info[-1], cur_t, args.chunk, savenpz, savejpg, save_vort)
+        
     print('Done output', testsavedir)
 
     return
@@ -223,7 +286,11 @@ def test(args):
         voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
 
         testsavedir = os.path.join(basedir, expname, 'volumeout_{:06d}'.format(start+1))
-        output_voxel(args, model, testsavedir, voxel_writer, t_info)
+        output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = args.voxel_video)
+    elif args.visualize_mapping:
+        testsavedir = os.path.join(basedir, expname, 'vis_mapping_{:06d}'.format(start+1))
+        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
+        visualize_mapping(args, model, testsavedir, voxel_scale, voxel_writer)
     elif args.render_only:
         testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('test' if args.render_test else 'path', start+1))
         if args.render_eval:

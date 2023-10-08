@@ -1,8 +1,8 @@
-expname = game/0929_zxy_v2_update_bbox
+expname = cyl/0925_4090_v2_occ_grid
 basedir = ./log
 
 ### data info
-datadir = ./data/Game
+datadir = ./data/Cyl
 dataset_type = pinf_data
 no_batching = True
 half_res = normal
@@ -36,8 +36,8 @@ overlayW = 0.000
 d2vW = 0.0  # [0.0 - 4.0, larger values are good for buoyancy driven smoke]
 
 ### scene params
-bbox_min = 0.0,-0.1,-0.1
-bbox_max = 1.2,0.9,1.35
+bbox_min = 0.0
+bbox_max = 1.0
 
 # vol_output_only
 # render_only
@@ -50,21 +50,21 @@ i_embed_neus = 0
 multires_neus = 6
 anneal_end = 50000
 
-i_img = 1000
-i_test = 5000
-i_weights = 10000
-i_video = 20000
+i_img = 100
+i_test = 1000
+i_weights = 1000
+i_video = 10000
 N_iter = 400000
 
 cuda_ray = True
 scene_scale = 0.33
-density_thresh = 2.0
+density_thresh = 1
 density_thresh_static = 30
 # density_activation = relu
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.05
-train_vel_within_rendering = False
+SmokeAlphaReguW = 0.01
+train_vel_within_rendering = True
 boundaryW = 0.5
 train_vel_uniform_sample = 2
 inside_sdf = 0.02
@@ -73,20 +73,16 @@ inside_sdf = 0.02
 # boundary_delay = 10000
 
 stage1_finish_recon = 50000
-uniform_sample_step = 30000
-smoke_recon_delay_start = 0
-smoke_recon_delay_last = 10000
-sdf_loss_delay = 2000
+uniform_sample_step = 10000000
+smoke_recon_delay = 1000
 
 stage2_finish_init_lagrangian = 5000
 stage3_finish_init_feature = 5000
 
 # nseW = 1e-4
 
+# output_voxel=True
 
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0928_zxy_v4_no_density_mapping_loss/080000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0927_zxy_check_recon_v3/100000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0927_zxy_check_recon_v3/060000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start/010000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/014000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start_debug/014000.tar

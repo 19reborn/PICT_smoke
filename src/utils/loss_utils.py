@@ -431,7 +431,14 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
         cross_cycle_loss = None
 
         mapped_features = vel_middle_output['mapped_features']
-        random_warpT = torch.rand_like(training_samples[:,0:1]) * 6.0 - 3.0 # todo:: change to long term frame
+        
+        mapping_frame_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_frame_range_fading_start, args.mapping_frame_range_fading_last) # 
+
+        min_mapping_frame = 3
+        max_mapping_frame = args.max_mapping_frame_range
+        mapping_frame_range = (max_mapping_frame - min_mapping_frame) * mapping_frame_fading + min_mapping_frame
+        random_warpT = torch.rand_like(training_samples[:,0:1]) * mapping_frame_range * 2 - mapping_frame_range # todo:: change to long term frame
+        # random_warpT = torch.rand_like(training_samples[:,0:1]) * 6.0 - 3.0 # todo:: change to long term frame
 
         cross_delta_t =  random_warpT * 1.0 / args.time_size
 

@@ -6,7 +6,7 @@ from torch import optim, nn
 import torch.nn.functional as F
 
 from src.utils.training_utils import batchify, batchify_func
-from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
+from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv, write_ply, draw_mapping
 
 
 #####################################################################
@@ -465,9 +465,9 @@ class Voxel_Tool(object):
         return feature_img
 
     @torch.no_grad()
-    def vis_mapping_voxel(self, frame_list, t_list, dynamic_model, sample_pts = 128, change_feature_interval = 1, chunk = 1024*32):
+    def vis_mapping_voxel(self, frame_list, t_list, model, sample_pts = 128, change_feature_interval = 1, chunk = 1024*32):
 
-        dynamic_model.eval_mode = True
+        dynamic_model = model.dynamic_model
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
 
@@ -495,8 +495,7 @@ class Voxel_Tool(object):
         pts_flat = pts_flat[density_0.squeeze(-1) >= 0.50]
             
         pts_num = sample_pts
-        # pts_num = 32
-        # pts_num = 1024
+
         import random
         sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
         pts_sampled = pts_flat[sample_id].reshape(-1,3)
@@ -513,11 +512,9 @@ class Voxel_Tool(object):
                 feature_sampled = dynamic_model.feature_map(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
             all_xyz.append(mapped_xyz.detach().cpu().numpy())
 
-        dynamic_model.eval_mode = False
-        from src.utils import write_ply
         write_ply(np.array(all_xyz).reshape(-1,3),'vis_mapping.ply')
-        
-    
+
+
 
         return torch.tensor(all_xyz)
 

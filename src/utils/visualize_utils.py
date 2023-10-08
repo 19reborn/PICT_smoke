@@ -1,6 +1,9 @@
 
 import numpy as np
 import cv2 as cv
+import matplotlib.pyplot as plt
+from plyfile import PlyData, PlyElement
+import pandas as pd
 
 #####################################################################
 # Visualization Tools
@@ -238,3 +241,54 @@ def den_scalar2rgb(den, scale=160, is3D=False, logv=False, mix=True):
         grey = np.repeat(grey, 3, -1)
 
     return grey
+
+
+
+def draw_mapping(path, data):
+
+    plt.figure()
+
+    N = data.shape[0]
+    for i in range(N):
+        x = data[i, :, 0]
+        y = data[i, :, 1]
+        
+        plt.plot(x, y, marker='o', linestyle='-')
+
+    plt.xlim(-1, 1)
+    plt.ylim(-1, 1)
+
+    plt.savefig(path)
+
+
+def write_ply(points, filename, text=False):
+    """
+    input: Nx3, write points to filename as PLY format.
+    """
+    points = [(points[i, 0], points[i, 1], points[i, 2]) for i in range(points.shape[0])]
+    vertex = np.array(points, dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4')])
+    el = PlyElement.describe(vertex, 'vertex', comments=['vertices'])
+    with open(filename, mode='wb') as f:
+        PlyData([el], text=text).write(f)
+
+
+def read_ply(file):
+    # read full file and drop empty lines
+    ply_df = pd.read_csv(file, header=None, engine='python')
+    ply_df = ply_df.dropna()
+    # extract number of vertices and faces, and row that marks the end of header
+    number_vertices = int(ply_df[ply_df[0].str.contains('element vertex')][0].iloc[0].split()[2])
+    number_faces = int(ply_df[ply_df[0].str.contains('element face')][0].iloc[0].split()[2])
+    end_header = ply_df[ply_df[0].str.contains('end_header')].index.tolist()[0]
+    # read vertex coordinates into dict
+    vertex_df = pd.read_csv(file, skiprows=range(end_header + 1),
+                            nrows=number_vertices, sep='\s*', header=None,
+                            engine='python')
+    vertex_array = np.array(vertex_df)
+    # read face indices into dict
+    face_df = pd.read_csv(file, skiprows=range(end_header + number_vertices + 1),
+                          nrows=number_faces, sep='\s*', header=None,
+                          engine='python')
+    face_array = np.array(face_df.iloc[:, 1:4])
+    
+    return vertex_array, face_array

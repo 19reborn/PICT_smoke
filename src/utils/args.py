@@ -33,9 +33,13 @@ def config_parser():
 
     ## Stage 2
     parser.add_argument("--stage2_finish_init_lagrangian", type=int, default=20000, help="stage 2 total training steps" )
+    parser.add_argument("--mapping_frame_range_fading_start", type=int, default=20000, help="frame_range" )
+    parser.add_argument("--mapping_frame_range_fading_last", type=int, default=50000, help="frame_range" )
+    parser.add_argument("--max_mapping_frame_range", type=int, default=30, help="frame_range" )
     
     ## Stage 3
     parser.add_argument("--stage3_finish_init_feature", type=int, default=20000, help="stage 2 total training steps" )
+
 
 
     
@@ -138,6 +142,8 @@ def config_parser():
     parser.add_argument("--test_mode", action='store_true', 
                         help='test mode')
     parser.add_argument("--output_voxel", action='store_true', 
+                        help='do not optimize, reload weights and output volumetric density and velocity')
+    parser.add_argument("--voxel_video", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
     parser.add_argument("--vol_output_W", type=int, default=256, 
                         help='In output mode: the output resolution along x; In training mode: the sampling resolution for training')
