@@ -82,7 +82,7 @@ stage3_finish_init_feature = 5000
 
 # output_voxel=True
 
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start/010000.tar
+model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0928_zxy_v5_less_density_mapping_loss_from_start_no_relu_true/200000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/014000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start_debug/014000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/016000.tar
