@@ -466,7 +466,9 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
         
         predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
         # density_in_mapped_xyz = den_model(predict_xyzt_cross.detach()) ## todo:: whether detach this
-        density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
+        # density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
+        density_in_mapped_xyz = den_model.forward_with_features(cross_features.detach(), cross_training_t) ## todo:: whether detach this
+        
 
         density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz)
         

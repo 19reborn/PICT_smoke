@@ -145,6 +145,8 @@ def config_parser():
                         help='do not optimize, reload weights and output volumetric density and velocity')
     parser.add_argument("--voxel_video", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
+    parser.add_argument("--visualize_mapping", action='store_true', 
+                        help='do not optimize, reload weights and output volumetric density and velocity')
     parser.add_argument("--vol_output_W", type=int, default=256, 
                         help='In output mode: the output resolution along x; In training mode: the sampling resolution for training')
     parser.add_argument("--full_vol_output", action='store_true', 
