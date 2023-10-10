@@ -340,8 +340,8 @@ def raw2outputs_hybrid_neus(raw_list, z_vals, rays_d, raw_noise_std=0, cos_annea
     raw2alpha = lambda raw, dists, act_fn=F.relu: 1.-torch.exp(-act_fn(raw)*dists)
 
     dists = nerf_z_vals[...,1:] - nerf_z_vals[...,:-1]
-    dists = torch.cat([dists, torch.Tensor([1e10]).expand(dists[...,:1].shape)], -1)  # [N_rays, N_samples]
-    # dists = torch.cat([dists, torch.Tensor([sample_dists]).expand(dists[...,:1].shape)], -1)  # [N_rays, N_samples]
+    # dists = torch.cat([dists, torch.Tensor([1e10]).expand(dists[...,:1].shape)], -1)  # [N_rays, N_samples]
+    dists = torch.cat([dists, torch.Tensor([sample_dists]).expand(dists[...,:1].shape)], -1)  # [N_rays, N_samples]
 
 
     noise = 0.

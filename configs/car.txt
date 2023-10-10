@@ -1,4 +1,4 @@
-expname = Car/0930_myc_v1_long_term_cycle_loss
+expname = Car/1009_zxy_v1_no_recon_delay
 basedir = ./log
 
 ### data info
@@ -63,7 +63,7 @@ density_thresh_static = 30
 # density_activation = relu
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.01
+SmokeAlphaReguW = 0.02
 train_vel_within_rendering = True
 boundaryW = 0.5
 train_vel_uniform_sample = 2
@@ -74,8 +74,8 @@ inside_sdf = 0.02
 
 stage1_finish_recon = 70000
 uniform_sample_step = 40000
-smoke_recon_delay_start = 10000
-smoke_recon_delay_last = 10000
+smoke_recon_delay_start = 0
+smoke_recon_delay_last = 1
 sdf_loss_delay = 200
 
 stage2_finish_init_lagrangian = 5000

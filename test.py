@@ -33,10 +33,10 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     frame_N = len(t_list)
     
 
-    frame_N = args.frame_num
+    frame_N = args.time_size
     delta_T = 1.0 / frame_N
     
-    if args.full_frame_output:
+    if args.full_vol_output:
         frame_list = range(0,frame_N, 1)
         testsavedir += "_full_frame"
     else:
@@ -46,8 +46,10 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     os.makedirs(testsavedir, exist_ok=True)
 
     
-    change_feature_interval = 50
-    sample_pts = 32
+    # change_feature_interval = 50
+    # sample_pts = 32
+    change_feature_interval = 20
+    sample_pts = 128
     mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
        
     
@@ -280,7 +282,56 @@ def test(args):
 
     model.update_model_type(4)
     
-    if args.output_voxel:
+    if args.mesh_only:
+        print('mesh ONLY')
+
+        N = 256
+
+        # min_rec, max_rec = -1.2, 1.2
+        # min_rec, max_rec = -2., 2
+        aabb_min = bbox_model.world_bbox[0]
+        aabb_max = bbox_model.world_bbox[1]
+        min_rec = aabb_min.min().item()
+        max_rec = aabb_max.max().item()
+        # min_rec, max_rec = bbox_model.s_min.min().item(), bbox_model.s_max.max().item()
+        t = np.linspace(min_rec, max_rec, N+1)
+
+        query_pts = np.stack(np.meshgrid(t, t, t), -1).astype(np.float32)
+        sh = query_pts.shape
+        pts = torch.Tensor(query_pts.reshape([-1,3]))
+
+        def reconstruct(points):
+            # embed_fn = render_kwargs_test['embed_fn_neus']
+                                        
+            chunk = 1024*64
+            # raw = np.concatenate([net_fn.static_model.sdf_network.sdf_with_encoding(points[i:i+chunk, :], embed_fn).detach().cpu().numpy() for i in range(0, points.shape[0], chunk)], 0)
+            raw = np.concatenate([model.sdf_static(points[i:i+chunk, :]).detach().cpu().numpy() for i in range(0, points.shape[0], chunk)], 0)
+            raw = np.reshape(raw, list(sh[:-1]) + [-1])
+            # sigma = np.maximum(raw[...,-1], 0.)
+            sigma = raw
+            return sigma
+
+        threshold = 0  # this is just a randomly found threshold
+        
+        sigma = reconstruct(pts)[...,0]
+        
+        import mcubes
+        import trimesh
+       
+
+        vertices, triangles = mcubes.marching_cubes(sigma, threshold)
+        
+        testsavedir = os.path.join(basedir, expname, 'meshonly_{:06d}'.format(start+1))
+        # display
+        mesh = trimesh.Trimesh(vertices / N * (max_rec - min_rec) + min_rec , triangles)
+        os.makedirs(f"{testsavedir}", exist_ok=True)
+        mesh.export(f"{testsavedir}/static_object.obj")
+        print('Done output', f"{testsavedir}/static_object.obj")
+
+        return
+
+    
+    elif args.output_voxel:
 
         resX = args.vol_output_W
         resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
@@ -292,7 +343,7 @@ def test(args):
     elif args.visualize_mapping:
         testsavedir = os.path.join(basedir, expname, 'vis_mapping_{:06d}'.format(start+1))
         voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
-        visualize_mapping(args, model, testsavedir, voxel_scale, voxel_writer)
+        visualize_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
     elif args.render_only:
         testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('test' if args.render_test else 'path', start+1))
         if args.render_eval:

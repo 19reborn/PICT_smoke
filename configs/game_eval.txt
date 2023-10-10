@@ -1,4 +1,4 @@
-expname = game/0929_zxy_v2_update_bbox
+expname = game/1009_v1
 basedir = ./log
 
 ### data info
