@@ -260,10 +260,19 @@ def load_pinf_frame_data(args, basedir, half_res='normal', testskip=1, train_ski
                 reader.close()
                 if args.use_mask:
                     msk_name = f_name[:-4] + '_mask.mp4'
-                    reader = imageio.get_reader(msk_name, "ffmpeg")
+                    no_reader = False
+                    try:
+                        reader = imageio.get_reader(msk_name, "ffmpeg")
+                    except:
+                        no_reader = True
+                        print(f'No mask found for {f_name}, use zeros 1s instead')
+                        # msks = np.zeros((len(imgs), H, W, 1))
                     for frame_i in range(0, train_video['frame_num'], skip):
-                        reader.set_image_index(frame_i)
-                        frame = reader.get_next_data()
+                        if no_reader:
+                            frame = np.zeros((H, W, 3))
+                        else:
+                            reader.set_image_index(frame_i)
+                            frame = reader.get_next_data()
 
                         # import cv2
                         # cv2.imwrite(f'debug/read_mask/{frame_i}.png', frame)

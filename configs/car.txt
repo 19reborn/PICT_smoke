@@ -1,8 +1,8 @@
-expname = Car/1009_zxy_v1_no_recon_delay
+expname = Car/1011_v6
 basedir = ./log
 
 ### data info
-datadir = ./data/Car
+datadir = ./data/Car_smoke
 dataset_type = pinf_data
 no_batching = True
 half_res = normal
@@ -28,6 +28,7 @@ lrate_decay = 500
 fading_layers = 50000
 tempo_delay = 0
 vel_delay = 20000
+fading_layers = 10000
 
 ### train params - loss weights
 vggW = 0.000 # [0.001 - 0.01]
@@ -47,7 +48,7 @@ bbox_max = 1.0
 ekW = 0.1
 i_weights = 5000
 i_embed_neus = 0
-multires_neus = 6
+multires_neus = 3
 anneal_end = 50000
 
 i_img = 1000
@@ -72,10 +73,10 @@ inside_sdf = 0.02
 
 # boundary_delay = 10000
 
-stage1_finish_recon = 70000
-uniform_sample_step = 40000
+stage1_finish_recon = 40000
+uniform_sample_step = 5000
 smoke_recon_delay_start = 0
-smoke_recon_delay_last = 1
+smoke_recon_delay_last = 0
 sdf_loss_delay = 200
 
 stage2_finish_init_lagrangian = 5000

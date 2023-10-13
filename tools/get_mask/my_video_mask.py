@@ -16,9 +16,8 @@ def main(args: argparse.Namespace) -> None:
     input_dir = args.input_dir
     all_video = glob.glob(os.path.join(input_dir, '*.mp4'))
     ## remove mask video
-    all_video = [video for video in all_video if 'mask' not in video]
-
-
+    all_video = [video for video in all_video if 'mask' not in video and 'test' not in video]
+    all_video.sort()
     ## load json to know frame num
     with open(os.path.join(input_dir, 'info.json'), 'r') as fp:
         meta = json.load(fp)
@@ -48,7 +47,8 @@ def main(args: argparse.Namespace) -> None:
         if all_first_choose_mask_id[i] == -1:
             continue
         video = all_video[i]
-        f_name = os.path.join(input_dir, video)
+        # f_name = os.path.join(input_dir, video)
+        f_name = video
         reader = imageio.get_reader(f_name, "ffmpeg")
         
         output_dir = video[:-4] + "_mask.mp4"
@@ -78,6 +78,7 @@ def main(args: argparse.Namespace) -> None:
                 all_mask_in_this_frame = glob.glob(os.path.join(save_base, '*.png'))
                 # all_mask_in_this_frame.sort() ## todo:: sort need the name to be 000000.png
                 # read mask
+                all_mask_in_this_frame.sort(key = lambda x:int(x.split('/')[-1][:-4]))
                 all_mask_in_this_frame = [cv2.imread(mask)[:,:,0] for mask in all_mask_in_this_frame]
                 if len(all_mask_in_this_frame) == 0:
                     # save mask to tmp

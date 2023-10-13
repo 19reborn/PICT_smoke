@@ -98,7 +98,8 @@ def train(args):
     render_poses = torch.Tensor(render_poses).to(device)
     render_timesteps = torch.Tensor(render_timesteps).to(device)
 
-    test_bkg_color = np.float32([0.0, 0.0, 0.3])
+    test_bkg_color = bkg_color
+    # test_bkg_color = np.float32([0.0, 0.0, 0.3])
     # test_bkg_color = np.float32([1.0, 1.0, 1.0])
 
     # Prepare raybatch tensor if batching random rays
@@ -152,7 +153,8 @@ def train(args):
     # some loss terms 
     
 
-    init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None if not args.use_mask else masks[i_train])
+    # init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None if not args.use_mask else masks[i_train])
+    init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None)
 
 
     ## debug
@@ -314,7 +316,7 @@ def train(args):
                 continue
                 
 
-            rendering_loss, rendering_loss_dict = get_rendering_loss(args, model, rgb, target_s, bg_color, extras, time_locate, global_step)
+            rendering_loss, rendering_loss_dict = get_rendering_loss(args, model, rgb, target_s, bg_color, extras, time_locate, global_step, target_mask)
             loss += rendering_loss
 
 
