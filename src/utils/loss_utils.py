@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 # Loss Tools (all for torch Tensors)
 def fade_in_weight(step, start, duration):
-    return min(max((float(step) - start)/duration, 0.0), 1.0)
+    return min(max((float(step) - start)/(duration+1e-6), 0.0), 1.0)
     
 
 # Misc
@@ -157,7 +157,7 @@ class VGGlossTool(object):
 
 
 
-def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, global_step):
+def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, global_step, target_mask = None):
     
 
     #####  core rendering optimization loop  #####
@@ -181,10 +181,18 @@ def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, 
     
     if ('rgbh1' in extras) and (smoke_recon_fading < (1.0-1e-8)): # rgbh1: static
         img_loss = img_loss * smoke_recon_fading + img2mse((extras['rgbh1'] - gt_rgb) * (1-extras['acch2']).reshape(-1, 1), 0) * (1.0-smoke_recon_fading) + extras['acch2'].mean() * args.SmokeAlphaReguW
+
     else:
         # todo::tricky now
         img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
-        
+        pass
+
+    if args.use_mask:
+    # if args.use_mask and global_step <= 20000:
+        # img_loss += (extras['acch1'] * (target_mask[:,0].float())).mean() * 0.05
+        img_loss += (extras['acch1'] * (target_mask[:,0].float())).mean() * 0.2
+        # if provide static scene mask
+    
     
     rendering_loss += img_loss
     rendering_loss_dict['img_loss'] = img_loss

@@ -153,7 +153,8 @@ def train(args):
     # some loss terms 
     
 
-    init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None if not args.use_mask else masks[i_train])
+    # init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None if not args.use_mask else masks[i_train])
+    init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None)
 
 
     ## debug
@@ -315,7 +316,7 @@ def train(args):
                 continue
                 
 
-            rendering_loss, rendering_loss_dict = get_rendering_loss(args, model, rgb, target_s, bg_color, extras, time_locate, global_step)
+            rendering_loss, rendering_loss_dict = get_rendering_loss(args, model, rgb, target_s, bg_color, extras, time_locate, global_step, target_mask)
             loss += rendering_loss
 
 
