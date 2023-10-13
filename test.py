@@ -225,7 +225,8 @@ def test(args):
     render_poses = torch.Tensor(render_poses).to(device)
     render_timesteps = torch.Tensor(render_timesteps).to(device)
 
-    test_bkg_color = np.float32([0.0, 0.0, 0.3])
+    test_bkg_color = bkg_color
+    # test_bkg_color = np.float32([0.0, 0.0, 0.3])
     # test_bkg_color = np.float32([1.0, 1.0, 1.0])
 
     # Prepare raybatch tensor if batching random rays

@@ -185,7 +185,7 @@ def train(args):
         update_static_occ_grid(args, model, 100)
 
     for global_step in trange(start, N_iters + 1):
-
+        local_step = 0
         
         training_stage = 0
         
@@ -312,7 +312,7 @@ def train(args):
             if "num_points" in extras and extras["num_points"] == 0:
                 print(f"no points in the ray, skip iteration {global_step}")
                 torch.cuda.empty_cache()
-                global_step += 1
+                local_step += 1
                 continue
                 
 
@@ -528,7 +528,7 @@ def train(args):
                 imageio.imwrite( os.path.join(testimgdir, 'vox_{:06d}.png'.format(global_step)), voxel_img)
             
 
-        if global_step % args.i_video==0 and global_step is not 0:
+        if global_step % args.i_video==0 and local_step is not 0:
             model.eval()
             if trainImg:
                 # Turn on testing mode
@@ -574,7 +574,7 @@ def train(args):
     
         sys.stdout.flush()
         torch.cuda.empty_cache()
-        global_step += 1
+        local_step += 1
 
 
 if __name__=='__main__':
