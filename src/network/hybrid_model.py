@@ -18,9 +18,9 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
         
         self.bbox_model = bbox_model
-        self.single_scene = 'hybrid' in args.net_model
+        self.single_scene = 'hybrid' not in args.net_model
 
-        if self.single_scele:
+        if self.single_scene:
             self.static_model = None
         else:
             self.static_model = NeuS(args = args, bbox_model=bbox_model)
@@ -95,9 +95,11 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         return sdf
 
     def forward_geometry(self, x):
-        sdf, gradient = self.static_model.sdf_with_gradient(x[..., :3])
         density = self.density_dynamic(x)
+        if self.single_scene:
+            return density
         
+        sdf, gradient = self.static_model.sdf_with_gradient(x[..., :3])
         return torch.cat([sdf, gradient, density], dim=-1)  
 
     def get_deviation(self):
@@ -142,8 +144,9 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
             
             for name, p in self.dynamic_model_siren.named_parameters():
                 p.requires_grad = False
-            for name, p in self.static_model.named_parameters():
-                p.requires_grad = False
+            if not self.single_scene:
+                for name, p in self.static_model.named_parameters():
+                    p.requires_grad = False
 
             for name, p in self.dynamic_model_lagrangian.named_parameters():
                 # p.requires_grad = True
@@ -154,8 +157,9 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
 
         elif training_stage == 3:
-            for name, p in self.static_model.named_parameters():
-                p.requires_grad = False
+            if not self.single_scene:
+                for name, p in self.static_model.named_parameters():
+                    p.requires_grad = False
             for name, p in self.dynamic_model_siren.named_parameters():
                 p.requires_grad = False
             for name, p in self.dynamic_model_lagrangian.named_parameters():
@@ -163,8 +167,9 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
 
         elif training_stage == 4:
-            for name, p in self.static_model.named_parameters():
-                p.requires_grad = False
+            if not self.single_scene:
+                for name, p in self.static_model.named_parameters():
+                    p.requires_grad = False
             for name, p in self.dynamic_model_siren.named_parameters():
                 p.requires_grad = False
             for name, p in self.dynamic_model_lagrangian.named_parameters():
@@ -211,7 +216,8 @@ def create_model(args, device, bbox_model):
     
     if load_model_path is not None:
         checkpoint = torch.load(load_model_path)
-        model.static_model.load_state_dict(checkpoint["static_model_state_dict"])
+        if not model.single_scene:
+            model.static_model.load_state_dict(checkpoint["static_model_state_dict"])
         model.dynamic_model_lagrangian.load_state_dict(checkpoint["dynamic_model_lagrangian_state_dict"])
         model.dynamic_model_siren.load_state_dict(checkpoint["dynamic_model_siren_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])

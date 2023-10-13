@@ -919,8 +919,15 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
             for i in range(2):
                 model.occupancy_grid_static.update_grid(get_density_static, S = 128)
       
+      
         else:
-            raise NotImplementedError
+            def get_density_dynamic(x, t):
+                x_t = torch.cat([x, t * torch.ones_like(x[..., :1])], dim = -1)
+                return model.density_dynamic(x_t.reshape(-1, 4))
+
+            for i in range(2):
+                model.occupancy_grid_dynamic.update_grid(get_density_dynamic, S = 128)
+      
         
     else:
 
@@ -952,7 +959,17 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
                 model.occupancy_grid_static.update_grid(get_density_static, S = 128)
 
         else:
-            raise NotImplementedError
+            def get_density_dynamic(x, t, chunk=64**3):
+                x_t = torch.cat([x, t * torch.ones_like(x[..., :1])], dim = -1)
+                
+                
+                return batchify(model.density_dynamic, chunk)(x_t)
+                # return model.density_dynamic(x_t.reshape(-1, 4))
+
+            if global_step % update_interval == 0 :
+                # model.occupancy_grid_dynamic.update_grid(get_density_dynamic, S = 128)
+                model.occupancy_grid_dynamic.update_grid(get_density_dynamic, S = 64)
+                
 
 def update_static_occ_grid(args, model, times=100):
     if not args.cuda_ray:

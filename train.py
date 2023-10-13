@@ -181,7 +181,7 @@ def train(args):
 
     total_loss_fading = 1.0
     
-    if global_step > args.uniform_sample_step:
+    if not model.single_scene and global_step > args.uniform_sample_step:
         update_static_occ_grid(args, model, 100)
 
     for global_step in trange(start, N_iters + 1):
@@ -223,7 +223,7 @@ def train(args):
             # trainVel = True
             trainVel = global_step % 5 == 0
             # trainVel_using_rendering_samples = False # todo:: use this
-            trainVel_using_rendering_samples = args.train_vel_within_rendering and not global_step % args.train_vel_uniform_sample == 0# todo:: use this
+            trainVel_using_rendering_samples = args.train_vel_within_rendering and not (global_step // 5) % args.train_vel_uniform_sample == 0# todo:: use this
 
         model.iter_step = global_step
         model.update_model_type(training_stage)
@@ -316,7 +316,7 @@ def train(args):
                 continue
                 
 
-            rendering_loss, rendering_loss_dict = get_rendering_loss(args, model, rgb, target_s, bg_color, extras, time_locate, global_step, target_mask)
+            rendering_loss, rendering_loss_dict = get_rendering_loss(args, model, rgb, acc, target_s, bg_color, extras, time_locate, global_step, target_mask)
             loss += rendering_loss
 
 
@@ -378,7 +378,7 @@ def train(args):
             path = os.path.join(basedir, expname, '{:06d}.tar'.format(global_step))
             save_dic = {
                 'global_step': global_step,
-                'static_model_state_dict': model.static_model.state_dict(),
+                'static_model_state_dict': model.static_model.state_dict() if not model.single_scene else None,
                 'dynamic_model_lagrangian_state_dict': model.dynamic_model_lagrangian.state_dict(),
                 'dynamic_model_siren_state_dict': model.dynamic_model_siren.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
@@ -402,6 +402,7 @@ def train(args):
                 eikonal_loss = rendering_loss_dict['eikonal_loss']
                 curvature_loss = rendering_loss_dict['curvature_loss']
                 smoke_inside_sdf_loss = rendering_loss_dict['smoke_inside_sdf_loss']
+                ghost_loss = rendering_loss_dict['ghost_loss']
                 
                 print("img_loss: ", img_loss.item())
                 writer.add_scalar('Loss/img_loss', img_loss.item(), global_step)
@@ -420,6 +421,10 @@ def train(args):
                 if curvature_loss is not None:
                     print("curvature_loss: ", curvature_loss.item())
                     writer.add_scalar('Loss/curvature_loss', curvature_loss.item(), global_step)
+                    
+                if ghost_loss is not None:
+                    print("ghost_loss: ", ghost_loss.item())
+                    writer.add_scalar('Loss/ghost_loss', ghost_loss.item(), global_step)
 
                 if "num_points" in extras:
                     samples_per_ray = extras["num_points"] / (extras["num_rays"] + 1e-6)
@@ -442,10 +447,11 @@ def train(args):
                     writer.add_scalar('Statistics/num_rays', N_rand, global_step)
 
 
-                with torch.no_grad():
-                    inv_s = model.get_deviation()         # Single parameter
-                    print("s_val: ",  1.0 / inv_s.item())
-                    writer.add_scalar('Statistics/s_val', 1.0 / inv_s.item(), global_step)
+                if not model.single_scene:
+                    with torch.no_grad():
+                        inv_s = model.get_deviation()         # Single parameter
+                        print("s_val: ",  1.0 / inv_s.item())
+                        writer.add_scalar('Statistics/s_val', 1.0 / inv_s.item(), global_step)
 
 
 
@@ -465,8 +471,8 @@ def train(args):
                     
                     
                     
-                boundary_loss = vel_loss_dict['boundary_loss']
-                inside_loss = vel_loss_dict['inside_loss']
+                boundary_loss = vel_loss_dict['boundary_loss'] if 'boundary_loss' in vel_loss_dict.keys() else None
+                inside_loss = vel_loss_dict['inside_loss'] if 'inside_loss' in vel_loss_dict.keys() else None
 
                 if boundary_loss is not None:
                     print("boundary_loss = ", boundary_loss.item())

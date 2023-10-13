@@ -27,6 +27,13 @@ def smooth_l1_loss(x1,x2):
 def l2_loss(x1,x2):
     return ((x1-x2)**2).mean()
 
+def my_ghost_loss_func(_rgb, bg, _acc, den_penalty = 0.0):
+    _bg = bg.detach()
+    _rgb = _rgb.detach()
+    ghost_mask = torch.mean(torch.square(_rgb - _bg), -1)
+    ghost_mask = torch.sigmoid(ghost_mask*-1.0) + den_penalty # (0 to 0.5) + den_penalty
+    ghost_alpha = ghost_mask * _acc
+    return torch.mean(torch.square(ghost_alpha))
 
 # VGG Tool, https://github.com/crowsonkb/style-transfer-pytorch/
 class VGGFeatures(nn.Module):
@@ -157,7 +164,7 @@ class VGGlossTool(object):
 
 
 
-def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, global_step, target_mask = None):
+def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_locate, global_step, target_mask = None):
     
 
     #####  core rendering optimization loop  #####
@@ -184,8 +191,8 @@ def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, 
 
     else:
         # todo::tricky now
-        img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
-        pass
+        if not model.single_scene:
+            img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
 
     if args.use_mask:
     # if args.use_mask and global_step <= 20000:
@@ -223,7 +230,7 @@ def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, 
 
     smoke_inside_sdf_loss = None
     w_smoke_inside_sdf = args.SmokeInsideSDFW * smoke_inside_sdf_loss_fading
-    if w_smoke_inside_sdf > 1e-8:
+    if w_smoke_inside_sdf > 1e-8 and not model.single_scene:
             
    
         inside_sdf = args.inside_sdf
@@ -268,6 +275,19 @@ def get_rendering_loss(args, model, rgb, gt_rgb, bg_color, extras, time_locate, 
         
     rendering_loss_dict['smoke_inside_sdf_loss'] = smoke_inside_sdf_loss
     
+    ghost_loss = None
+    if model.single_scene and (args.ghostW > 0.0) and args.white_bkgd is not None:
+        ghost_fading = fade_in_weight(global_step, 0, 10000)
+        w_ghost = ghost_fading * args.ghostW
+        if w_ghost > 1e-8:
+            static_back = args.white_bkgd
+            # ghost_loss = ghost_loss_func(rgb, static_back, acc, den_penalty=0.0)
+            ghost_loss = my_ghost_loss_func(rgb, static_back, acc, den_penalty=0.0)
+
+            rendering_loss += ghost_loss * w_ghost
+            
+    rendering_loss_dict['ghost_loss'] = ghost_loss
+    
     return rendering_loss, rendering_loss_dict
 
 
@@ -294,8 +314,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
     jac = vel_middle_output['jacobian']
     _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
     
-    
-    _sdf, _normal = model.static_model.sdf_with_gradient(training_samples[..., :3])
+    if not model.single_scene:
+        _sdf, _normal = model.static_model.sdf_with_gradient(training_samples[..., :3])
     
     
     _den, den_middle_output = den_model.forward_with_middle_output(training_samples, need_jacobian = True)
@@ -397,34 +417,35 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
 
 
     # boundary loss
-    # if the sampling point's sdf < 0.05 and > -0.05, we assume it's on the boundary: The velocity along the normal direction must be zero.
-    # If the sampling point's sdf < -0.05, we assume it's inside the object : The velocity should be 0.
-    _sdf = _sdf.detach()
-    _normal = _normal.detach()
+    if not model.single_scene:
+        # if the sampling point's sdf < 0.05 and > -0.05, we assume it's on the boundary: The velocity along the normal direction must be zero.
+        # If the sampling point's sdf < -0.05, we assume it's inside the object : The velocity should be 0.
+        _sdf = _sdf.detach()
+        _normal = _normal.detach()
 
-    # boundary_sdf = 0.05
-    # boundary_sdf = 0.02 * args.scene_scale
-    # boundary_sdf = 0.00 * args.scene_scale
-    boundary_sdf = args.inside_sdf
-    boundary_mask = torch.abs(_sdf) < boundary_sdf
-    boundary_vel = _vel * boundary_mask
-    
-    # boundary_vel_normal = torch.dot(boundary_vel, _normal) 
-    boundary_vel_normal = (boundary_vel * _normal).sum(-1)
-    _normal_norm_squared = torch.sum(_normal ** 2, dim = -1, keepdim=True)
-    boundary_vel_project2normal = boundary_vel_normal[:,None] / (_normal_norm_squared + 1e-6) * boundary_vel
-    boundary_loss = torch.sum(boundary_vel_project2normal ** 2) / (boundary_mask.sum() + 1e-6)
-    # boundary_loss = mean_squared_error(boundary_vel_project2normal, torch.zeros_like(boundary_vel_project2normal))
+        # boundary_sdf = 0.05
+        # boundary_sdf = 0.02 * args.scene_scale
+        # boundary_sdf = 0.00 * args.scene_scale
+        boundary_sdf = args.inside_sdf
+        boundary_mask = torch.abs(_sdf) < boundary_sdf
+        boundary_vel = _vel * boundary_mask
+        
+        # boundary_vel_normal = torch.dot(boundary_vel, _normal) 
+        boundary_vel_normal = (boundary_vel * _normal).sum(-1)
+        _normal_norm_squared = torch.sum(_normal ** 2, dim = -1, keepdim=True)
+        boundary_vel_project2normal = boundary_vel_normal[:,None] / (_normal_norm_squared + 1e-6) * boundary_vel
+        boundary_loss = torch.sum(boundary_vel_project2normal ** 2) / (boundary_mask.sum() + 1e-6)
+        # boundary_loss = mean_squared_error(boundary_vel_project2normal, torch.zeros_like(boundary_vel_project2normal))
 
-    inside_sdf = args.inside_sdf
-    inside_mask = _sdf < -inside_sdf
-    inside_vel = _vel * inside_mask
-    inside_loss = torch.sum(inside_vel ** 2) / (boundary_mask.sum() + 1e-6)
+        inside_sdf = args.inside_sdf
+        inside_mask = _sdf < -inside_sdf
+        inside_vel = _vel * inside_mask
+        inside_loss = torch.sum(inside_vel ** 2) / (boundary_mask.sum() + 1e-6)
 
-    vel_loss += (boundary_loss + inside_loss) * args.boundaryW
+        vel_loss += (boundary_loss + inside_loss) * args.boundaryW
 
-    vel_loss_dict['boundary_loss'] = boundary_loss
-    vel_loss_dict['inside_loss'] = inside_loss
+        vel_loss_dict['boundary_loss'] = boundary_loss
+        vel_loss_dict['inside_loss'] = inside_loss
 
 
     ## cycle loss for lagrangian feature
