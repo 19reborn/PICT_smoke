@@ -123,7 +123,7 @@ class DensityMapping(nn.Module):
     (features, t) -> (density)
     """
     # def __init__(self, in_channels=16, out_channels=1, D=2, W=128, skips=[]):
-    def __init__(self, in_channels=17, out_channels=1, D=2, W=128, skips=[]):
+    def __init__(self, in_channels=17, out_channels=1, D=4, W=128, skips=[]):
         super(DensityMapping, self).__init__()
 
         self.in_channels = in_channels

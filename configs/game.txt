@@ -1,4 +1,4 @@
-expname = game/1013_v2_32_lagrangian_feature
+expname = game/1013_v3_test_deeper_density_mapping
 basedir = ./log
 
 ### data info
@@ -72,8 +72,12 @@ inside_sdf = 0.02
 
 # boundary_delay = 10000
 
-stage1_finish_recon = 100000
-uniform_sample_step = 60000
+
+#stage1_finish_recon = 100000
+# uniform_sample_step = 40000
+
+stage1_finish_recon = 50000
+uniform_sample_step = 30000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 10000
 sdf_loss_delay = 2000

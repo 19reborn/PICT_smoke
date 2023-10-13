@@ -18,9 +18,12 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
         
         self.bbox_model = bbox_model
+        self.single_scene = 'hybrid' in args.net_model
 
-
-        self.static_model = NeuS(args = args, bbox_model=bbox_model)
+        if self.single_scele:
+            self.static_model = None
+        else:
+            self.static_model = NeuS(args = args, bbox_model=bbox_model)
 
         self.dynamic_model_lagrangian = Lagrangian_NeRF(args = args, bbox_model = bbox_model)
 
@@ -35,6 +38,7 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
         self.iter_step = -1
         self.anneal_end = args.anneal_end
+        
     
 
     def forward(self, x):
@@ -43,8 +47,8 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         
         dynamic_x = x
         static_x = torch.cat((inputs_xyz, input_views), dim=-1)
-
-        static_output = self.static_model.forward(inputs_xyz, input_views, xyz_bound=self.occupancy_grid_static.bound if self.occupancy_grid_static is not None else 1.0)
+        
+        static_output = self.static_model.forward(inputs_xyz, input_views)
         dynamic_output = self.dynamic_model.forward(x)
         outputs = torch.cat([static_output, dynamic_output], dim=-1)
 
@@ -54,13 +58,14 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
     
         inputs_xyz, input_t, input_views = torch.split(x, [3, 1, self.input_ch_views], dim=-1)
         
-        dynamic_x = x
-        static_x = torch.cat((inputs_xyz, input_views), dim=-1)
-
-        static_output = self.static_model.forward(inputs_xyz, input_views, xyz_bound=self.occupancy_grid_static.bound if self.occupancy_grid_static is not None else 1.0)
         dynamic_output, dynamic_jacobian, Dd_Dt = self.dynamic_model.forward_density_with_jacobian(x)
 
-        outputs = torch.cat([static_output, dynamic_output], dim=-1)
+        if self.single_scene:
+            outputs = dynamic_output
+        else:
+            static_output = self.static_model.forward(inputs_xyz, input_views)
+            outputs = torch.cat([static_output, dynamic_output], dim=-1)
+            
 
         return outputs, dynamic_jacobian, Dd_Dt
 

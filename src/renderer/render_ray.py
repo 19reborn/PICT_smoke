@@ -231,7 +231,10 @@ def render(H, W, K, model, N_samples = 64, chunk=1024*32, rays=None, c2w=None, n
     all_ret = {}
     for i in range(0, rays.shape[0], chunk):
         if cuda_ray:
-            ret = render_rays_cuda(rays[i:i+chunk], model, chunk = netchunk, perturb=perturb)
+            if model.single_scene:
+                ret = render_rays_cuda_single_scene(rays[i:i+chunk], model, chunk = netchunk, perturb=perturb)
+            else:
+                ret = render_rays_cuda(rays[i:i+chunk], model, chunk = netchunk, perturb=perturb)
         else:
             ret = render_rays(rays[i:i+chunk], model, N_samples = N_samples, perturb = perturb, chunk = netchunk)
             
@@ -558,8 +561,6 @@ def render_rays_cuda(ray_batch,
         static_raw, smoke_raw = None, None
 
         ## get static raw
-        # static_raw = fn.forward_static(pts_static)
-        # static_raw = batchify(fn.forward_static, chunk)(pts_static)
         static_raw = batchify_func(fn.forward_static, chunk, not fn.training)(pts_static)
 
 
@@ -567,8 +568,6 @@ def render_rays_cuda(ray_batch,
         ## todo:: not warp pos for rgb
         orig_pos, orig_viewdir, orig_t = torch.split(pts_dynamic, [3, 3, 1], -1)
         pts_dynamic = torch.cat([orig_pos, orig_t], dim = -1)
-        # smoke_raw = fn.forward_dynamic(pts_dynamic)
-        # smoke_raw = batchify(fn.forward_dynamic, chunk)(pts_dynamic)
         smoke_raw = batchify_func(fn.forward_dynamic, chunk, not fn.training)(pts_dynamic)
 
 
@@ -730,16 +729,234 @@ def render_rays(ray_batch,
 
      
         ## get static raw
-        # static_raw = fn.forward_static(pts[..., :-1])
-        # static_raw = batchify(fn.forward_static, chunk)(pts[..., :-1])
         static_raw = batchify_func(fn.forward_static, chunk, not fn.training)(pts[..., :-1])
 
         ## get smoke raw
         ## todo:: not warp pos for rgb
         orig_pos, orig_viewdir, orig_t = torch.split(pts, [3, 3, 1], -1)
         pts = torch.cat([orig_pos, orig_t], dim = -1)
-        # smoke_raw = fn.forward_dynamic(pts)
-        # smoke_raw = batchify(fn.forward_dynamic, chunk)(pts)
+        smoke_raw = batchify_func(fn.forward_dynamic, chunk, not fn.training)(pts)
+
+        return smoke_raw, static_raw # [N_rays, N_samples, 4], [N_rays, N_samples, 4]
+
+    C_smokeRaw, C_staticRaw = get_raw(model, pts) 
+
+    raw = [C_smokeRaw, C_staticRaw]
+
+
+    ## density/sdf to alpha
+    # add variance
+    inv_s = model.get_deviation()         # Single parameter
+    inv_s = inv_s.expand(N_rays, N_samples)
+
+    cos_anneal_ratio = model.get_cos_anneal_ratio()
+    
+    rgb_map, disp_map, acc_map, weights, depth_map, ti_map, rgb_map_stack, acc_map_stack, extras = raw2outputs_hybrid_neus(raw, [z_vals, z_vals], rays_d, raw_noise_std, inv_s = inv_s, cos_anneal_ratio = cos_anneal_ratio, pytest=False, remove99=False, valid_rays=valid_rays)
+
+
+    if raw[-1] is not None:
+        rgbh2_map = rgb_map_stack[...,0] # dynamic
+        acch2_map = acc_map_stack[...,0] # dynamic
+        rgbh1_map = rgb_map_stack[...,1] # staitc
+        acch1_map = acc_map_stack[...,1] # staitc
+    
+    extras_0 = None
+
+    ret = {'rgb_map' : rgb_map, 'disp_map' : disp_map, 'acc_map' : acc_map}
+    ret['raw'] = raw[0]
+    if raw[1] is not None:
+        ret['raw_static'] = raw[1]
+
+    if raw[-1] is not None:
+        ret['rgbh1'] = rgbh1_map
+        ret['acch1'] = acch1_map
+        ret['rgbh2'] = rgbh2_map
+        ret['acch2'] = acch2_map
+        ret['rgbM'] = rgbh1_map * 0.5 + rgbh2_map * 0.5
+
+    if 'gradient_error' in extras:
+        ret['gradient_error'] = extras['gradient_error']
+
+    if 'gradients' in extras:
+        ret['gradients'] = extras['gradients']
+
+    if 'hessians' in extras:
+        ret['hessians'] = extras['hessians']
+
+
+        
+    ret['smoke_weights'] = weights
+    ret['samples_xyz_dynamic'] = pts
+    ret['rays_id'] = torch.arange(N_rays).unsqueeze(-1).long().expand(N_rays, N_samples).reshape(-1,1)
+
+
+    if extras_0!= None and 'gradients' in extras_0:
+        ret['gradients_coarse'] = extras_0['gradients']
+
+
+
+    return ret
+
+
+
+def render_rays_cuda_single_scene(ray_batch,
+                model,
+                chunk = 1024*64,
+                perturb=0.
+                ):
+
+    N_rays = ray_batch.shape[0]
+    rays_o, rays_d, rays_t = ray_batch[:,0:3], ray_batch[:,3:6], ray_batch[:,-1:] # [N_rays, 3] each
+
+
+    bounds = torch.reshape(ray_batch[...,6:8], [-1,1,2])
+    near, far = bounds[...,0], bounds[...,1] # [-1,1]
+
+
+
+    ## ray marching
+    density_grid_dynamic = model.occupancy_grid_dynamic
+
+    t = torch.floor(rays_t * density_grid_dynamic.time_size).clamp(min=0, max=density_grid_dynamic.time_size - 1).long()
+    aabb = model.bbox_model.world_bbox
+    aabb = aabb.reshape(6).contiguous() # [1, 1, 6]
+    aabb_near, aabb_far = raymarching.near_far_from_aabb(rays_o, rays_d, aabb)    
+    aabb_near = aabb_near.unsqueeze(-1).clamp(1e-6, 1e6)
+    aabb_far = aabb_far.unsqueeze(-1).clamp(1e-6, 1e6)
+    
+    xyzs_dynamic, dirs_dynamic, ts_dynamic, rays_dynamic, rays_dynamic_id = raymarching.march_rays_train(rays_o, rays_d, density_grid_dynamic.bound, False, density_grid_dynamic.density_bitfield[t], density_grid_dynamic.cascade, density_grid_dynamic.grid_size, aabb_near, aabb_far, perturb, density_grid_dynamic.dt_gamma, density_grid_dynamic.max_steps) # contract = False
+
+    num_points_dynamic = xyzs_dynamic.shape[0]
+
+ 
+
+
+    rays_t_bc = rays_t[0].reshape(1,1).expand(xyzs_dynamic.shape[0], 1)
+    pts_dynamic = torch.cat([xyzs_dynamic, dirs_dynamic, rays_t_bc], dim = -1) # [num_points_dynamic, 3 + 3 + 1]
+
+
+    def get_raw(fn, pts_dynamic):
+        static_raw, smoke_raw = None, None
+
+        ## get static raw
+
+
+        ## get smoke raw
+        ## todo:: not warp pos for rgb
+        orig_pos, orig_viewdir, orig_t = torch.split(pts_dynamic, [3, 3, 1], -1)
+        pts_dynamic = torch.cat([orig_pos, orig_t], dim = -1)
+        smoke_raw = batchify_func(fn.forward_dynamic, chunk, not fn.training)(pts_dynamic)
+
+
+        return smoke_raw, static_raw # [N_rays, N_samples, 4], [N_rays, N_samples, 4]
+
+    C_smokeRaw, C_staticRaw = get_raw(model, pts_dynamic) 
+
+    smoke_color = C_smokeRaw[..., :3]
+    smoke_color = torch.sigmoid(smoke_color)
+    smoke_density = C_smokeRaw[..., 3:] 
+    smoke_density = torch.relu(smoke_density)
+    
+
+    raw2alpha = lambda raw, dists, act_fn=F.relu: 1.-torch.exp(-act_fn(raw)*dists)
+    smoke_alpha = raw2alpha(smoke_density, ts_dynamic[:,1].unsqueeze(-1))  # [N_rays, N_samples]
+    
+
+
+    
+    weights, weights_sum, depth, image = raymarching.composite_rays_train(smoke_density, smoke_color, ts_dynamic, rays_dynamic)
+    
+    ## todo:: check depth
+    depth_normalized = depth / (weights_sum + 1e-6)
+    pred_depth = (depth_normalized.unsqueeze(-1) - near) / (far - near + 1e-6)
+    disp_map = pred_depth.clamp(0, 1)
+
+    disp_map = depth
+
+    rgb_map = image
+
+    ret = {'rgb_map' : rgb_map.reshape(-1, 3), 'disp_map' : disp_map.reshape(-1,1), 'acc_map' : weights_sum.reshape(-1,1)}
+
+
+
+
+    ret['raw'] = C_smokeRaw
+    ret['num_points_dynamic'] = num_points_dynamic
+
+    ret['samples_xyz_dynamic'] = xyzs_dynamic
+
+    # if smoke_vel != None:
+    #     ret['smoke_vel'] = smoke_vel
+    # ret['smoke_weights'] = dynamic_weights
+
+    # ret['rays_id'] = rays_dynamic_id
+    # import pdb
+    # pdb.set_trace()
+    # ret['rays_id'] = torch.arange(N_rays).unsqueeze(-1).long().expand(N_rays, N_samples).reshape(-1,1)
+
+    ret['num_points'] = num_points_dynamic
+
+    return ret
+
+def render_rays_single_scene(ray_batch,
+                model,
+                chunk = 1024*64,
+                N_samples=64,
+                perturb=0.,
+                raw_noise_std=0.
+                ):
+    # TODO:: TO BE FINISHED
+    N_rays = ray_batch.shape[0]
+    rays_o, rays_d, rays_t = ray_batch[:,0:3], ray_batch[:,3:6], ray_batch[:,-1:] # [N_rays, 3] each
+
+
+    bounds = torch.reshape(ray_batch[...,6:8], [-1,1,2])
+    near, far = bounds[...,0], bounds[...,1] # [-1,1]
+
+    valid_rays = None
+    
+    aabb = model.bbox_model.world_bbox
+    aabb = aabb.reshape(6).contiguous() # [1, 1, 6]
+    aabb_near, aabb_far = raymarching.near_far_from_aabb(rays_o, rays_d, aabb)
+
+    valid_rays = (aabb_near < aabb_far) & (aabb_near < 1e6) & (aabb_far < 1e6)
+
+    near = aabb_near.unsqueeze(-1).clamp(1e-6, 1e6)
+    far = aabb_far.unsqueeze(-1).clamp(1e-6, 1e6)
+
+    t_vals = torch.linspace(0., 1., steps=N_samples)
+    z_vals = near * (1.-t_vals) + far * (t_vals)
+
+    z_vals = z_vals.expand([N_rays, N_samples])
+
+    if perturb > 0.:
+        # get intervals between samples
+        mids = .5 * (z_vals[...,1:] + z_vals[...,:-1])
+        upper = torch.cat([mids, z_vals[...,-1:]], -1)
+        lower = torch.cat([z_vals[...,:1], mids], -1)
+        t_rand = torch.rand(z_vals.shape)
+
+
+        z_vals = lower + (upper - lower) * t_rand
+
+    pts = rays_o[...,None,:] + rays_d[...,None,:] * z_vals[...,:,None] # [N_rays, N_samples, 3]
+    
+    
+    rays_t_bc = torch.reshape(rays_t, [-1,1,1]).expand([N_rays, N_samples, 1])
+    rays_d = torch.reshape(rays_d, [-1,1,3]).expand([N_rays, N_samples, 3])
+    pts = torch.cat([pts, rays_d, rays_t_bc], dim = -1)
+    
+    def get_raw(fn, pts):
+        static_raw, smoke_raw = None, None
+
+     
+        ## get static raw
+        static_raw = batchify_func(fn.forward_static, chunk, not fn.training)(pts[..., :-1])
+
+        ## get smoke raw
+        ## todo:: not warp pos for rgb
+        orig_pos, orig_viewdir, orig_t = torch.split(pts, [3, 3, 1], -1)
+        pts = torch.cat([orig_pos, orig_t], dim = -1)
         smoke_raw = batchify_func(fn.forward_dynamic, chunk, not fn.training)(pts)
 
         return smoke_raw, static_raw # [N_rays, N_samples, 4], [N_rays, N_samples, 4]

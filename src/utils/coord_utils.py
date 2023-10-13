@@ -228,14 +228,19 @@ class Voxel_Tool(object):
     def get_density_flat(self, model, cur_pts, chunk=1024*32, getSDF = False):
         flat_raw = self.get_raw_geometry_at_pts(model, cur_pts, chunk)
         den_raw = F.relu(flat_raw[...,-1:])
-        static_sdf = flat_raw[...,0:1]
-        if not getSDF:
-            inv_s = model.get_deviation()
-            static_sdf = torch.sigmoid(static_sdf * inv_s).squeeze(-1)
-            static_sdf = inv_s * static_sdf * (1. - static_sdf)
+        
+        if model.single_scene:
+            return [den_raw]
+        
+        else:
+            static_sdf = flat_raw[...,0:1]
+            if not getSDF:
+                inv_s = model.get_deviation()
+                static_sdf = torch.sigmoid(static_sdf * inv_s).squeeze(-1)
+                static_sdf = inv_s * static_sdf * (1. - static_sdf)
 
-        static_normal = flat_raw[...,1:3]
-        return [den_raw, static_sdf, static_normal]
+            static_normal = flat_raw[...,1:3]
+            return [den_raw, static_sdf, static_normal]
    
 
     def get_velocity_flat(self, model, cur_pts,chunk=1024*32,):
@@ -248,61 +253,6 @@ class Voxel_Tool(object):
             world_v.append(vel_i)
         world_v = torch.cat(world_v, 0)
         return world_v
-
-    def get_density_and_derivatives(self, cur_pts, chunk=1024*32, use_viewdirs=False, 
-        network_query_fn=None, network_fn=None):
-        _den, _ , _ = self.get_density_flat(cur_pts, chunk, use_viewdirs,network_query_fn, network_fn, )[0]
-        # requires 1 backward passes 
-        # The minibatch Jacobian matrix of shape (N, D_y=1, D_x=4)
-        jac = _get_minibatch_jacobian(_den, cur_pts)
-        _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,1)
-        return _den, _d_x, _d_y, _d_z, _d_t
-
-    def get_lagrangian_density_and_derivatives(self, cur_pts, chunk=1024*32, use_viewdirs=False, 
-        network_query_fn=None, density_model=None):
-        _den, den_middle_output = density_model.forward_with_middle_output(cur_pts, need_jacobian=True)
-        # requires 1 backward passes 
-        # The minibatch Jacobian matrix of shape (N, D_y=1, D_x=4)
-        jac = den_middle_output['jacobian']
-        _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
-        return _den, _d_x, _d_y, _d_z, _d_t
-
-    
-    def get_density_and_derivatives_with_sdf(self, model, cur_pts, chunk=1024*32, use_viewdirs=False, 
-        network_query_fn=None, network_fn=None):
-        _den, _sdf, _normal = self.get_density_flat(model, cur_pts, chunk)
-        # requires 1 backward passes 
-        # The minibatch Jacobian matrix of shape (N, D_y=1, D_x=4)
-        jac = _get_minibatch_jacobian(_den, cur_pts)
-        _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,1)
-        return _den, _d_x, _d_y, _d_z, _d_t, _sdf, _normal
-
-    
-    def get_lagrangian_density_and_derivatives_with_sdf(self, cur_pts, chunk=1024*32, use_viewdirs=False, 
-        network_query_fn=None, network_fn=None):
-        outputs, dynamic_jacobian, Dd_Dt = network_fn.forward_with_jacobian(cur_pts)
-        _den = outputs[..., -1:]
-        _sdf = outputs[...,3:4]
-        _normal = outputs[...,4:7]
-        jac = dynamic_jacobian
-        _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,1)
-        return _den, _d_x, _d_y, _d_z, _d_t, Dd_Dt, _sdf, _normal
-
-    def get_velocity_and_derivatives(self, cur_pts, chunk=1024*32, batchify_fn=None, vel_model=None):
-        _vel = self.get_velocity_flat(cur_pts, batchify_fn, chunk, vel_model)
-        # requires 3 backward passes
-        # The minibatch Jacobian matrix of shape (N, D_y=3, D_x=4)
-        jac = _get_minibatch_jacobian(_vel, cur_pts)
-        _u_x, _u_y, _u_z, _u_t = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
-        return _vel, _u_x, _u_y, _u_z, _u_t
-
-    def get_lagrangian_velocity_and_derivatives(self, cur_pts, chunk=1024*32, batchify_fn=None, vel_model=None):
-        predict_vel, middle_output = vel_model.forward_with_middle_output(cur_pts, need_vorticity=True)
-        ## supervise using ns equation
-        jac = middle_output['jacobian']
-        _u_x, _u_y, _u_z, Dv_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
-        _vel = predict_vel
-        return _vel, _u_x, _u_y, _u_z, Dv_Dt, middle_output
 
     def get_voxel_density_list(self, model, t=None,chunk=1024*32,middle_slice=False):
         model.eval()
