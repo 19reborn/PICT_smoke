@@ -729,12 +729,16 @@ def render_rays(ray_batch,
 
      
         ## get static raw
+        # static_raw = fn.forward_static(pts[..., :-1])
+        # static_raw = batchify(fn.forward_static, chunk)(pts[..., :-1])
         static_raw = batchify_func(fn.forward_static, chunk, not fn.training)(pts[..., :-1])
 
         ## get smoke raw
         ## todo:: not warp pos for rgb
         orig_pos, orig_viewdir, orig_t = torch.split(pts, [3, 3, 1], -1)
         pts = torch.cat([orig_pos, orig_t], dim = -1)
+        # smoke_raw = fn.forward_dynamic(pts)
+        # smoke_raw = batchify(fn.forward_dynamic, chunk)(pts)
         smoke_raw = batchify_func(fn.forward_dynamic, chunk, not fn.training)(pts)
 
         return smoke_raw, static_raw # [N_rays, N_samples, 4], [N_rays, N_samples, 4]
@@ -839,12 +843,16 @@ def render_rays_cuda_single_scene(ray_batch,
         static_raw, smoke_raw = None, None
 
         ## get static raw
+        # static_raw = fn.forward_static(pts_static)
+        # static_raw = batchify(fn.forward_static, chunk)(pts_static)
 
 
         ## get smoke raw
         ## todo:: not warp pos for rgb
         orig_pos, orig_viewdir, orig_t = torch.split(pts_dynamic, [3, 3, 1], -1)
         pts_dynamic = torch.cat([orig_pos, orig_t], dim = -1)
+        # smoke_raw = fn.forward_dynamic(pts_dynamic)
+        # smoke_raw = batchify(fn.forward_dynamic, chunk)(pts_dynamic)
         smoke_raw = batchify_func(fn.forward_dynamic, chunk, not fn.training)(pts_dynamic)
 
 
@@ -951,12 +959,16 @@ def render_rays_single_scene(ray_batch,
 
      
         ## get static raw
+        # static_raw = fn.forward_static(pts[..., :-1])
+        # static_raw = batchify(fn.forward_static, chunk)(pts[..., :-1])
         static_raw = batchify_func(fn.forward_static, chunk, not fn.training)(pts[..., :-1])
 
         ## get smoke raw
         ## todo:: not warp pos for rgb
         orig_pos, orig_viewdir, orig_t = torch.split(pts, [3, 3, 1], -1)
         pts = torch.cat([orig_pos, orig_t], dim = -1)
+        # smoke_raw = fn.forward_dynamic(pts)
+        # smoke_raw = batchify(fn.forward_dynamic, chunk)(pts)
         smoke_raw = batchify_func(fn.forward_dynamic, chunk, not fn.training)(pts)
 
         return smoke_raw, static_raw # [N_rays, N_samples, 4], [N_rays, N_samples, 4]
