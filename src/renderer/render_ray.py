@@ -236,7 +236,10 @@ def render(H, W, K, model, N_samples = 64, chunk=1024*32, rays=None, c2w=None, n
             else:
                 ret = render_rays_cuda(rays[i:i+chunk], model, chunk = netchunk, perturb=perturb)
         else:
-            ret = render_rays(rays[i:i+chunk], model, N_samples = N_samples, perturb = perturb, chunk = netchunk)
+            if model.single_scene:
+                ret = render_rays_single_scene(rays[i:i+chunk], model, N_samples = N_samples, perturb = perturb, chunk = netchunk)
+            else:
+                ret = render_rays(rays[i:i+chunk], model, N_samples = N_samples, perturb = perturb, chunk = netchunk)
             
         
         # merge results   
@@ -318,6 +321,106 @@ def _get_minibatch_jacobian(y, x):
         )[0].view(x.shape[0], -1)
         jac.append(torch.unsqueeze(dy_j_dx, 1))
     return jac
+
+
+def raw2outputs(raw_list, z_vals, rays_d, raw_noise_std=0, pytest=False, remove99=False):
+    """Transforms model's predictions to semantically meaningful values.
+    Args:
+        raw_list: a list of tensors in shape [num_rays, num_samples along ray, 4]. Prediction from model.
+        z_vals: [num_rays, num_samples along ray]. Integration time.
+        rays_d: [num_rays, 3]. Direction of each ray.
+    Returns:
+        rgb_map: [num_rays, 3]. Estimated RGB color of a ray.
+        disp_map: [num_rays]. Disparity map. Inverse of depth map.
+        acc_map: [num_rays]. Sum of weights along each ray.
+        weights: [num_rays, num_samples]. Weights assigned to each sampled color.
+        depth_map: [num_rays]. Estimated distance to object.
+        extras: extra information for neus
+    """
+    extras = {}
+    
+    sample_dists = 2.0 / 64
+    
+    raw2alpha = lambda raw, dists, act_fn=F.relu: 1.-torch.exp(-act_fn(raw)*dists)
+
+    dists = z_vals[...,1:] - z_vals[...,:-1]
+    dists = torch.cat([dists, torch.Tensor([sample_dists]).expand(dists[...,:1].shape)], -1)  # [N_rays, N_samples]
+
+
+    noise = 0.
+    alpha_list = []
+    color_list = []
+    for raw in raw_list:
+        if raw is None: continue
+        if raw_noise_std > 0.:
+            noise = torch.randn(raw[...,3].shape) * raw_noise_std
+
+            # Overwrite randomly sampled data if pytest
+            if pytest:
+                np.random.seed(42)
+                noise = np.random.rand(*list(raw[...,3].shape)) * raw_noise_std
+                noise = torch.Tensor(noise)
+        
+        alpha = raw2alpha(raw[...,3] + noise, dists)  # [N_rays, N_samples]
+        if remove99:
+            alpha = torch.where(alpha > 0.99, torch.zeros_like(alpha), alpha)
+        rgb = torch.sigmoid(raw[..., :3]) # [N_rays, N_samples, 3]
+
+        alpha_list += [alpha]
+        color_list += [rgb]
+            
+    densTiStack = torch.stack([1.-alpha for alpha in alpha_list], dim=-1) 
+    # [N_rays, N_samples, N_raws]
+    densTi = torch.prod(densTiStack, dim=-1, keepdim=True) 
+    # [N_rays, N_samples]
+    densTi_all = torch.cat([densTiStack, densTi], dim=-1) 
+    # [N_rays, N_samples, N_raws + 1] 
+    Ti_all = torch.cumprod(densTi_all + 1e-10, dim=-2) # accu along samples
+    Ti_all = Ti_all / (densTi_all + 1e-10)
+    # [N_rays, N_samples, N_raws + 1], exclusive
+    weights_list = [alpha * Ti_all[...,-1] for alpha in alpha_list] # a list of [N_rays, N_samples]
+    self_weights_list = [alpha_list[alpha_i] * Ti_all[...,alpha_i] for alpha_i in range(len(alpha_list))] # a list of [N_rays, N_samples]
+
+    def weighted_sum_of_samples(wei_list, content_list=None, content=None):
+        content_map_list = []
+        if content_list is not None:
+            content_map_list = [
+                torch.sum(weights[..., None] * ct, dim=-2)  
+                # [N_rays, N_content], weighted sum along samples
+                for weights, ct in zip(wei_list, content_list)
+            ]
+        elif content is not None:
+            content_map_list = [
+                torch.sum(weights * content, dim=-1)  
+                # [N_rays], weighted sum along samples
+                for weights in wei_list
+            ]
+        content_map = torch.stack(content_map_list, dim=-1) 
+        # [N_rays, (N_contentlist,) N_raws]
+        content_sum = torch.sum(content_map, dim=-1) 
+        # [N_rays, (N_contentlist,)]
+        return content_sum, content_map
+
+    rgb_map, _ = weighted_sum_of_samples(weights_list, color_list) # [N_rays, 3]
+    # Sum of weights along each ray. This value is in [0, 1] up to numerical error.
+    acc_map, _ = weighted_sum_of_samples(weights_list, None, 1) # [N_rays]
+
+    _, rgb_map_stack = weighted_sum_of_samples(self_weights_list, color_list)
+    _, acc_map_stack = weighted_sum_of_samples(self_weights_list, None, 1)
+
+    # Estimated depth map is expected distance.
+    # Disparity map is inverse depth.
+    depth_map,_ = weighted_sum_of_samples(weights_list, None, z_vals) # [N_rays]
+    disp_map = 1./torch.max(1e-10 * torch.ones_like(depth_map), depth_map / acc_map)
+    # alpha * Ti
+    weights = (1.-densTi)[...,0] * Ti_all[...,-1] # [N_rays, N_samples]
+    
+    # weights = alpha * torch.cumprod(torch.cat([torch.ones((alpha.shape[0], 1)), 1.-alpha + 1e-10], -1), -1)[:, :-1]
+    # rgb_map = torch.sum(weights[...,None] * rgb, -2)  # [N_rays, 3]
+    # depth_map = torch.sum(weights * z_vals, -1)
+    # acc_map = torch.sum(weights, -1)
+
+    return rgb_map, disp_map, acc_map, weights, depth_map, Ti_all[...,-1], rgb_map_stack, acc_map_stack, extras
 
 def raw2outputs_hybrid_neus(raw_list, z_vals, rays_d, raw_noise_std=0, cos_anneal_ratio = 1.0, inv_s = None, pytest=False, remove99=False, valid_rays=None):
     """Transforms model's predictions to semantically meaningful values.
@@ -917,7 +1020,6 @@ def render_rays_single_scene(ray_batch,
     N_rays = ray_batch.shape[0]
     rays_o, rays_d, rays_t = ray_batch[:,0:3], ray_batch[:,3:6], ray_batch[:,-1:] # [N_rays, 3] each
 
-
     bounds = torch.reshape(ray_batch[...,6:8], [-1,1,2])
     near, far = bounds[...,0], bounds[...,1] # [-1,1]
 
@@ -958,10 +1060,6 @@ def render_rays_single_scene(ray_batch,
         static_raw, smoke_raw = None, None
 
      
-        ## get static raw
-        # static_raw = fn.forward_static(pts[..., :-1])
-        # static_raw = batchify(fn.forward_static, chunk)(pts[..., :-1])
-        static_raw = batchify_func(fn.forward_static, chunk, not fn.training)(pts[..., :-1])
 
         ## get smoke raw
         ## todo:: not warp pos for rgb
@@ -978,15 +1076,8 @@ def render_rays_single_scene(ray_batch,
     raw = [C_smokeRaw, C_staticRaw]
 
 
-    ## density/sdf to alpha
-    # add variance
-    inv_s = model.get_deviation()         # Single parameter
-    inv_s = inv_s.expand(N_rays, N_samples)
-
-    cos_anneal_ratio = model.get_cos_anneal_ratio()
     
-    rgb_map, disp_map, acc_map, weights, depth_map, ti_map, rgb_map_stack, acc_map_stack, extras = raw2outputs_hybrid_neus(raw, [z_vals, z_vals], rays_d, raw_noise_std, inv_s = inv_s, cos_anneal_ratio = cos_anneal_ratio, pytest=False, remove99=False, valid_rays=valid_rays)
-
+    rgb_map, disp_map, acc_map, weights, depth_map, ti_map, rgb_map_stack, acc_map_stack, extras = raw2outputs(raw, z_vals, rays_d, raw_noise_std)
 
     if raw[-1] is not None:
         rgbh2_map = rgb_map_stack[...,0] # dynamic
@@ -998,24 +1089,6 @@ def render_rays_single_scene(ray_batch,
 
     ret = {'rgb_map' : rgb_map, 'disp_map' : disp_map, 'acc_map' : acc_map}
     ret['raw'] = raw[0]
-    if raw[1] is not None:
-        ret['raw_static'] = raw[1]
-
-    if raw[-1] is not None:
-        ret['rgbh1'] = rgbh1_map
-        ret['acch1'] = acch1_map
-        ret['rgbh2'] = rgbh2_map
-        ret['acch2'] = acch2_map
-        ret['rgbM'] = rgbh1_map * 0.5 + rgbh2_map * 0.5
-
-    if 'gradient_error' in extras:
-        ret['gradient_error'] = extras['gradient_error']
-
-    if 'gradients' in extras:
-        ret['gradients'] = extras['gradients']
-
-    if 'hessians' in extras:
-        ret['hessians'] = extras['hessians']
 
 
         
@@ -1024,8 +1097,6 @@ def render_rays_single_scene(ray_batch,
     ret['rays_id'] = torch.arange(N_rays).unsqueeze(-1).long().expand(N_rays, N_samples).reshape(-1,1)
 
 
-    if extras_0!= None and 'gradients' in extras_0:
-        ret['gradients_coarse'] = extras_0['gradients']
 
 
 

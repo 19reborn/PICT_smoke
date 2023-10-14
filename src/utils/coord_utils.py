@@ -230,7 +230,7 @@ class Voxel_Tool(object):
         den_raw = F.relu(flat_raw[...,-1:])
         
         if model.single_scene:
-            return [den_raw]
+            return [den_raw.reshape(-1,1)]
         
         else:
             static_sdf = flat_raw[...,0:1]
@@ -239,8 +239,9 @@ class Voxel_Tool(object):
                 static_sdf = torch.sigmoid(static_sdf * inv_s).squeeze(-1)
                 static_sdf = inv_s * static_sdf * (1. - static_sdf)
 
-            static_normal = flat_raw[...,1:3]
-            return [den_raw, static_sdf, static_normal]
+            return [den_raw.reshape(-1,1), static_sdf.reshape(-1,1)]
+            # static_normal = flat_raw[...,1:3]
+            # return [den_raw, static_sdf, static_normal]
    
 
     def get_velocity_flat(self, model, cur_pts,chunk=1024*32,):
@@ -265,9 +266,8 @@ class Voxel_Tool(object):
             pts_flat = torch.cat([pts_flat,input_t], dim=-1)
 
 
-        den_list, sdf_list , _ = self.get_density_flat(model, pts_flat, chunk)
+        raw_list = self.get_density_flat(model, pts_flat, chunk)
 
-        raw_list = [den_list.reshape(-1,1), sdf_list.reshape(-1,1)]
 
         # import pdb
         return_list = []
