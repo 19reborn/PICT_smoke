@@ -347,13 +347,14 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
         split_nse_wei = [2.0, 1e-3, 1e-3, 1e-3, 1e-3] 
         
         # loss compared with reference density and color
-        
-        density_reference_loss = smooth_l1_loss(_den, _den_ref.detach())
+        # density_reference_loss = smooth_l1_loss(_den, _den_ref.detach())
+        density_reference_loss = smooth_l1_loss(F.relu(_den), F.relu(_den_ref.detach()))
         
         _color = model.dynamic_model.color(training_samples)
         _color_ref = model.dynamic_model_siren.color(training_samples)
         
-        color_reference_loss = smooth_l1_loss(_color, _color_ref.detach())
+        # color_reference_loss = smooth_l1_loss(_color, _color_ref.detach())
+        color_reference_loss = smooth_l1_loss(F.sigmoid(_color), F.sigmoid(_color_ref.detach()))
          
         vel_loss_dict['density_reference_loss'] = density_reference_loss
         vel_loss_dict['color_reference_loss'] = color_reference_loss       
@@ -480,7 +481,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
         cross_features = vel_model.feature_map(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
         cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
-        vel_loss += 0.2 * cross_cycle_loss
+        vel_loss += 0.1 * cross_cycle_loss
 
         vel_loss_dict['feature_cycle_loss'] = cycle_loss
         vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
@@ -501,7 +502,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
 
         density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz)
         
-        vel_loss += 0.01 * density_mapping_loss * density_mapping_fading
+        # vel_loss += 0.01 * density_mapping_loss * density_mapping_fading
 
         
         vel_loss_dict['density_mapping_loss'] = density_mapping_loss

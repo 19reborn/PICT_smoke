@@ -184,8 +184,8 @@ def train(args):
     if not model.single_scene and global_step > args.uniform_sample_step:
         update_static_occ_grid(args, model, 100)
 
+    local_step = 0
     for global_step in trange(start, N_iters + 1):
-        local_step = 0
         
         training_stage = 0
         
@@ -221,9 +221,9 @@ def train(args):
             training_stage = 4
             trainImg = True
             # trainVel = True
-            trainVel = global_step % 5 == 0
+            trainVel = global_step % 20 == 0
             # trainVel_using_rendering_samples = False # todo:: use this
-            trainVel_using_rendering_samples = args.train_vel_within_rendering and not (global_step // 5) % args.train_vel_uniform_sample == 0# todo:: use this
+            trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
 
         model.iter_step = global_step
         model.update_model_type(training_stage)
