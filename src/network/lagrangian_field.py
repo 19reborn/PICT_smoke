@@ -36,7 +36,7 @@ class FeatureMapping(nn.Module):
     Lagarian Particle feature mapping
     (x,y,z,t) -> (features)
     """
-    def __init__(self, in_channels=4, out_channels=16, D=3, W=128, skips=[]):
+    def __init__(self, in_channels=4, out_channels=32, D=4, W=128, skips=[2]):
         super(FeatureMapping, self).__init__()
 
         self.in_channels = in_channels
@@ -80,7 +80,7 @@ class PositionMapping(nn.Module):
     Lagarian Particle position mapping
     (features, t) -> (x,y,z)
     """
-    def __init__(self, in_channels=17, out_channels=3, D=3, W=128, skips=[]):
+    def __init__(self, in_channels=33, out_channels=3, D=3, W=128, skips=[]):
         super(PositionMapping, self).__init__()
 
         self.in_channels = in_channels
@@ -123,7 +123,6 @@ class DensityMapping(nn.Module):
     (features, t) -> (density)
     """
     # def __init__(self, in_channels=16, out_channels=1, D=2, W=128, skips=[]):
-    # def __init__(self, in_channels=17, out_channels=1, D=2, W=128, skips=[]):
     def __init__(self, in_channels=17, out_channels=1, D=4, W=128, skips=[]):
         super(DensityMapping, self).__init__()
 

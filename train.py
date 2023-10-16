@@ -303,7 +303,8 @@ def train(args):
                                         near = near,
                                         far = far,
                                         bkgd_color=bg_color,
-                                        cuda_ray = trainImg and global_step >= args.uniform_sample_step,
+                                        # cuda_ray = trainImg and global_step >= args.uniform_sample_step,
+                                        cuda_ray = global_step >= args.uniform_sample_step,
                                         perturb = args.perturb
                                         )
             
