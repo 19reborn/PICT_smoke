@@ -127,7 +127,7 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         if training_stage == 1:
             self.dynamic_model = self.dynamic_model_siren
         elif training_stage == 2 or training_stage == 3 or training_stage == 4:
-            self.dynamic_model = self.dynamic_model_lagrangian
+            self.dynamic_model = self.dynamic_model_siren
         else:
             AssertionError("training stage should be set to 1,2,3,4")
             
@@ -171,7 +171,7 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
                 for name, p in self.static_model.named_parameters():
                     p.requires_grad = False
             for name, p in self.dynamic_model_siren.named_parameters():
-                p.requires_grad = False
+                p.requires_grad = True
             for name, p in self.dynamic_model_lagrangian.named_parameters():
                 p.requires_grad = True
   

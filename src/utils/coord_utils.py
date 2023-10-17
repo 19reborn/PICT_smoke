@@ -250,7 +250,7 @@ class Voxel_Tool(object):
         for i in range(0, pts_N, chunk):
             input_i = cur_pts[i:i+chunk]
             # vel_i = batchify(model, chunk)(input_i)
-            vel_i = batchify_func(model.dynamic_model.vel_model, chunk, not model.training)(input_i)
+            vel_i = batchify_func(model.dynamic_model_lagrangian.vel_model, chunk, not model.training)(input_i)
             world_v.append(vel_i)
         world_v = torch.cat(world_v, 0)
         return world_v
@@ -294,7 +294,7 @@ class Voxel_Tool(object):
             pts_flat = torch.cat([pts_flat,input_t], dim=-1)
 
 
-        # world_v = self.get_velocity_flat(model.dynamic_model.vel_model, pts_flat, chunk)
+        # world_v = self.get_velocity_flat(model.dynamic_model_lagrangian.vel_model, pts_flat, chunk)
         world_v = self.get_velocity_flat(model, pts_flat, chunk)
         reso_scale = [self.W*scale,self.H*scale,self.D*scale]
         target_v = vel_world2smoke(world_v, self.s_w2s, self.s_scale, reso_scale)
@@ -329,9 +329,9 @@ class Voxel_Tool(object):
                 break
 
     @torch.no_grad()
-    def vis_cross_feature_error_voxel(self, path, t, dynamic_model, middle_slice = False, chunk = 1024*32):
+    def vis_cross_feature_error_voxel(self, path, t, dynamic_model_lagrangian, middle_slice = False, chunk = 1024*32):
 
-        dynamic_model.eval_mode = True
+        dynamic_model_lagrangian.eval_mode = True
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
         pts_flat = self.pts_mid if middle_slice else self.pts.view(-1, 3)
@@ -342,7 +342,7 @@ class Voxel_Tool(object):
         feature_0 = []
         for i in range(0, pts_N, chunk):
             input_i = pts_flat[i:i+chunk]
-            feature = dynamic_model.feature_map(input_i, torch.ones([input_i.shape[0], 1])*float(0)).detach()
+            feature = dynamic_model_lagrangian.feature_map(input_i, torch.ones([input_i.shape[0], 1])*float(0)).detach()
             feature_0.append(feature)
 
         feature_0 = torch.cat(feature_0, 0)
@@ -352,8 +352,8 @@ class Voxel_Tool(object):
         feature_t = []
         for i in range(0, pts_N, chunk):
             input_i = pts_flat[i:i+chunk]
-            mapped_xyz = dynamic_model.map_model(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(t)], dim = -1), torch.ones([input_i.shape[0], 1])*float(0)).detach()
-            feature = dynamic_model.feature_map(mapped_xyz, torch.ones([mapped_xyz.shape[0], 1])*float(t)).detach()
+            mapped_xyz = dynamic_model_lagrangian.map_model(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(t)], dim = -1), torch.ones([input_i.shape[0], 1])*float(0)).detach()
+            feature = dynamic_model_lagrangian.feature_map(mapped_xyz, torch.ones([mapped_xyz.shape[0], 1])*float(t)).detach()
             feature_t.append(feature)
             
         feature_t = torch.cat(feature_t, 0)
@@ -369,7 +369,7 @@ class Voxel_Tool(object):
         else:
             feature_error = feature_error.view(D,H,W,-1) 
             
-        dynamic_model.eval_mode = False
+        dynamic_model_lagrangian.eval_mode = False
 
         error_img = vel_uv2hsv(feature_error.cpu(), scale=160, is3D=True, logv=False)
 
@@ -378,9 +378,9 @@ class Voxel_Tool(object):
         return error_img
 
     @torch.no_grad()
-    def vis_feature_voxel(self, path, t, dynamic_model, middle_slice = False, chunk = 1024*32):
+    def vis_feature_voxel(self, path, t, dynamic_model_lagrangian, middle_slice = False, chunk = 1024*32):
 
-        dynamic_model.eval_mode = True
+        dynamic_model_lagrangian.eval_mode = True
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
         pts_flat = self.pts_mid if middle_slice else self.pts.view(-1, 3)
@@ -393,7 +393,7 @@ class Voxel_Tool(object):
         feature_t = []
         for i in range(0, pts_N, chunk):
             input_i = pts_flat[i:i+chunk]
-            feature = dynamic_model.feature_map(input_i, torch.ones([input_i.shape[0], 1])*float(t)).detach()
+            feature = dynamic_model_lagrangian.feature_map(input_i, torch.ones([input_i.shape[0], 1])*float(t)).detach()
             feature_t.append(feature)
             
         feature_t = torch.cat(feature_t, 0)
@@ -407,7 +407,7 @@ class Voxel_Tool(object):
         else:
             feature_t = feature_t.view(D,H,W,-1) 
             
-        dynamic_model.eval_mode = False
+        dynamic_model_lagrangian.eval_mode = False
 
         feature_img = vel_uv2hsv(feature_t.cpu(), scale=160, is3D=True, logv=False)
         imageio.imwrite(path, feature_img)
@@ -417,7 +417,8 @@ class Voxel_Tool(object):
     @torch.no_grad()
     def vis_mapping_voxel(self, frame_list, t_list, model, sample_pts = 128, change_feature_interval = 1, chunk = 1024*32):
 
-        dynamic_model = model.dynamic_model
+        dynamic_model_lagrangian = model.dynamic_model_lagrangian
+        dynamic_model = model.dynamic_model_siren
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
 
@@ -450,16 +451,16 @@ class Voxel_Tool(object):
         sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
         pts_sampled = pts_flat[sample_id].reshape(-1,3)
 
-        feature_sampled = dynamic_model.feature_map(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*float(0)).detach()
+        feature_sampled = dynamic_model_lagrangian.feature_map(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*float(0)).detach()
 
         all_xyz = []
 
         for frame_i in frame_list:
 
             cur_t = t_list[frame_i]
-            mapped_xyz = dynamic_model.map_model.forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
+            mapped_xyz = dynamic_model_lagrangian.map_model.forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
             if (frame_i - 1) % change_feature_interval == 0:
-                feature_sampled = dynamic_model.feature_map(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
+                feature_sampled = dynamic_model_lagrangian.feature_map(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
             all_xyz.append(mapped_xyz.detach().cpu().numpy())
 
         write_ply(np.array(all_xyz).reshape(-1,3),'vis_mapping.ply')

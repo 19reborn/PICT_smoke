@@ -221,9 +221,9 @@ def train(args):
             training_stage = 4
             trainImg = True
             # trainVel = True
-            trainVel = global_step % 20 == 0
-            # trainVel_using_rendering_samples = False # todo:: use this
-            trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
+            trainVel = global_step % 10 == 0
+            trainVel_using_rendering_samples = False # todo:: use this
+            # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
 
         model.iter_step = global_step
         model.update_model_type(training_stage)

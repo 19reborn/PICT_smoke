@@ -251,7 +251,7 @@ class VelocityNetwork(nn.Module):
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
         xyz.requires_grad_(True) ## allow for futhre order derivative
-        # t.requires_grad_(True) ## todo:: check whether put it after feature_map
+        t.requires_grad_(True) ## todo:: check whether put it after feature_map
         t1 = t.clone().detach()
         t1.requires_grad_(True)
 
@@ -272,6 +272,11 @@ class VelocityNetwork(nn.Module):
             jaco_t1 = _get_minibatch_jacobian(velocity, t1)
             jacobian = torch.cat([jaco_xyz, jaco_t1], dim = -1) # [N, 3, 4]
             middle_output['jacobian'] = jacobian
+            dfeature_dxyz = _get_minibatch_jacobian(features, xyz)
+            dfeature_dt = _get_minibatch_jacobian(features, t)
+            middle_output['dfeature_dxyz'] = dfeature_dxyz
+            middle_output['dfeature_dt'] = dfeature_dt
+
 
         return velocity, middle_output
 
@@ -447,16 +452,11 @@ class Lagrangian_NeRF(nn.Module):
 
         self.feature_map = FeatureMapping()
         self.position_map = PositionMapping()
-        self.density_map = DensityMapping()
         
   
 
         self.vel_model = VelocityNetwork(self.feature_map, self.position_map)
         self.map_model = MappingNetwork(self.feature_map, self.position_map)
-
-        self.density_model = DensityNetwork(self.feature_map, self.density_map)
-
-        self.color_model = ColorNetwork()
 
         self.bbox_model = bbox_model
 
@@ -480,52 +480,4 @@ class Lagrangian_NeRF(nn.Module):
     def print_fading(self):
         print("fading not used in Lagrangian NeRF!")
 
-    def density(self, x):
-
-        density = self.density_model(x)
-
-        if self.bbox_model is not None:
-   
-            bbox_mask = self.bbox_model.insideMask(x[...,:3])
-            density[bbox_mask==0] = 0
-
-        return density
-
-    def color(self, x):
-
-        color = self.color_model(x)
-
-
-        if self.bbox_model is not None:
-            bbox_mask = self.bbox_model.insideMask(x[...,:3])
-            color[bbox_mask==0] = 0
-            
-        return color
-
-    def forward(self, x):
-
-        density = self.density(x)
-        
-        color = self.color(x)
-        
-
-        output = torch.cat([color, density], -1)
-
-        return output
-
-    def forward_density_with_jacobian(self, x):
-
-        density, middle_output = self.density_model.forward_with_middle_output(x, need_jacobian=True)
-
-        jacobian = middle_output['jacobian']
-        Dd_Dt = middle_output['Dd_Dt']
-
-        if self.bbox_model is not None:
-   
-            bbox_mask = self.bbox_model.insideMask(x[...,:3])
-            density[bbox_mask==0] = 0
-            jacobian[bbox_mask==0] = 0
-            Dd_Dt[bbox_mask==0] = 0
-
-        return density, jacobian, Dd_Dt
     
