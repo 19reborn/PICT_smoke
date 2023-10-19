@@ -336,6 +336,12 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
         # density transport, feature continuity, velocitt divergence, scale regularzation, Du_Dt
         split_nse_wei = [1.0, 0.0, 1e-3, 1e-3, 1e-3] 
         
+        _den_lagrangian = model.dynamic_model_lagrangian.density(training_samples)
+        density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
+                 
+        vel_loss_dict['density_reference_loss'] = density_reference_loss
+
+        vel_loss += density_reference_loss
 
     else:
         

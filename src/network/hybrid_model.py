@@ -144,6 +144,7 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
             
             for name, p in self.dynamic_model_siren.named_parameters():
                 p.requires_grad = False
+                
             if not self.single_scene:
                 for name, p in self.static_model.named_parameters():
                     p.requires_grad = False
@@ -218,9 +219,9 @@ def create_model(args, device, bbox_model):
         checkpoint = torch.load(load_model_path)
         if not model.single_scene:
             model.static_model.load_state_dict(checkpoint["static_model_state_dict"])
-        model.dynamic_model_lagrangian.load_state_dict(checkpoint["dynamic_model_lagrangian_state_dict"])
+        #model.dynamic_model_lagrangian.load_state_dict(checkpoint["dynamic_model_lagrangian_state_dict"])
         model.dynamic_model_siren.load_state_dict(checkpoint["dynamic_model_siren_state_dict"])
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        #optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         
         ## todo::
         # load occ grid

@@ -452,11 +452,14 @@ class Lagrangian_NeRF(nn.Module):
 
         self.feature_map = FeatureMapping()
         self.position_map = PositionMapping()
+        self.density_map = DensityMapping()
         
   
 
         self.vel_model = VelocityNetwork(self.feature_map, self.position_map)
         self.map_model = MappingNetwork(self.feature_map, self.position_map)
+
+        self.density_model = DensityNetwork(self.feature_map, self.density_map)
 
         self.bbox_model = bbox_model
 
@@ -480,4 +483,13 @@ class Lagrangian_NeRF(nn.Module):
     def print_fading(self):
         print("fading not used in Lagrangian NeRF!")
 
-    
+    def density(self, x):
+
+        density = self.density_model(x)
+
+        if self.bbox_model is not None:
+   
+            bbox_mask = self.bbox_model.insideMask(x[...,:3])
+            density[bbox_mask==0] = 0
+
+        return density

@@ -1,4 +1,4 @@
-expname = scalar/1017_v4
+expname = scalar/1019_v1
 basedir = ./log
 
 ### data info
@@ -56,8 +56,8 @@ uniform_sample_step = 20000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
 
-stage2_finish_init_lagrangian = 0
-stage3_finish_init_feature = 0
+stage2_finish_init_lagrangian = 1000
+stage3_finish_init_feature = 1000
 
 i_video = 500000
 max_mapping_frame_range = 3

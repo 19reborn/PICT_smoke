@@ -293,7 +293,7 @@ class SIREN_NeRFt(nn.Module):
 
         if self.bbox_model is not None:
             bbox_mask = self.bbox_model.insideMask(input_pts[...,:3])
-            outputs[bbox_mask==0] = -1e6
+            outputs[bbox_mask==0] = 0
 
         return outputs
 

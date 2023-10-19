@@ -189,21 +189,21 @@ def train(args):
         
         training_stage = 0
         
-        if global_step <= args.stage1_finish_recon:
+        if global_step < args.stage1_finish_recon:
             # smoke and obstacle reconstruction
             training_stage = 1 
             trainImg = True
             trainVel = False
             trainVel_using_rendering_samples = False
 
-        elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian:
+        elif global_step < args.stage1_finish_recon + args.stage2_finish_init_lagrangian:
             # init d,g, not learn feature
             training_stage = 2
             trainImg = False
             trainVel = True
             trainVel_using_rendering_samples = False
         
-        elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature:
+        elif global_step < args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature:
             # start learn feature, add its relevant constrain
             # but still only learn from reference density and color , do not use image
             # total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian, 10000) # 

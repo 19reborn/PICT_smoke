@@ -1,4 +1,4 @@
-expname = game/1015_v2_small_warmup
+expname = game/1019_v1_use_lag_density_warmup_1
 basedir = ./log
 
 ### data info
@@ -87,6 +87,7 @@ stage3_finish_init_feature = 1000
 
 # nseW = 1e-4
 
+model_path = /root/data/wym/workspace/pinf_clean/log/game/1015_v2_small_warmup/100000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1011_v4_less_pe/100000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1009_v1/140000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0928_zxy_v4_no_density_mapping_loss/080000.tar
