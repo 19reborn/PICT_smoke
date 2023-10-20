@@ -123,7 +123,7 @@ class DensityMapping(nn.Module):
     (features, t) -> (density)
     """
     # def __init__(self, in_channels=16, out_channels=1, D=2, W=128, skips=[]):
-    def __init__(self, in_channels=17, out_channels=1, D=4, W=128, skips=[]):
+    def __init__(self, in_channels=17, out_channels=1, D=2, W=128, skips=[]):
         super(DensityMapping, self).__init__()
 
         self.in_channels = in_channels
@@ -132,16 +132,30 @@ class DensityMapping(nn.Module):
         self.W = W
         self.skips = skips
 
-        first_omega_0 = 30.0
-        hidden_omega_0 = 1.0
+        # first_omega_0 = 1.0
+        # hidden_omega_0 = 1.0
 
-        self.linears = nn.ModuleList(
-            [SineLayer(in_channels, W, omega_0=first_omega_0)] +
-            [SineLayer(W, W, omega_0=hidden_omega_0) 
-                if i not in skips else SineLayer(W + in_channels, W, omega_0=hidden_omega_0) for i in range(D-1)] +
-            [nn.Linear(W, out_channels)]
-        )
+        # self.linears = nn.ModuleList(
+        #     [SineLayer(in_channels, W, omega_0=first_omega_0)] +
+        #     [SineLayer(W, W, omega_0=hidden_omega_0) 
+        #         if i not in skips else SineLayer(W + in_channels, W, omega_0=hidden_omega_0) for i in range(D-1)] +
+        #     [nn.Linear(W, out_channels)]
+        # )
 
+
+        linears = []
+        linears += [nn.Linear(in_channels, W)]
+        linears += [nn.ReLU()]
+        for i in range(D-1):
+            if i not in skips:
+                linears += [nn.Linear(W, W)]
+                linears += [nn.ReLU()]
+            else:
+                linears += [nn.Linear(W + in_channels, W)]
+                linears += [nn.ReLU()]
+        linears += [nn.Linear(W, out_channels)]
+
+        self.linears = nn.Sequential(*linears)
 
         # self.activation = nn.ReLU()
         self.activation = nn.LeakyReLU()
@@ -407,6 +421,33 @@ class DensityNetwork(nn.Module):
             middle_output['ddensity_dt'] = ddensity_dt
 
         return density, middle_output
+    
+    def forward_with_Dt(self, xyzt):
+        # if t1 is None:
+        #     if xyzt.shape[-1] == 5:
+        #         xyz, t, t1 = torch.split(xyzt, (3, 1, 1), dim=-1)
+        #     else:
+        #         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
+        #         t1 = t
+        #         ## warning:: this may cause careless bug
+        # else:
+        xyz, t = torch.split(xyzt, (3, 1), dim=-1)
+
+        t1 = t.clone().detach()
+        t1.requires_grad_(True) ## todo:: check whether put it after feature_map
+
+        features = self.feature_map(xyz, t)
+        density = self.density_map(features, t1)
+
+        middle_output = {}
+        middle_output['mapped_features'] = features
+
+   
+        Ddensity_Dt = _get_minibatch_jacobian(density, t1)
+            
+
+
+        return density, Ddensity_Dt
 
 class ColorNetwork(nn.Module):
     def __init__(self, in_channels=4, out_channels=3, D=3, W=128, skips=[]):

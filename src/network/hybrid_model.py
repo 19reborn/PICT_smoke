@@ -219,9 +219,9 @@ def create_model(args, device, bbox_model):
         checkpoint = torch.load(load_model_path)
         if not model.single_scene:
             model.static_model.load_state_dict(checkpoint["static_model_state_dict"])
-        #model.dynamic_model_lagrangian.load_state_dict(checkpoint["dynamic_model_lagrangian_state_dict"])
+        model.dynamic_model_lagrangian.load_state_dict(checkpoint["dynamic_model_lagrangian_state_dict"])
         model.dynamic_model_siren.load_state_dict(checkpoint["dynamic_model_siren_state_dict"])
-        #optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         
         ## todo::
         # load occ grid
