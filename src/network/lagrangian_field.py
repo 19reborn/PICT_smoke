@@ -3,7 +3,7 @@ import sys,os
 sys.path.append('.')
 import torch
 import torch.nn as nn
-from .siren_basic import *
+from .siren_basic import SineLayer, trunc_exp
 import torch.nn.functional as F
 
 def _get_minibatch_jacobian(y, x):
@@ -80,7 +80,7 @@ class PositionMapping(nn.Module):
     Lagarian Particle position mapping
     (features, t) -> (x,y,z)
     """
-    def __init__(self, in_channels=17, out_channels=3, D=2, W=128, skips=[]):
+    def __init__(self, in_channels=17, out_channels=3, D=3, W=128, skips=[]):
         super(PositionMapping, self).__init__()
 
         self.in_channels = in_channels
@@ -89,7 +89,7 @@ class PositionMapping(nn.Module):
         self.W = W
         self.skips = skips
 
-        first_omega_0 = 30.0
+        first_omega_0 = 5.0
         hidden_omega_0 = 1.0
 
         self.linears = nn.ModuleList(
@@ -99,6 +99,21 @@ class PositionMapping(nn.Module):
             [nn.Linear(W, out_channels)]
         )
 
+
+
+        # linears = []
+        # linears += [nn.Linear(in_channels, W)]
+        # linears += [nn.ReLU()]
+        # for i in range(D-1):
+        #     if i not in skips:
+        #         linears += [nn.Linear(W, W)]
+        #         linears += [nn.ReLU()]
+        #     else:
+        #         linears += [nn.Linear(W + in_channels, W)]
+        #         linears += [nn.ReLU()]
+        # linears += [nn.Linear(W, out_channels)]
+
+        # self.linears = nn.Sequential(*linears)
 
 
     def forward(self, feature, t=None):
@@ -123,7 +138,7 @@ class DensityMapping(nn.Module):
     (features, t) -> (density)
     """
     # def __init__(self, in_channels=16, out_channels=1, D=2, W=128, skips=[]):
-    def __init__(self, in_channels=17, out_channels=1, D=4, W=128, skips=[]):
+    def __init__(self, in_channels=17, out_channels=1, D=2, W=128, skips=[]):
         super(DensityMapping, self).__init__()
 
         self.in_channels = in_channels
@@ -132,7 +147,7 @@ class DensityMapping(nn.Module):
         self.W = W
         self.skips = skips
 
-        first_omega_0 = 30.0
+        first_omega_0 = 1.0
         hidden_omega_0 = 1.0
 
         self.linears = nn.ModuleList(
@@ -143,8 +158,23 @@ class DensityMapping(nn.Module):
         )
 
 
+        # linears = []
+        # linears += [nn.Linear(in_channels, W)]
+        # linears += [nn.ReLU()]
+        # for i in range(D-1):
+        #     if i not in skips:
+        #         linears += [nn.Linear(W, W)]
+        #         linears += [nn.ReLU()]
+        #     else:
+        #         linears += [nn.Linear(W + in_channels, W)]
+        #         linears += [nn.ReLU()]
+        # linears += [nn.Linear(W, out_channels)]
+
+        # self.linears = nn.Sequential(*linears)
+
         # self.activation = nn.ReLU()
-        self.activation = nn.LeakyReLU()
+        # self.activation = nn.LeakyReLU()
+        self.activation = trunc_exp
 
     def forward(self, feature, t=None):
         # x: (features, t)
@@ -407,6 +437,30 @@ class DensityNetwork(nn.Module):
             middle_output['ddensity_dt'] = ddensity_dt
 
         return density, middle_output
+    
+    def forward_with_Dt(self, xyzt, bbox_mask = None):
+        # if t1 is None:
+        #     if xyzt.shape[-1] == 5:
+        #         xyz, t, t1 = torch.split(xyzt, (3, 1, 1), dim=-1)
+        #     else:
+        #         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
+        #         t1 = t
+        #         ## warning:: this may cause careless bug
+        # else:
+        xyz, t = torch.split(xyzt, (3, 1), dim=-1)
+
+        t1 = t.clone().detach()
+        t1.requires_grad_(True) ## todo:: check whether put it after feature_map
+
+        features = self.feature_map(xyz, t)
+        density = self.density_map(features, t1)
+        if bbox_mask is not None:
+            density[bbox_mask==0] = 0
+
+        Ddensity_Dt = _get_minibatch_jacobian(density, t1)
+            
+
+        return density, Ddensity_Dt
 
 class ColorNetwork(nn.Module):
     def __init__(self, in_channels=4, out_channels=3, D=3, W=128, skips=[]):
@@ -461,6 +515,7 @@ class Lagrangian_NeRF(nn.Module):
 
         self.density_model = DensityNetwork(self.feature_map, self.density_map)
 
+
         self.bbox_model = bbox_model
 
 
@@ -493,3 +548,50 @@ class Lagrangian_NeRF(nn.Module):
             density[bbox_mask==0] = 0
 
         return density
+    
+    def density_with_Dt(self, x):
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(x[...,:3])
+        else:
+            bbox_mask = None
+        density, Ddensity_Dt = self.density_model.forward_with_Dt(x, bbox_mask)
+   
+        return density, Ddensity_Dt
+
+    # def color(self, x):
+
+    #     color = self.color_model(x)
+
+
+    #     if self.bbox_model is not None:
+    #         bbox_mask = self.bbox_model.insideMask(x[...,:3])
+    #         color[bbox_mask==0] = 0
+            
+    #     return color
+
+    # def forward(self, x):
+
+    #     density = self.density(x)
+        
+    #     color = self.color(x)
+        
+
+    #     output = torch.cat([color, density], -1)
+
+    #     return output
+
+    # def forward_density_with_jacobian(self, x):
+
+    #     density, middle_output = self.density_model.forward_with_middle_output(x, need_jacobian=True)
+
+    #     jacobian = middle_output['jacobian']
+    #     Dd_Dt = middle_output['Dd_Dt']
+
+    #     if self.bbox_model is not None:
+   
+    #         bbox_mask = self.bbox_model.insideMask(x[...,:3])
+    #         density[bbox_mask==0] = 0
+    #         jacobian[bbox_mask==0] = 0
+    #         Dd_Dt[bbox_mask==0] = 0
+
+    #     return density, jacobian, Dd_Dt

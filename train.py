@@ -223,6 +223,7 @@ def train(args):
             # trainVel = True
             trainVel = global_step % 10 == 0
             trainVel_using_rendering_samples = False # todo:: use this
+            # trainVel_using_rendering_samples = True # todo:: use this
             # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
 
         model.iter_step = global_step
@@ -328,9 +329,11 @@ def train(args):
     
                 smoke_samples_xyz = extras['samples_xyz_dynamic']
 
-                static_samples_xyz = extras['samples_xyz_static']
-
-                samples_xyz = torch.cat([static_samples_xyz,smoke_samples_xyz], dim = 0)
+                if model.single_scene:
+                    samples_xyz = smoke_samples_xyz
+                else:
+                    static_samples_xyz = extras['samples_xyz_static']
+                    samples_xyz = torch.cat([static_samples_xyz,smoke_samples_xyz], dim = 0)
 
                 max_samples = 32**3
                 if samples_xyz.shape[0] > max_samples:
@@ -568,7 +571,7 @@ def train(args):
                 imageio.mimwrite(moviebase + 'velrgb.mp4', np.stack(vel_rgbs,axis=0).astype(np.uint8), fps=30, quality=8)
             model.train()
 
-        if global_step % args.i_testset==0 and global_step > 0:
+        if global_step % args.i_testset==0 and global_step > 0 and trainImg:
             model.eval()
             testsavedir = os.path.join(basedir, expname, 'testset_{:06d}'.format(global_step))
             os.makedirs(testsavedir, exist_ok=True)

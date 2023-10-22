@@ -126,7 +126,10 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
         if training_stage == 1:
             self.dynamic_model = self.dynamic_model_siren
-        elif training_stage == 2 or training_stage == 3 or training_stage == 4:
+        # elif training_stage == 2 or training_stage == 3 or training_stage == 4:
+        elif training_stage == 2 or training_stage == 3:
+            self.dynamic_model = self.dynamic_model_lagrangian
+        elif training_stage == 4:
             self.dynamic_model = self.dynamic_model_siren
         else:
             AssertionError("training stage should be set to 1,2,3,4")
@@ -142,19 +145,20 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
         elif training_stage == 2:
             
-            for name, p in self.dynamic_model_siren.named_parameters():
-                p.requires_grad = False
                 
             if not self.single_scene:
                 for name, p in self.static_model.named_parameters():
                     p.requires_grad = False
 
+            for name, p in self.dynamic_model_siren.named_parameters():
+                p.requires_grad = False
             for name, p in self.dynamic_model_lagrangian.named_parameters():
-                # p.requires_grad = True
-                if "position_map" in name or "density_map" in name or 'color_model' in name:
-                    p.requires_grad = True
-                else:
-                    p.requires_grad = False
+                
+                p.requires_grad = True
+                # if "position_map" in name or "density_map" in name or 'color_model' in name:
+                #     p.requires_grad = True
+                # else:
+                #     p.requires_grad = False
 
 
         elif training_stage == 3:
@@ -219,9 +223,9 @@ def create_model(args, device, bbox_model):
         checkpoint = torch.load(load_model_path)
         if not model.single_scene:
             model.static_model.load_state_dict(checkpoint["static_model_state_dict"])
-        #model.dynamic_model_lagrangian.load_state_dict(checkpoint["dynamic_model_lagrangian_state_dict"])
+        model.dynamic_model_lagrangian.load_state_dict(checkpoint["dynamic_model_lagrangian_state_dict"])
         model.dynamic_model_siren.load_state_dict(checkpoint["dynamic_model_siren_state_dict"])
-        #optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         
         ## todo::
         # load occ grid

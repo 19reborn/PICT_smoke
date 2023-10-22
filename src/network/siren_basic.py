@@ -195,7 +195,7 @@ def get_activation(activation):
 
 # Model
 class SIREN_NeRFt(nn.Module):
-    def __init__(self, args, D=8, W=256, input_ch=4, input_ch_views=0, output_ch=4, skips=[4], use_viewdirs=False, fading_fin_step=0, bbox_model=None, density_activation='identity'):
+    def __init__(self, args, D=4, W=256, input_ch=4, input_ch_views=0, output_ch=4, skips=[], use_viewdirs=False, fading_fin_step=0, bbox_model=None, density_activation='identity'):
         """ 
         fading_fin_step: >0, to fade in layers one by one, fully faded in when self.fading_step >= fading_fin_step
         """
@@ -216,7 +216,7 @@ class SIREN_NeRFt(nn.Module):
         self.fading_fin_step = fading_fin_step if fading_fin_step>0 else args.fading_layers
         self.bbox_model = bbox_model
 
-        first_omega_0 = 30.0
+        first_omega_0 = 5.0
         hidden_omega_0 = 1.0
 
         self.pts_linears = nn.ModuleList(
