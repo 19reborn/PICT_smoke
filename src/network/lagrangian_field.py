@@ -150,13 +150,20 @@ class DensityMapping(nn.Module):
         first_omega_0 = 1.0
         hidden_omega_0 = 1.0
 
-        self.linears = nn.ModuleList(
-            [SineLayer(in_channels, W, omega_0=first_omega_0)] +
-            [SineLayer(W, W, omega_0=hidden_omega_0) 
-                if i not in skips else SineLayer(W + in_channels, W, omega_0=hidden_omega_0) for i in range(D-1)] +
-            [nn.Linear(W, out_channels)]
-        )
 
+        linears = []
+        linears += [nn.Linear(in_channels, W)]
+        linears += [nn.ReLU()]
+        for i in range(D-1):
+            if i not in skips:
+                linears += [nn.Linear(W, W)]
+                linears += [nn.ReLU()]
+            else:
+                linears += [nn.Linear(W + in_channels, W)]
+                linears += [nn.ReLU()]
+        linears += [nn.Linear(W, out_channels)]
+
+        self.linears = nn.Sequential(*linears)
 
         # linears = []
         # linears += [nn.Linear(in_channels, W)]

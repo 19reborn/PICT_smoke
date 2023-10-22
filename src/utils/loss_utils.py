@@ -487,7 +487,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
 
         density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz)
         
-        # vel_loss += 0.01 * density_mapping_loss * density_mapping_fading
+        vel_loss += 0.1 * density_mapping_loss * density_mapping_fading
 
         
         vel_loss_dict['density_mapping_loss'] = density_mapping_loss
@@ -568,6 +568,8 @@ def PDE_stage4(f_t, f_x, f_y, f_z,
         eqs += [ (u*u + v*v + w*w)* 1e-1]
 
     
+    eqs += [Dd_Dt]
+
     eqs += [Du_Dt]
     
     
