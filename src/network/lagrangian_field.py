@@ -46,7 +46,7 @@ class FeatureMapping(nn.Module):
         self.skips = skips
 
 
-        first_omega_0 = 30.0
+        first_omega_0 = 10.0
         hidden_omega_0 = 1.0
 
         self.linears = nn.ModuleList(
@@ -137,8 +137,8 @@ class DensityMapping(nn.Module):
     Lagarian Particle density mapping
     (features, t) -> (density)
     """
-    # def __init__(self, in_channels=16, out_channels=1, D=2, W=128, skips=[]):
-    def __init__(self, in_channels=17, out_channels=1, D=2, W=128, skips=[]):
+    def __init__(self, in_channels=16, out_channels=1, D=2, W=128, skips=[]):
+    # def __init__(self, in_channels=17, out_channels=1, D=2, W=128, skips=[]):
         super(DensityMapping, self).__init__()
 
         self.in_channels = in_channels
@@ -147,23 +147,16 @@ class DensityMapping(nn.Module):
         self.W = W
         self.skips = skips
 
-        first_omega_0 = 1.0
+        first_omega_0 = 5.0
         hidden_omega_0 = 1.0
 
+        self.linears = nn.ModuleList(
+            [SineLayer(in_channels, W, omega_0=first_omega_0)] +
+            [SineLayer(W, W, omega_0=hidden_omega_0) 
+                if i not in skips else SineLayer(W + in_channels, W, omega_0=hidden_omega_0) for i in range(D-1)] +
+            [nn.Linear(W, out_channels)]
+        )
 
-        linears = []
-        linears += [nn.Linear(in_channels, W)]
-        linears += [nn.ReLU()]
-        for i in range(D-1):
-            if i not in skips:
-                linears += [nn.Linear(W, W)]
-                linears += [nn.ReLU()]
-            else:
-                linears += [nn.Linear(W + in_channels, W)]
-                linears += [nn.ReLU()]
-        linears += [nn.Linear(W, out_channels)]
-
-        self.linears = nn.Sequential(*linears)
 
         # linears = []
         # linears += [nn.Linear(in_channels, W)]
@@ -186,8 +179,8 @@ class DensityMapping(nn.Module):
     def forward(self, feature, t=None):
         # x: (features, t)
 
-        input_xyz = torch.cat([feature, t], dim=-1)
-        # input_xyz = torch.cat([feature], dim=-1)
+        # input_xyz = torch.cat([feature, t], dim=-1)
+        input_xyz = torch.cat([feature], dim=-1)
 
         xyz = input_xyz
 
@@ -211,7 +204,7 @@ class MappingNetwork(nn.Module):
     (features, t') -> position_mapping -> (x,y,z)
     """
 
-    def __init__(self, feature_map, position_map):
+    def __init__(self, feature_map, position_map, bbox_model):
         super(MappingNetwork, self).__init__()
 
         self.feature_map = feature_map
@@ -248,17 +241,13 @@ class VelocityNetwork(nn.Module):
     (x,y,z) -> auto differentiation -> (vx,vy,vz)
     """
 
-    def __init__(self, feature_map, position_map):
+    def __init__(self, feature_map, position_map, bbox_model = None):
         super(VelocityNetwork, self).__init__()
 
         self.feature_map = feature_map
         self.position_map = position_map
 
-        self.eval_mode = False
-
-    def fix_feature_map_grad(self):
-        for name, p in self.feature_map.named_parameters():
-            p.requires_grad = False
+        self.bbox_model = bbox_model  
 
     def gradients(self, y, x):
         """Computes the Jacobian of y wrt x assuming minibatch-mode.
@@ -299,6 +288,13 @@ class VelocityNetwork(nn.Module):
 
 
         velocity = self.gradients(mapped_xyz, t1)
+        
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+            features[bbox_mask] = 0.0
+            
+            mapped_xyz[bbox_mask] = xyz[bbox_mask]
+            velocity[bbox_mask] = 0.0
 
         middle_output = {}
         middle_output['mapped_features'] = features
@@ -317,18 +313,50 @@ class VelocityNetwork(nn.Module):
 
         return velocity, middle_output
 
+    def forward_with_feature_save_middle_output(self, xyzt, features, need_vorticity = False):
+        xyz, t = torch.split(xyzt, (3, 1), dim=-1)
+
+        t1 = t.clone().detach()
+        t1.requires_grad_(True)
+
+
+        mapped_xyz = self.position_map(features, t1)
+
+        velocity = self.gradients(mapped_xyz, t1)
+        
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+            features[bbox_mask] = 0.0
+            
+            mapped_xyz[bbox_mask] = xyz[bbox_mask]
+            velocity[bbox_mask] = 0.0
+
+
+        jaco_t1 = _get_minibatch_jacobian(velocity, t1)
+
+
+        return velocity, jaco_t1
+
     def forward(self, xyzt):
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
         xyz.requires_grad_(True) ## allow for futhre order derivative
 
         features = self.feature_map(xyz, t)
-        t.requires_grad_(True) ## todo:: check whether put it after feature_map
+        # t.requires_grad_(True) ## todo:: check whether put it after feature_map
+        t1 = t.clone().detach()
+        t1.requires_grad_(True)
 
-        xyz = self.position_map(features, t)
 
-        velocity = self.gradients(xyz, t)
+        mapped_xyz = self.position_map(features, t1)
 
+        velocity = self.gradients(mapped_xyz, t1)
+        
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == 0
+            features[bbox_mask] = 0.0
+            velocity[bbox_mask] = 0.0
+            
         return velocity
 
     def mapping_forward(self, xyzt, t1 = None):
@@ -341,15 +369,22 @@ class VelocityNetwork(nn.Module):
  
         features = self.feature_map(xyz, t)
 
-        xyz = self.position_map(features, t1)
+        mapped_xyz = self.position_map(features, t1)
+        
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == 0
+            mapped_xyz[bbox_mask] = xyz[bbox_mask]
+            
+        return mapped_xyz
 
-        return xyz
-
-    def mapping_forward_with_features(self, features, t1):
+    def mapping_forward_with_features(self, features, t1, xyz = None):
         # directly provide features instead of xyzt
-        xyz = self.position_map(features, t1)
+        mapped_xyz = self.position_map(features, t1)
+        if self.bbox_model is not None and xyz is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == 0
+            mapped_xyz[bbox_mask] = xyz[bbox_mask]
 
-        return xyz
+        return mapped_xyz
 
     def update_fading_step(self, steps):
         return
@@ -365,13 +400,14 @@ class DensityNetwork(nn.Module):
     (features, t') -> density_mapping -> (density)
     """
 
-    def __init__(self, feature_map, density_map):
+    def __init__(self, feature_map, density_map, bbox_model = None):
         super(DensityNetwork, self).__init__()
 
         self.feature_map = feature_map
         self.density_map = density_map
 
-        self.eval_mode = False
+        self.bbox_model = bbox_model
+        
         
         
     def fix_feature_map_grad(self):
@@ -393,8 +429,8 @@ class DensityNetwork(nn.Module):
  
         features = self.feature_map(xyz, t)
 
-        density = self.density_map(features, t)
-        # density = self.density_map(features)
+        # density = self.density_map(features, t)
+        density = self.density_map(features)
 
         return density
     
@@ -456,18 +492,21 @@ class DensityNetwork(nn.Module):
         # else:
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
-        t1 = t.clone().detach()
-        t1.requires_grad_(True) ## todo:: check whether put it after feature_map
+        # t1 = t.clone().detach()
+        # t1.requires_grad_(True) ## todo:: check whether put it after feature_map
 
         features = self.feature_map(xyz, t)
-        density = self.density_map(features, t1)
+        density = self.density_map(features, t)
         if bbox_mask is not None:
             density[bbox_mask==0] = 0
+            features[bbox_mask==0] = 0
 
-        Ddensity_Dt = _get_minibatch_jacobian(density, t1)
+        # Ddensity_Dt = _get_minibatch_jacobian(density, t1)
+        # Ddensity_Dt = 0.0
             
 
-        return density, Ddensity_Dt
+        # return density, features, Ddensity_Dt
+        return density, features
 
 class ColorNetwork(nn.Module):
     def __init__(self, in_channels=4, out_channels=3, D=3, W=128, skips=[]):
@@ -517,10 +556,10 @@ class Lagrangian_NeRF(nn.Module):
         
   
 
-        self.vel_model = VelocityNetwork(self.feature_map, self.position_map)
-        self.map_model = MappingNetwork(self.feature_map, self.position_map)
+        self.vel_model = VelocityNetwork(self.feature_map, self.position_map, bbox_model)
+        self.map_model = MappingNetwork(self.feature_map, self.position_map, bbox_model)
 
-        self.density_model = DensityNetwork(self.feature_map, self.density_map)
+        self.density_model = DensityNetwork(self.feature_map, self.density_map, bbox_model)
 
 
         self.bbox_model = bbox_model
@@ -561,9 +600,9 @@ class Lagrangian_NeRF(nn.Module):
             bbox_mask = self.bbox_model.insideMask(x[...,:3])
         else:
             bbox_mask = None
-        density, Ddensity_Dt = self.density_model.forward_with_Dt(x, bbox_mask)
+        density, features = self.density_model.forward_with_Dt(x, bbox_mask)
    
-        return density, Ddensity_Dt
+        return density, features
 
     # def color(self, x):
 
