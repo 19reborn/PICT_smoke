@@ -1,4 +1,4 @@
-expname = scalar/1023_v6_desity_no_t
+expname = scalar/1023_v2_much_smaller_density_reference
 basedir = ./log
 
 ### data info
@@ -64,10 +64,10 @@ i_img = 500
 i_video = 500000
 max_mapping_frame_range = 3
 
-
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1023_v1_smaller_density_reference/010000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1023_v3_smaller_loss_smaller_omega/020000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1022_v4/200000.tar
-model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1022_v1/010000.tar
+# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1022_v1/010000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1021_v18/014000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1021_v14_exp_activation/010000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1021_smaller_siren/020000.tar
