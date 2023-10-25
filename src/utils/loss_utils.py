@@ -289,7 +289,7 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
     return rendering_loss, rendering_loss_dict
 
 
-def get_velocity_loss(args, model, training_samples, training_stage, global_step):
+def get_velocity_loss(args, model, training_samples, training_stage, trainVel, global_step):
 
 
     #####  core velocity optimization loop  #####
@@ -307,12 +307,23 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
 
     
     _den, _d_x, _d_y, _d_z, _d_t = den_model.density_with_jacobian(training_samples.clone().detach().requires_grad_(True) )
+    # _den = den_model.density(training_samples.clone().detach().requires_grad_(True) )
     
     _den_lagrangian, features = model.dynamic_model_lagrangian.density_features(training_samples)
-    
+    # _den_lagrangian, jacobian = model.dynamic_model_lagrangian.density_model.density_with_jacobian(training_samples)
+    # _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
+
+         
     vel_loss_dict = {}
     vel_loss = 0.0
-
+    if training_stage == 4 and not trainVel:
+        density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
+        
+        vel_loss_dict['density_reference_loss'] = density_reference_loss
+        vel_loss += density_reference_loss
+        
+        return vel_loss, vel_loss_dict
+        
     if training_stage == 2:
         # warm up the feature using density
         # warm up the velocity linears using nse equation
@@ -326,7 +337,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
             Du_Dt)
         
         # density transport,  velocity divergence, scale regularzation, Du_Dt,
-        split_nse_wei = [0.1, 1e-3, 5e-2, 1e-3] 
+        # split_nse_wei = [0.1, z1e-3, 5e-2, 1e-3] 
+        split_nse_wei = [0.1, 0.1, 0.1, 1e-3] 
         
         
         density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
@@ -353,7 +365,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
         
         # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
         # split_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
-        split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+        # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+        split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
         
         density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
                  
@@ -378,7 +391,9 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
             Du_Dt)
         
         # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
-        split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+        split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
+        # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+        # split_nse_wei = [1.0, 1e-2, 1e-3, 1e-3, 1e-3] 
         # spl0it_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
         
         density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
@@ -442,7 +457,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, global_step
     
         predict_xyz = vel_middle_output['mapped_xyz']
         cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
-        vel_loss += 0.5 * cycle_loss * args.nseW
+        vel_loss += 0.1 * cycle_loss
+        # vel_loss += 1.0 * cycle_loss
 
         cross_cycle_loss = None
 

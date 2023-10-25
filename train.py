@@ -221,7 +221,7 @@ def train(args):
             training_stage = 4
             trainImg = True
             # trainVel = True
-            trainVel = global_step % args.stage3_train_vel_interval == 0
+            trainVel = global_step % args.stage4_train_vel_interval == 0
             trainVel_using_rendering_samples = False # todo:: use this
             # trainVel_using_rendering_samples = True # todo:: use this
             # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
@@ -323,7 +323,7 @@ def train(args):
 
 
 
-        if trainVel:
+        if trainVel or training_stage == 4:
             if trainVel_using_rendering_samples:
 
     
@@ -350,7 +350,7 @@ def train(args):
                 training_t = torch.ones([training_samples.shape[0], 1])*time_locate
                 training_samples = torch.cat([training_samples,training_t], dim=-1)
 
-            vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage, global_step = global_step)
+            vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage, trainVel = trainVel, global_step = global_step)
 
             loss += vel_loss
 

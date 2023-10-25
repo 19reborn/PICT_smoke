@@ -379,6 +379,25 @@ class DensityNetwork(nn.Module):
 
         return density
 
+    def density_with_jacobian(self, xyzt):
+        xyz, t = torch.split(xyzt, (3, 1), dim=-1)
+
+        xyz.requires_grad_(True) ## allow for futhre order derivative
+        t.requires_grad_(True) ## todo:: check whether put it after feature_map
+
+        features = self.feature_map(xyz, t)
+        density = self.density_map(features)
+
+
+  
+        ddensity_dxyz = _get_minibatch_jacobian(density, xyz)
+        ddensity_dt = _get_minibatch_jacobian(density, t)
+        
+        jacobian = torch.cat([ddensity_dxyz, ddensity_dt], dim = -1) # [N, 3, 4]
+           
+
+        return density, jacobian
+
 class Lagrangian_NeRF(nn.Module):
     def __init__(self, args, bbox_model = None):
         super(Lagrangian_NeRF, self).__init__()

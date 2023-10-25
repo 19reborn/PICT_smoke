@@ -1,0 +1,70 @@
+expname = scalarSyn/1025_v1_test
+basedir = ./log
+
+### data info
+datadir = ./data/ScalarSyn
+dataset_type = pinf_data
+no_batching = True
+half_res = half
+white_bkgd = True
+testskip = 60
+
+### network arch
+net_model = siren
+use_viewdirs = False
+# feature_map_first_omega = 10
+# density_activation = exp
+# lagrangian_density_activation = exp
+position_map_first_omega = 30
+density_map_first_omega = 30
+
+### train params - sampling
+N_samples = 64
+N_importance = 0
+N_rand = 1024
+i_embed = -1
+train_warp = True
+vol_output_W = 128
+
+### train params - iterations
+precrop_iters = 1000
+precrop_frac = 0.5
+lrate_decay = 500
+fading_layers = 5000
+tempo_delay = 0
+vel_delay = 10000
+N_iter = 600000
+
+### train params - loss weights
+vggW = 0.00 # [0.001 - 0.01] larger values are good for high-frequency info
+ghostW = 0.07 # scalar needs a larger ghostW due to density-color ambiguity
+d2vW = 0.0 # [0.0 - 4.0, larger values are good for buoyancy driven smoke]
+
+### scene params
+bbox_min = 0.05
+bbox_max = 0.9
+# vol_output_only
+# render_only
+# render_test
+cuda_ray = True
+density_thresh = 0.5
+i_testset = 10000
+i_weights = 5000
+i_img = 1000
+i_video = 50000
+
+
+stage1_finish_recon = 10000
+uniform_sample_step = 2000000
+smoke_recon_delay_start = 0
+smoke_recon_delay_last = 0
+
+stage2_finish_init_lagrangian = 1000
+stage3_finish_init_feature = 1000
+stage4_train_vel_interval = 5
+
+max_mapping_frame_range = 3
+
+
+# model_path = /root/data/wym/workspace/pinf_clean/log/scalarSyn/1025_v1_from_start/010000.tar
+

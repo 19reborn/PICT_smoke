@@ -1,4 +1,4 @@
-expname = scalar/1025_v1_from_start
+expname = scalar/1025_v16_no_activation
 basedir = ./log
 
 ### data info
@@ -15,7 +15,12 @@ use_viewdirs = False
 # feature_map_first_omega = 10
 # density_activation = exp
 # lagrangian_density_activation = exp
+# density_activation = relu
+# lagrangian_density_activation = relu
+# density_activation = leakyrelu
+# lagrangian_density_activation = leakyrelu
 position_map_first_omega = 30
+density_map_first_omega = 30
 
 ### train params - sampling
 N_samples = 64
@@ -38,7 +43,6 @@ N_iter = 600000
 vggW = 0.00 # [0.001 - 0.01] larger values are good for high-frequency info
 ghostW = 0.07 # scalar needs a larger ghostW due to density-color ambiguity
 d2vW = 0.0 # [0.0 - 4.0, larger values are good for buoyancy driven smoke]
-nseW = 0.01
 
 ### scene params
 bbox_min = 0.05
@@ -54,18 +58,22 @@ i_img = 1000
 i_video = 50000
 
 
-stage1_finish_recon = 50000
-uniform_sample_step = 20000
+stage1_finish_recon = 10000
+uniform_sample_step = 2000000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
 
-stage2_finish_init_lagrangian = 2500
-stage3_finish_init_feature = 2500
-stage3_train_vel_interval = 40
+stage2_finish_init_lagrangian = 1500
+stage3_finish_init_feature = 1500
+stage4_train_vel_interval = 10
 
+# nseW = 0.1
 max_mapping_frame_range = 3
 
-
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1025_v16_no_activation/015000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1025_v14_no_activation/010000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1025_v10_debug/020000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1025_v1_from_start/050000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1024_v5_position_omega_30/020000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1024_v3_larger_omega/020000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1024_v1_smaller_reference/020000.tar
