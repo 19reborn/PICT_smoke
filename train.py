@@ -384,7 +384,7 @@ def train(args):
                 'global_step': global_step,
                 'static_model_state_dict': model.static_model.state_dict() if not model.single_scene else None,
                 'dynamic_model_lagrangian_state_dict': model.dynamic_model_lagrangian.state_dict(),
-                'dynamic_model_siren_state_dict': model.dynamic_model_siren.state_dict(),
+                'dynamic_model_siren_state_dict': model.dynamic_model_siren.state_dict() if model.use_two_level_density else None,
                 'optimizer_state_dict': optimizer.state_dict(),
             }
      

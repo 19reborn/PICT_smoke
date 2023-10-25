@@ -373,7 +373,26 @@ class DensityNetwork(nn.Module):
             
         return density, features
     
-    def forward_with_features(self, features):
+
+    def density(self, xyzt):
+
+        xyz, t = torch.split(xyzt, (3, 1), dim=-1)
+ 
+        features = self.feature_map(xyz, t)
+
+        
+        density = self.density_map(features)
+        
+        if self.bbox_model is not None:
+   
+            bbox_mask = self.bbox_model.insideMask(xyz)
+            density[bbox_mask==0] = 0
+            
+            
+        return density
+    
+
+    def density_with_features(self, features):
         # directly provide features instead of xyzt
         density = self.density_map(features)
 
@@ -396,7 +415,50 @@ class DensityNetwork(nn.Module):
         jacobian = torch.cat([ddensity_dxyz, ddensity_dt], dim = -1) # [N, 3, 4]
            
 
-        return density, jacobian
+        return density, features, jacobian
+
+class ColorNetwork(nn.Module):
+    def __init__(self, bbox_model = None, in_channels=4, out_channels=3, D=3, W=128, skips=[]):
+        super(ColorNetwork, self).__init__()
+
+        self.bbox_model = bbox_model
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.D = D
+        self.W = W
+        self.skips = skips
+
+
+        first_omega_0 = 5.0
+        hidden_omega_0 = 1.0
+
+        self.linears = nn.ModuleList(
+            [SineLayer(in_channels, W, omega_0=first_omega_0)] + 
+            [SineLayer(W, W, omega_0=hidden_omega_0) 
+                if i not in self.skips else SineLayer(W + in_channels, W, omega_0=hidden_omega_0) for i in range(D-1)] + 
+                [nn.Linear(W, out_channels)]
+        )
+
+    def forward(self, xyzt):
+
+        input_feature = torch.cat([xyzt], dim=-1)
+
+        feature = input_feature
+
+        for i, layer in enumerate(self.linears):
+            if i in self.skips:
+                feature = torch.cat([input_feature, layer(feature)], dim=-1)
+            else:
+                feature = layer(feature)
+        
+        color = feature
+
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyzt[..., :3]) == False
+            color[bbox_mask] = 0.0
+
+        return color
 
 class Lagrangian_NeRF(nn.Module):
     def __init__(self, args, bbox_model = None):
@@ -407,11 +469,13 @@ class Lagrangian_NeRF(nn.Module):
         self.position_map = PositionMapping(args, in_channels = feature_dim + 1)
         self.density_map = DensityMapping(args, in_channels = feature_dim)
         
-  
 
-        self.vel_model = VelocityNetwork(self.feature_map, self.position_map, bbox_model)
+        self.velocity_model = VelocityNetwork(self.feature_map, self.position_map, bbox_model)
 
         self.density_model = DensityNetwork(self.feature_map, self.density_map, bbox_model)
+
+        if not args.use_two_level_density:
+            self.color_model = ColorNetwork(bbox_model = bbox_model)
 
 
     def print_fading(self):
@@ -423,9 +487,19 @@ class Lagrangian_NeRF(nn.Module):
 
         return density
     
+    def color(self, x):
+
+        color = self.color_model(x)
+            
+        return color
     
-    def density_features(self, x):
+    def forward(self, x):
 
-        density, features = self.density_model(x)
+        density = self.density(x)
+        
+        color = self.color(x)
+        
 
-        return density, features
+        output = torch.cat([color, density], -1)
+
+        return output

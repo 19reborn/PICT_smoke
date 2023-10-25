@@ -16,9 +16,10 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
         super(Lagrangian_Hybrid_NeuS, self).__init__()
 
-        
+        self.args = args
         self.bbox_model = bbox_model
         self.single_scene = 'hybrid' not in args.net_model
+        self.use_two_level_density = args.use_two_level_density
 
         if self.single_scene:
             self.static_model = None
@@ -26,9 +27,9 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
             self.static_model = NeuS(args = args, bbox_model=bbox_model)
 
         self.dynamic_model_lagrangian = Lagrangian_NeRF(args = args, bbox_model = bbox_model)
-
-        self.dynamic_model_siren = SIREN_NeRFt(args = args, bbox_model = bbox_model, density_activation = args.density_activation,
-                                               D = args.siren_nerf_netdepth)
+        if args.use_two_level_density:
+            self.dynamic_model_siren = SIREN_NeRFt(args = args, bbox_model = bbox_model, density_activation = args.density_activation,
+                                                   D = args.siren_nerf_netdepth)
 
         self.dynamic_model = None
         
@@ -121,28 +122,35 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         return self.static_model.up_sample(rays_o, rays_d, z_vals, n_importance, up_sample_steps, embed_fn)
   
     def update_fading_step(self, global_step):
-        self.dynamic_model_siren.fading_step = global_step
+        if self.args.use_two_level_density:
+            self.dynamic_model_siren.fading_step = global_step
 
     def update_model_type(self, training_stage):
 
-        if training_stage == 1:
-            self.dynamic_model = self.dynamic_model_siren
-        # elif training_stage == 2 or training_stage == 3 or training_stage == 4:
-        elif training_stage == 2 or training_stage == 3:
-            self.dynamic_model = self.dynamic_model_lagrangian
-        elif training_stage == 4:
-            self.dynamic_model = self.dynamic_model_siren
+        if self.args.use_two_level_density:
+            if training_stage == 1:
+                self.dynamic_model = self.dynamic_model_siren
+            # elif training_stage == 2 or training_stage == 3 or training_stage == 4:
+            elif training_stage == 2 or training_stage == 3:
+                self.dynamic_model = self.dynamic_model_lagrangian
+            elif training_stage == 4:
+                self.dynamic_model = self.dynamic_model_siren
+            else:
+                AssertionError("training stage should be set to 1,2,3,4")
+
         else:
-            AssertionError("training stage should be set to 1,2,3,4")
+            self.dynamic_model = self.dynamic_model_lagrangian
             
         self.adjust_grad_type(training_stage)
         
 
     def adjust_grad_type(self, training_stage):
+
         if training_stage == 1:
-            # fix dynamic lagrangian grad
-            for name, p in self.dynamic_model_lagrangian.named_parameters():
-                p.requires_grad = False
+            if self.args.use_two_level_density:
+                # fix dynamic lagrangian grad   
+                for name, p in self.dynamic_model_lagrangian.named_parameters():
+                    p.requires_grad = False
 
         elif training_stage == 2:
             
@@ -150,9 +158,9 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
             if not self.single_scene:
                 for name, p in self.static_model.named_parameters():
                     p.requires_grad = False
-
-            for name, p in self.dynamic_model_siren.named_parameters():
-                p.requires_grad = False
+            if self.args.use_two_level_density:
+                for name, p in self.dynamic_model_siren.named_parameters():
+                    p.requires_grad = False
             for name, p in self.dynamic_model_lagrangian.named_parameters():
                 p.requires_grad = True
                 # if "position_map" in name or "density_map" in name or 'color_model' in name:
@@ -165,8 +173,9 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
             if not self.single_scene:
                 for name, p in self.static_model.named_parameters():
                     p.requires_grad = False
-            for name, p in self.dynamic_model_siren.named_parameters():
-                p.requires_grad = False
+            if self.args.use_two_level_density:
+                for name, p in self.dynamic_model_siren.named_parameters():
+                    p.requires_grad = False
             for name, p in self.dynamic_model_lagrangian.named_parameters():
                 p.requires_grad = True
 
@@ -175,8 +184,9 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
             if not self.single_scene:
                 for name, p in self.static_model.named_parameters():
                     p.requires_grad = False
-            for name, p in self.dynamic_model_siren.named_parameters():
-                p.requires_grad = True
+            if self.args.use_two_level_density:
+                for name, p in self.dynamic_model_siren.named_parameters():
+                    p.requires_grad = True
             for name, p in self.dynamic_model_lagrangian.named_parameters():
                 p.requires_grad = True
   
@@ -224,7 +234,8 @@ def create_model(args, device, bbox_model):
         if not model.single_scene:
             model.static_model.load_state_dict(checkpoint["static_model_state_dict"])
         model.dynamic_model_lagrangian.load_state_dict(checkpoint["dynamic_model_lagrangian_state_dict"])
-        model.dynamic_model_siren.load_state_dict(checkpoint["dynamic_model_siren_state_dict"])
+        if model.use_two_level_density:
+            model.dynamic_model_siren.load_state_dict(checkpoint["dynamic_model_siren_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         
         ## todo::

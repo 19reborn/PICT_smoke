@@ -44,6 +44,7 @@ def config_parser():
 
     # network model
     ## lagrangian network
+    parser.add_argument('--use_two_level_density', action = 'store_true')
     parser.add_argument("--lagrangian_feature_dim", type=int, default=16, 
                         help='Lagrangian feature dimension')   
     

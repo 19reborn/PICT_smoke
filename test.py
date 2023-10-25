@@ -111,7 +111,7 @@ def output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = F
     else:
         savenpz = True # need a large space
         savejpg = True 
-        save_vort = True # (vel_model is not None) and (savenpz) and (savejpg)
+        save_vort = True # (velocity_model is not None) and (savenpz) and (savejpg)
         # with torch.no_grad():
 
 

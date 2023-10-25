@@ -250,7 +250,7 @@ class Voxel_Tool(object):
         for i in range(0, pts_N, chunk):
             input_i = cur_pts[i:i+chunk]
             # vel_i = batchify(model, chunk)(input_i)
-            vel_i = batchify_func(model.dynamic_model_lagrangian.vel_model, chunk, not model.training)(input_i)
+            vel_i = batchify_func(model.dynamic_model_lagrangian.velocity_model, chunk, not model.training)(input_i)
             world_v.append(vel_i)
         world_v = torch.cat(world_v, 0)
         return world_v
@@ -294,7 +294,7 @@ class Voxel_Tool(object):
             pts_flat = torch.cat([pts_flat,input_t], dim=-1)
 
 
-        # world_v = self.get_velocity_flat(model.dynamic_model_lagrangian.vel_model, pts_flat, chunk)
+        # world_v = self.get_velocity_flat(model.dynamic_model_lagrangian.velocity_model, pts_flat, chunk)
         world_v = self.get_velocity_flat(model, pts_flat, chunk)
         reso_scale = [self.W*scale,self.H*scale,self.D*scale]
         target_v = vel_world2smoke(world_v, self.s_w2s, self.s_scale, reso_scale)
@@ -471,9 +471,9 @@ class Voxel_Tool(object):
 
 
     @torch.no_grad()
-    def save_voxel_vel_npz(self,vel_path,deltaT,t,batchify_fn,chunk=1024*32, vel_model=None,save_npz=True,save_jpg=False,save_vort=False):
+    def save_voxel_vel_npz(self,vel_path,deltaT,t,batchify_fn,chunk=1024*32, velocity_model=None,save_npz=True,save_jpg=False,save_vort=False):
         vel_scale = 160
-        voxel_vel = self.get_voxel_velocity(deltaT,t,batchify_fn,chunk,vel_model,middle_slice=not save_npz).detach().cpu().numpy()
+        voxel_vel = self.get_voxel_velocity(deltaT,t,batchify_fn,chunk,velocity_model,middle_slice=not save_npz).detach().cpu().numpy()
         
         if save_jpg:
             jpg_path = os.path.splitext(vel_path)[0]+".jpg"

@@ -296,116 +296,142 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
     # allows to take derivative w.r.t. training_samples
 
 
-    vel_model = model.dynamic_model_lagrangian.vel_model
+    velocity_model = model.dynamic_model_lagrangian.velocity_model
+    den_model_lagrangian = model.dynamic_model_lagrangian.density_model
     
-    den_model = model.dynamic_model_siren
+    if args.use_two_level_density:
+        den_model_siren = model.dynamic_model_siren
     
-    # training_samples.requires_grad_(True)
     
     if not model.single_scene:
         _sdf, _normal = model.static_model.sdf_with_gradient(training_samples[..., :3].clone().detach().requires_grad_(True))
 
-    
-    _den, _d_x, _d_y, _d_z, _d_t = den_model.density_with_jacobian(training_samples.clone().detach().requires_grad_(True) )
-    # _den = den_model.density(training_samples.clone().detach().requires_grad_(True) )
-    
-    _den_lagrangian, features = model.dynamic_model_lagrangian.density_features(training_samples)
-    # _den_lagrangian, jacobian = model.dynamic_model_lagrangian.density_model.density_with_jacobian(training_samples)
-    # _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
+    if args.use_two_level_density:
+        _den_siren, _d_x, _d_y, _d_z, _d_t = den_model_siren.density_with_jacobian(training_samples.clone().detach().requires_grad_(True) )
+        _den_lagrangian, features = den_model_lagrangian.density_features(training_samples)
+    else:
+        _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
+        _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
+
 
          
     vel_loss_dict = {}
     vel_loss = 0.0
-    if training_stage == 4 and not trainVel:
-        density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
-        
-        vel_loss_dict['density_reference_loss'] = density_reference_loss
-        vel_loss += density_reference_loss
-        
-        return vel_loss, vel_loss_dict
-        
-    if training_stage == 2:
-        # warm up the feature using density
-        # warm up the velocity linears using nse equation
-  
-  
-        _vel, Du_Dt = vel_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
+
+    if args.use_two_level_density:
+        if training_stage == 4 and not trainVel:
+        # supervise lagrangian density using siren density
+            density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
+            
+            vel_loss_dict['density_reference_loss'] = density_reference_loss
+            vel_loss += density_reference_loss
+            
+            return vel_loss, vel_loss_dict
+            
+        if training_stage == 2:
+            # warm up the feature using density
+            # warm up the velocity linears using nse equation
     
-        split_nse = PDE_stage2(
-            _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-            _vel, 
-            Du_Dt)
-        
-        # density transport,  velocity divergence, scale regularzation, Du_Dt,
-        # split_nse_wei = [0.1, z1e-3, 5e-2, 1e-3] 
-        split_nse_wei = [0.1, 0.1, 0.1, 1e-3] 
-        
-        
-        density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
-                 
-        vel_loss_dict['density_reference_loss'] = density_reference_loss
-
-        vel_loss += density_reference_loss
-
-    elif training_stage == 3:
-        
-        _vel, vel_middle_output = vel_model.forward_with_middle_output(training_samples, need_vorticity=True)
-        
-        jac = vel_middle_output['jacobian']
-        _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
-        _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
-        _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
-        
-
-        split_nse = PDE_stage3(
-            _f_t, _f_x, _f_y, _f_z,
-            _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-            _vel, _u_x, _u_y, _u_z, 
-            Du_Dt)
-        
-        # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
-        # split_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
-        # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
-        split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
-        
-        density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
-                 
-        vel_loss_dict['density_reference_loss'] = density_reference_loss 
-        
-        vel_loss += density_reference_loss 
-
     
-    elif training_stage == 4:
+            _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
         
-        _vel, vel_middle_output = vel_model.forward_with_middle_output(training_samples, need_vorticity=True)
-        jac = vel_middle_output['jacobian']
-        _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
-        _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
-        _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
-        
+            split_nse = PDE_stage2(
+                _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                _vel, 
+                Du_Dt)
+            
+            # density transport,  velocity divergence, scale regularzation, Du_Dt,
+            # split_nse_wei = [0.1, z1e-3, 5e-2, 1e-3] 
+            split_nse_wei = [0.1, 0.1, 0.1, 1e-3] 
+            
+            
+            density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
+                    
+            vel_loss_dict['density_reference_loss'] = density_reference_loss
 
-        split_nse = PDE_stage3(
-            _f_t, _f_x, _f_y, _f_z,
-            _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-            _vel, _u_x, _u_y, _u_z, 
-            Du_Dt)
-        
-        # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
-        split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
-        # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
-        # split_nse_wei = [1.0, 1e-2, 1e-3, 1e-3, 1e-3] 
-        # spl0it_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
-        
-        density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
-                 
-        vel_loss_dict['density_reference_loss'] = density_reference_loss 
+            vel_loss += density_reference_loss
 
-        vel_loss += density_reference_loss 
+        elif training_stage == 3:
+            
+            _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
+            
+            jac = vel_middle_output['jacobian']
+            _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
+            _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
+            _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
+            
 
+            split_nse = PDE_stage3(
+                _f_t, _f_x, _f_y, _f_z,
+                _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                _vel, _u_x, _u_y, _u_z, 
+                Du_Dt)
+            
+            # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
+            # split_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
+            # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+            split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
+            
+            density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
+                    
+            vel_loss_dict['density_reference_loss'] = density_reference_loss 
+            
+            vel_loss += density_reference_loss 
+
+        
+        elif training_stage == 4:
+            
+            _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
+            jac = vel_middle_output['jacobian']
+            _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
+            _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
+            _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
+            
+
+            split_nse = PDE_stage3(
+                _f_t, _f_x, _f_y, _f_z,
+                _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                _vel, _u_x, _u_y, _u_z, 
+                Du_Dt)
+            
+            # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
+            split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
+            # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+            # split_nse_wei = [1.0, 1e-2, 1e-3, 1e-3, 1e-3] 
+            # spl0it_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
+            
+            density_reference_loss = smooth_l1_loss(F.relu(_den.detach()), F.relu(_den_lagrangian))
+                    
+            vel_loss_dict['density_reference_loss'] = density_reference_loss 
+
+            vel_loss += density_reference_loss 
+
+        else:
+            AssertionError("training stage should be set to 1,2,3,4")
+            
     else:
-        AssertionError("training stage should be set to 1,2,3,4")
+       
+        # start train velocity using lagrangian density, and give up siren density
+
+
+        _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
+        jac = vel_middle_output['jacobian']
+        _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
+        _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
+        _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)       
+    
+        split_nse = PDE_stage3(
+            _f_t, _f_x, _f_y, _f_z,
+            _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+            _vel, _u_x, _u_y, _u_z, 
+            Du_Dt)
         
-  
+        # density transport, feature continuity, velocitt divergence, scale regularzation, Dd_Dt, Du_Dt
+        split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+            
+
+            
+
     nse_errors = [mean_squared_error(x,0.0) for x in split_nse]
 
 
@@ -479,8 +505,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         cross_training_t = torch.clamp(cross_training_t, 0.0, 1.0) # clamp to (0,1)
 
 
-        predict_xyz_cross = vel_model.mapping_forward_with_features(mapped_features, cross_training_t)
-        cross_features = vel_model.feature_map(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
+        predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
+        cross_features = velocity_model.feature_map(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
         cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
         vel_loss += 0.05 * cross_cycle_loss * args.nseW
@@ -493,11 +519,17 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 20000, 10000) # 
 
         density_mapping_loss = None
+        if args.use_two_level_density:
+            _den = _den_siren
+            den_model = den_model_siren
+        else:
+            _den = _den_lagrangian
+            den_model = den_model_lagrangian
+
         density_in_xyz = _den
 
-        
         predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
-        density_in_mapped_xyz = den_model(predict_xyzt_cross.detach()) ## todo:: whether detach this
+        density_in_mapped_xyz = den_model.density(predict_xyzt_cross.detach()) ## todo:: whether detach this
         # density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
         # density_in_mapped_xyz = den_model.forward_with_features(cross_features.detach(), cross_training_t) ## todo:: whether detach this
         
