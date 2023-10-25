@@ -1,4 +1,4 @@
-expname = scalar/1023_v2_much_smaller_density_reference
+expname = scalar/1025_v1_from_start
 basedir = ./log
 
 ### data info
@@ -12,7 +12,10 @@ testskip = 60
 ### network arch
 net_model = siren
 use_viewdirs = False
-density_activation = exp
+# feature_map_first_omega = 10
+# density_activation = exp
+# lagrangian_density_activation = exp
+position_map_first_omega = 30
 
 ### train params - sampling
 N_samples = 64
@@ -35,6 +38,7 @@ N_iter = 600000
 vggW = 0.00 # [0.001 - 0.01] larger values are good for high-frequency info
 ghostW = 0.07 # scalar needs a larger ghostW due to density-color ambiguity
 d2vW = 0.0 # [0.0 - 4.0, larger values are good for buoyancy driven smoke]
+nseW = 0.01
 
 ### scene params
 bbox_min = 0.05
@@ -45,32 +49,25 @@ bbox_max = 0.9
 cuda_ray = True
 density_thresh = 0.5
 i_testset = 10000
-i_weights = 10000
-# chunk = 1024
-hardW = 0.00
-MinusDensityW = 0.00
+i_weights = 5000
+i_img = 1000
+i_video = 50000
 
 
-stage1_finish_recon = 10000
-uniform_sample_step = 5000000
+stage1_finish_recon = 50000
+uniform_sample_step = 20000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
 
-stage2_finish_init_lagrangian = 5000
-stage3_finish_init_feature = 5000
+stage2_finish_init_lagrangian = 2500
+stage3_finish_init_feature = 2500
+stage3_train_vel_interval = 40
 
-i_weights = 2000
-i_img = 500
-i_video = 500000
 max_mapping_frame_range = 3
 
+
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1024_v5_position_omega_30/020000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1024_v3_larger_omega/020000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1024_v1_smaller_reference/020000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1023_v1_smaller_density_reference/010000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1023_v3_smaller_loss_smaller_omega/020000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1022_v4/200000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1022_v1/010000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1021_v18/014000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1021_v14_exp_activation/010000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1021_smaller_siren/020000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1019_v4_from_start/020000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1013_v2_add_ghost_loss/100000.tar
 

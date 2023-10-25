@@ -195,7 +195,7 @@ def get_activation(activation):
 
 # Model
 class SIREN_NeRFt(nn.Module):
-    def __init__(self, args, D=4, W=256, input_ch=4, input_ch_views=0, output_ch=4, skips=[], use_viewdirs=False, fading_fin_step=0, bbox_model=None, density_activation='identity'):
+    def __init__(self, args, D=8, W=256, input_ch=4, input_ch_views=0, output_ch=4, skips=[4], use_viewdirs=False, fading_fin_step=0, bbox_model=None, density_activation='identity'):
         """ 
         fading_fin_step: >0, to fade in layers one by one, fully faded in when self.fading_step >= fading_fin_step
         """
@@ -204,7 +204,8 @@ class SIREN_NeRFt(nn.Module):
 
         self.args = args
 
-        self.scene_scale = args.scene_scale
+        # self.scene_scale = args.scene_scale
+        self.scene_scale = 1.0
 
         self.D = D
         self.W = W
@@ -216,7 +217,8 @@ class SIREN_NeRFt(nn.Module):
         self.fading_fin_step = fading_fin_step if fading_fin_step>0 else args.fading_layers
         self.bbox_model = bbox_model
 
-        first_omega_0 = 5.0
+        first_omega_0 = args.siren_nerf_first_omega
+
         hidden_omega_0 = 1.0
 
         self.pts_linears = nn.ModuleList(
@@ -236,8 +238,6 @@ class SIREN_NeRFt(nn.Module):
         final_rgb_linear = nn.Linear(W, 3)
         self.rgb_linear = final_rgb_linear
 
-        self.eval_mode = False
-        self.occupancy_grid_dynamic = None
 
         self.density_activation = get_activation(density_activation)
 
@@ -303,9 +303,6 @@ class SIREN_NeRFt(nn.Module):
         _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,1)
         return density, _d_x, _d_y, _d_z, _d_t
 
-    # def density_with_encoding(self, x, encoding):
-    #     x = encoding(x)
-    #     return self.density(x)[:, :1]
 
     def color(self, x, xyz_bound = 1.0):
         input_pts, input_views = torch.split(x, [self.input_ch, self.input_ch_views], dim=-1)

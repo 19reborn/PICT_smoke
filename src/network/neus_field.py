@@ -321,7 +321,8 @@ class NeuS(nn.Module):
 
         self.args = args
 
-        self.scene_scale = args.scene_scale
+        # self.scene_scale = args.scene_scale
+        self.scene_scale = 1.0
 
         encoding_type = 'HashGrid' if args.use_neus2_network else 'PE'
         if args.use_neus2_network:

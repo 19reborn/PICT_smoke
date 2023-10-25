@@ -27,7 +27,8 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
         self.dynamic_model_lagrangian = Lagrangian_NeRF(args = args, bbox_model = bbox_model)
 
-        self.dynamic_model_siren = SIREN_NeRFt(args = args, bbox_model = bbox_model, density_activation = args.density_activation)
+        self.dynamic_model_siren = SIREN_NeRFt(args = args, bbox_model = bbox_model, density_activation = args.density_activation,
+                                               D = args.siren_nerf_netdepth)
 
         self.dynamic_model = None
         

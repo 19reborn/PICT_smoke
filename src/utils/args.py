@@ -39,9 +39,29 @@ def config_parser():
     
     ## Stage 3
     parser.add_argument("--stage3_finish_init_feature", type=int, default=20000, help="stage 2 total training steps" )
+    parser.add_argument("--stage3_train_vel_interval", type=int, default=10, help="stage 2 total training steps" )
 
 
-
+    # network model
+    ## lagrangian network
+    parser.add_argument("--lagrangian_feature_dim", type=int, default=16, 
+                        help='Lagrangian feature dimension')   
+    
+    parser.add_argument("--feature_map_first_omega", type=int, default=30, 
+                        help='Lagrangian feature dimension')   
+    parser.add_argument("--position_map_first_omega", type=int, default=1, 
+                        help='Lagrangian feature dimension')   
+    parser.add_argument("--density_map_first_omega", type=int, default=5, 
+                        help='Lagrangian feature dimension')   
+    parser.add_argument("--density_activation", type=str,
+                        default='identity', help='activation function for density')
+    parser.add_argument("--lagrangian_density_activation", type=str,
+                        default='exp', help='activation function for density')
+    ## siren nerf    
+    parser.add_argument("--siren_nerf_netdepth", type=int, default=8, 
+                        help='layers in network')
+    parser.add_argument("--siren_nerf_first_omega", type=int, default=30, 
+                        help='layers in network')
     
     parser.add_argument("--net_model", type=str, default='nerf',
                         help='which model to use, nerf, siren, hybrid..')
@@ -99,9 +119,7 @@ def config_parser():
     parser.add_argument("--occ_grid_bound_static", type=float, default = 1.0)
     parser.add_argument("--occ_grid_bound_dynamic", type=float, default = 1.0)
     
-    parser.add_argument("--density_activation", type=str,
-                        default='identity', help='activation function for density')
-    
+
 
     # loss hyper params, negative values means to disable the loss terms
     parser.add_argument("--vgg_strides", type=int, default=4,
