@@ -50,9 +50,9 @@ def config_parser():
     
     parser.add_argument("--feature_map_first_omega", type=int, default=30, 
                         help='Lagrangian feature dimension')   
-    parser.add_argument("--position_map_first_omega", type=int, default=1, 
+    parser.add_argument("--position_map_first_omega", type=int, default=30, 
                         help='Lagrangian feature dimension')   
-    parser.add_argument("--density_map_first_omega", type=int, default=5, 
+    parser.add_argument("--density_map_first_omega", type=int, default=30, 
                         help='Lagrangian feature dimension')   
     parser.add_argument("--density_activation", type=str,
                         default='identity', help='activation function for density')

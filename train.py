@@ -323,7 +323,8 @@ def train(args):
 
 
 
-        if trainVel or training_stage == 4:
+        # if trainVel or training_stage == 4:
+        if ((trainVel or training_stage == 4) and args.use_two_level_density ) or (not args.use_two_level_density and trainVel):
             if trainVel_using_rendering_samples:
 
     

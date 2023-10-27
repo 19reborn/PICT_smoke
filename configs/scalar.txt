@@ -1,4 +1,4 @@
-expname = scalar/1025_v16_no_activation
+expname = scalar/1026_v2_less_omega
 basedir = ./log
 
 ### data info
@@ -19,8 +19,8 @@ use_viewdirs = False
 # lagrangian_density_activation = relu
 # density_activation = leakyrelu
 # lagrangian_density_activation = leakyrelu
-position_map_first_omega = 30
-density_map_first_omega = 30
+position_map_first_omega = 5
+density_map_first_omega = 10
 
 ### train params - sampling
 N_samples = 64
@@ -58,7 +58,7 @@ i_img = 1000
 i_video = 50000
 
 
-stage1_finish_recon = 5000
+stage1_finish_recon = 10000
 uniform_sample_step = 2000000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
@@ -67,7 +67,6 @@ stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 stage4_train_vel_interval = 10
 
-# nseW = 0.1
 max_mapping_frame_range = 3
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1025_v16_no_activation/015000.tar

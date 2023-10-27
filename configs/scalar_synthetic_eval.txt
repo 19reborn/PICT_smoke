@@ -1,4 +1,4 @@
-expname = scalarSyn/1026_v4_much_larger_vel_reg
+expname = scalarSyn/1025_v2_single_density
 basedir = ./log
 
 ### data info
@@ -54,7 +54,7 @@ i_img = 1000
 i_video = 50000
 
 
-stage1_finish_recon = 2000
+stage1_finish_recon = 5000
 uniform_sample_step = 2000000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
