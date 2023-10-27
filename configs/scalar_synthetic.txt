@@ -1,4 +1,4 @@
-expname = scalarSyn/1026_v4_much_larger_vel_reg
+expname = scalarSyn/1027_v23
 basedir = ./log
 
 ### data info
@@ -16,6 +16,7 @@ use_viewdirs = False
 # density_activation = exp
 # lagrangian_density_activation = exp
 position_map_first_omega = 30
+# lagrangian_feature_dim = 32
 density_map_first_omega = 30
 
 ### train params - sampling
@@ -55,7 +56,7 @@ i_video = 50000
 
 
 stage1_finish_recon = 2000
-uniform_sample_step = 2000000
+uniform_sample_step = 5000000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
 
@@ -64,6 +65,7 @@ stage3_finish_init_feature = 0
 stage4_train_vel_interval = 5
 
 max_mapping_frame_range = 3
+# nseW = 0.01
 
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalarSyn/1025_v1_from_start/010000.tar

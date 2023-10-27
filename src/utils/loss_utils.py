@@ -21,6 +21,9 @@ def mean_squared_error(pred, exact):
 def cos_loss(x1,x2):
     return F.cosine_similarity(x1,x2).mean()
 
+def L1_loss(x1,x2):
+    return F.l1_loss(x1,x2)
+
 def smooth_l1_loss(x1,x2):
     return F.smooth_l1_loss(x1,x2)
 
@@ -386,6 +389,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
             _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
             _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
             _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
+            _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
             
 
             split_nse = PDE_stage3(
@@ -414,6 +418,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
 
 
         _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
+        _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
         jac = vel_middle_output['jacobian']
         _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
         _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
@@ -427,12 +432,20 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         
         # density transport, feature continuity, velocitt divergence, scale regularzation, Dd_Dt, Du_Dt
         # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
-        split_nse_wei = [1.0, 1.0, 1e-3, 1000000, 1e-3] 
+        # split_nse_wei = [1.0, 1.0, 1e-3, 1000000, 1e-3] 
+        # split_nse_wei = [1.0, 1.0, 0.1, 100000, 0.1] 
+        # split_nse_wei = [1.0, 1.0, 1e-3, 100.0, 1e-3] 
+        # split_nse_wei = [10.0, 0.1, 1e-3, 1.0, 1e-3] 
             
+        # split_nse_wei = [1.0, 1.0, 1e-3, 1000000, 1e-3] 
+        split_nse_wei = [1.0, 1.0, 1e-3, 1000, 1e-3] 
 
             
 
-    nse_errors = [mean_squared_error(x,0.0) for x in split_nse]
+    # nse_errors = [smooth_l1_loss(x, torch.zeros_like(x)) for x in split_nse]
+    # nse_errors = [L1_loss(x, torch.zeros_like(x)) for x in split_nse]
+    # nse_errors = [mean_squared_error(x,0.0) for x in split_nse]
+    nse_errors = split_nse
 
 
     nseloss_fine = 0.0
@@ -573,22 +586,29 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
 
     transport = d_t + (u*d_x + v*d_y + w*d_z) # transport constrain
     
-    eqs += [transport]
+    # eqs += [transport]
+    eqs += [mean_squared_error(transport,0.0)]
     
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
-    eqs += [feature]
+    # eqs += [feature]
+    eqs += [mean_squared_error(feature,0.0)]
 
-    eqs += [ U_x[:,0] + U_y[:,1] + U_z[:,2] ] # velocity divergence constrain
+    # eqs += [ U_x[:,0] + U_y[:,1] + U_z[:,2] ] # velocity divergence constrain
+    eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
     
 
-    if True: # scale regularization
-        eqs += [ (u*u + v*v + w*w)* 1e-1]
+    # if True: # scale regularization
+    #     eqs += [ (u*u + v*v + w*w)* 1e-1]
+    # scale regulization
+    # eqs += [U]
+    # eqs += [L1_loss(U,torch.zeros_like(U))]
+    # eqs += [smooth_l1_loss(U,torch.zeros_like(U))]
+    # eqs += [mean_squared_error((u*u + v*v + w*w)* 1e-1, 0.0)]
+    eqs += [mean_squared_error(U, 0.0)]
 
-    
-    
-    eqs += [Du_Dt]
-    
+    # eqs += [Du_Dt]
+    eqs += [mean_squared_error(Du_Dt,0.0)]
     
     return eqs
 
