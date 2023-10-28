@@ -313,7 +313,9 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
 
     if args.use_two_level_density:
         _den_siren, _d_x, _d_y, _d_z, _d_t = den_model_siren.density_with_jacobian(training_samples.clone().detach().requires_grad_(True) )
-        _den_lagrangian, features = den_model_lagrangian(training_samples)
+        # _den_lagrangian, features = den_model_lagrangian(training_samples)
+        _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
+        _d_x_lagrangian, _d_y_lagrangian, _d_z_lagrangian, _d_t_lagrangian = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
     else:
         _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
         _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
@@ -324,14 +326,14 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
     vel_loss = 0.0
 
     if args.use_two_level_density:
-        if training_stage == 4 and not trainVel:
-        # supervise lagrangian density using siren density
-            density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
+        # if training_stage == 4 and not trainVel:
+        # # supervise lagrangian density using siren density
+        #     density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
             
-            vel_loss_dict['density_reference_loss'] = density_reference_loss
-            vel_loss += density_reference_loss
+        #     vel_loss_dict['density_reference_loss'] = density_reference_loss
+        #     vel_loss += density_reference_loss
             
-            return vel_loss, vel_loss_dict
+        #     return vel_loss, vel_loss_dict
             
         if training_stage == 2:
             # warm up the feature using density
@@ -350,11 +352,11 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
             split_nse_wei = [0.1, 0.1, 0.1, 1e-3] 
             
             
-            density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
+            # density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
                     
-            vel_loss_dict['density_reference_loss'] = density_reference_loss
+            # vel_loss_dict['density_reference_loss'] = density_reference_loss
 
-            vel_loss += density_reference_loss
+            # vel_loss += density_reference_loss
 
         elif training_stage == 3:
             
@@ -377,11 +379,11 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
             # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
             split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
             
-            density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
+            # density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
                     
-            vel_loss_dict['density_reference_loss'] = density_reference_loss 
+            # vel_loss_dict['density_reference_loss'] = density_reference_loss 
             
-            vel_loss += density_reference_loss 
+            # vel_loss += density_reference_loss 
 
         
         elif training_stage == 4:
@@ -394,24 +396,31 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
             _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
             
 
-            split_nse = PDE_stage3(
+            # split_nse = PDE_stage3(
+            #     _f_t, _f_x, _f_y, _f_z,
+            #     _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+            #     _vel, _u_x, _u_y, _u_z, 
+            #     Du_Dt)
+            split_nse = PDE_stage4(
                 _f_t, _f_x, _f_y, _f_z,
                 _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
                 _vel, _u_x, _u_y, _u_z, 
                 Du_Dt)
             
             # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
             # split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
-            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
+            split_nse_wei = [1.0, 0.1, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
+            # split_nse_wei = [1.0, 1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
             # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
             # split_nse_wei = [1.0, 1e-2, 1e-3, 1e-3, 1e-3] 
             # spl0it_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
             
-            density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
+            # density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
                     
-            vel_loss_dict['density_reference_loss'] = density_reference_loss 
+            # vel_loss_dict['density_reference_loss'] = density_reference_loss 
 
-            vel_loss += density_reference_loss 
+            # vel_loss += density_reference_loss 
 
         else:
             AssertionError("training stage should be set to 1,2,3,4")
@@ -574,14 +583,16 @@ def PDE_stage2(d_t, d_x, d_y, d_z, U, Du_Dt):
 
     transport = d_t + (u*d_x + v*d_y + w*d_z) # transport constrain
     
-    eqs += [transport]
+    # eqs += [transport]
+    eqs += [mean_squared_error(transport,0.0)]
 
-    if True: # scale regularization
-        eqs += [ (u*u + v*v + w*w)* 1e-1]
+    # if True: # scale regularization
+        # eqs += [ (u*u + v*v + w*w)* 1e-1]
+    eqs += [mean_squared_error(U, 0.0)]
 
     
-    eqs += [Du_Dt]
-    
+    # eqs += [Du_Dt]
+    eqs += [mean_squared_error(Du_Dt,0.0)]
         
     
     return eqs
@@ -626,29 +637,36 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
 
 
 def PDE_stage4(f_t, f_x, f_y, f_z,
-    d_t, d_x, d_y, d_z, U, U_x, U_y, U_z, Du_Dt):
+    d_t, d_x, d_y, d_z, 
+    d_t_l, d_x_l, d_y_l, d_z_l, 
+    U, U_x, U_y, U_z, Du_Dt, density_mask = None):
     eqs = []
     u,v,w = U.split(1, dim=-1) # (N,1)
 
+    transport_lagran = d_t_l + (u*d_x_l + v*d_y_l + w*d_z_l) # transport constrain
     transport = d_t + (u*d_x + v*d_y + w*d_z) # transport constrain
     
-    eqs += [transport]
+    # eqs += [transport]
+    eqs += [mean_squared_error(transport_lagran,0.0)]
+    eqs += [mean_squared_error(transport,0.0)]
     
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
-    eqs += [feature]
+    # eqs += [feature]
+    eqs += [mean_squared_error(feature,0.0)]
 
-    eqs += [ U_x[:,0] + U_y[:,1] + U_z[:,2] ] # velocity divergence constrain
+    # eqs += [ U_x[:,0] + U_y[:,1] + U_z[:,2] ] # velocity divergence constrain
+    eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
     
 
-    if True: # scale regularization
-        eqs += [ (u*u + v*v + w*w)* 1e-1]
+    if density_mask is not None:
+        density_mask = (density_mask < 1e-1).float()
+        eqs += [mean_squared_error(U * density_mask, 0.0) + mean_squared_error(U * (1.0 - density_mask), 0.0) * 0.1]
+    else:
+        eqs += [mean_squared_error(U, 0.0)]
 
-    
-    eqs += [Dd_Dt]
-
-    eqs += [Du_Dt]
-    
+    # eqs += [Du_Dt]
+    eqs += [mean_squared_error(Du_Dt,0.0)]
     
     return eqs
 

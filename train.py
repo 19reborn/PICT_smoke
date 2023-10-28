@@ -322,9 +322,22 @@ def train(args):
             loss += rendering_loss
 
 
+        # supervise the lagrangian density
+        if args.use_two_level_density and global_step >= 2000:
+            # pass
+            smoke_samples_xyz = extras['samples_xyz_dynamic']
+            samples_xyzt = torch.cat([smoke_samples_xyz, time_locate * torch.ones_like(smoke_samples_xyz[..., :1])], dim=-1) # [N, 4]
+            training_samples = samples_xyzt.reshape(-1,4).detach()
 
+            _den_lagrangian = model.dynamic_model_lagrangian.density(training_samples)
+            _den_siren = model.dynamic_model_siren.density(training_samples)
+
+            loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
+
+
+        if trainVel:
         # if trainVel or training_stage == 4:
-        if ((trainVel or training_stage == 4) and args.use_two_level_density ) or (not args.use_two_level_density and trainVel):
+        # if ((trainVel or training_stage == 4) and args.use_two_level_density ) or (not args.use_two_level_density and trainVel):
             if trainVel_using_rendering_samples:
 
     
@@ -363,8 +376,10 @@ def train(args):
         optimizer.step()
     
 
-
-        ###   update learning rate   ###
+        # if global_step <= 500:
+            # new_lrate = 1e-2
+        # else:
+            ###   update learning rate   ###
         decay_rate = 0.1
         decay_steps = args.lrate_decay * 1000
         new_lrate = args.lrate * (decay_rate ** (global_step / decay_steps))

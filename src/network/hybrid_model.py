@@ -148,9 +148,10 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
 
         if training_stage == 1:
             if self.args.use_two_level_density:
+                pass
                 # fix dynamic lagrangian grad   
-                for name, p in self.dynamic_model_lagrangian.named_parameters():
-                    p.requires_grad = False
+                # for name, p in self.dynamic_model_lagrangian.named_parameters():
+                    # p.requires_grad = False
 
         elif training_stage == 2:
             
