@@ -1,4 +1,4 @@
-expname = scalarSyn/1027_v23
+expname = scalarSyn/1028_v1_larger_divergence
 basedir = ./log
 
 ### data info
@@ -68,5 +68,6 @@ max_mapping_frame_range = 3
 # nseW = 0.01
 
 
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v23/080000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalarSyn/1025_v1_from_start/010000.tar
 

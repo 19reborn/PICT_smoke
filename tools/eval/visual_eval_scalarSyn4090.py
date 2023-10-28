@@ -16,9 +16,12 @@ from _helpers import FFmpegTool
 
 ref_path = "/home/yiming/Documents/workspace/Project_PINF/eval_scalarSyn/gt/"
 glo_path = None
-pinf_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v23/volumeout_050001/'
+# pinf_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v23/volumeout_050001/'
+# pinf_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v2_mask_velocity_loss/volumeout_450001'
+pinf_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v3_larger_vel_regu/volumeout_045001/'
 # out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/scalarSyn/v2_120kiters/'
-out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/scalarSyn/v1_1027/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/scalarSyn/v2_1028_masked_vel_reg/'
+out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/scalarSyn/v3_1028_larger_reg_vel_scale_1/'
 hull_path = ref_path + "hull/hull.npz"
 
 os.makedirs(out_path, exist_ok = True)

@@ -7,6 +7,8 @@ import torch.nn.functional as F
 def fade_in_weight(step, start, duration):
     return min(max((float(step) - start)/(duration+1e-6), 0.0), 1.0)
     
+def decay_in_weight(step, start, duration, min_decay = 1e-2):
+    return max(min_decay, (1.0 - min(max((float(step) - start)/(duration+1e-6), 0.0), 1.0)))
 
 # Misc
 img2mse = lambda x, y : torch.mean((x - y) ** 2)
@@ -399,7 +401,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
                 Du_Dt)
             
             # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
-            split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
+            # split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
+            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
             # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
             # split_nse_wei = [1.0, 1e-2, 1e-3, 1e-3, 1e-3] 
             # spl0it_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
@@ -429,6 +432,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
             _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
             _vel, _u_x, _u_y, _u_z, 
             Du_Dt)
+            # Du_Dt, density_mask=_den_lagrangian)
         
         # density transport, feature continuity, velocitt divergence, scale regularzation, Dd_Dt, Du_Dt
         # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
@@ -438,7 +442,10 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         # split_nse_wei = [10.0, 0.1, 1e-3, 1.0, 1e-3] 
             
         # split_nse_wei = [1.0, 1.0, 1e-3, 1000000, 1e-3] 
-        split_nse_wei = [1.0, 1.0, 1e-3, 1000, 1e-3] 
+        # vel_regulization_weight = 1000 * decay_in_weight(global_step, args.stage1_finish_recon + 3000, 2000, min_decay = 1e-3)
+        # split_nse_wei = [1.0, 1.0, 1e-3, vel_regulization_weight, 1e-3]
+        # split_nse_wei = [1.0, 1.0, 1e-3, 1000, 1e-3] 
+        split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
 
             
 
@@ -580,7 +587,7 @@ def PDE_stage2(d_t, d_x, d_y, d_z, U, Du_Dt):
     return eqs
 
 def PDE_stage3(f_t, f_x, f_y, f_z,
-    d_t, d_x, d_y, d_z, U, U_x, U_y, U_z, Du_Dt):
+    d_t, d_x, d_y, d_z, U, U_x, U_y, U_z, Du_Dt, density_mask = None):
     eqs = []
     u,v,w = U.split(1, dim=-1) # (N,1)
 
@@ -605,7 +612,12 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
     # eqs += [L1_loss(U,torch.zeros_like(U))]
     # eqs += [smooth_l1_loss(U,torch.zeros_like(U))]
     # eqs += [mean_squared_error((u*u + v*v + w*w)* 1e-1, 0.0)]
-    eqs += [mean_squared_error(U, 0.0)]
+    # eqs += [mean_squared_error(U, 0.0)]
+    if density_mask is not None:
+        density_mask = (density_mask < 1e-1).float()
+        eqs += [mean_squared_error(U * density_mask, 0.0) + mean_squared_error(U * (1.0 - density_mask), 0.0) * 0.1]
+    else:
+        eqs += [mean_squared_error(U, 0.0)]
 
     # eqs += [Du_Dt]
     eqs += [mean_squared_error(Du_Dt,0.0)]
