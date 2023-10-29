@@ -1,4 +1,4 @@
-expname = scalar/1028_v11_lagrangian_transport
+expname = scalar/1029_v3_much_larger_vel_regu
 basedir = ./log
 
 ### data info
@@ -69,7 +69,7 @@ stage4_train_vel_interval = 10
 
 max_mapping_frame_range = 3
 use_two_level_density = True
-vel_regulization_weight = 1
+vel_regulization_weight = 100
 
 model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1028_v11_lagrangian_transport/010000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1028_v2_two_level_density/010000.tar

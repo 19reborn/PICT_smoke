@@ -312,15 +312,20 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         _sdf, _normal = model.static_model.sdf_with_gradient(training_samples[..., :3].clone().detach().requires_grad_(True))
 
     if args.use_two_level_density:
-        _den_siren, _d_x, _d_y, _d_z, _d_t = den_model_siren.density_with_jacobian(training_samples.clone().detach().requires_grad_(True) )
+        _den_siren, _d_x_siren, _d_y_siren, _d_z_siren, _d_t_siren = den_model_siren.density_with_jacobian(training_samples.clone().detach().requires_grad_(True) )
         # _den_lagrangian, features = den_model_lagrangian(training_samples)
         _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
         _d_x_lagrangian, _d_y_lagrangian, _d_z_lagrangian, _d_t_lagrangian = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
+    
+        _d_x = _d_x_lagrangian.detach() + 0.01 * _d_x_siren.detach()
+        _d_y = _d_y_lagrangian.detach() + 0.01 * _d_y_siren.detach()
+        _d_z = _d_z_lagrangian.detach() + 0.01 * _d_z_siren.detach()
+        _d_t = _d_t_lagrangian.detach() + 0.01 * _d_t_siren.detach()
     else:
         _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
         _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
 
-
+    
          
     vel_loss_dict = {}
     vel_loss = 0.0
@@ -347,16 +352,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
                 _vel, 
                 Du_Dt)
             
-            # density transport,  velocity divergence, scale regularzation, Du_Dt,
-            # split_nse_wei = [0.1, z1e-3, 5e-2, 1e-3] 
-            split_nse_wei = [0.1, 0.1, 0.1, 1e-3] 
-            
-            
-            # density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
-                    
-            # vel_loss_dict['density_reference_loss'] = density_reference_loss
+            split_nse_wei = [1.0, 0.1, 0.1, 1e-2] 
 
-            # vel_loss += density_reference_loss
 
         elif training_stage == 3:
             
@@ -396,21 +393,22 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
             _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
             
 
-            # split_nse = PDE_stage3(
-            #     _f_t, _f_x, _f_y, _f_z,
-            #     _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-            #     _vel, _u_x, _u_y, _u_z, 
-            #     Du_Dt)
-            split_nse = PDE_stage4(
+            split_nse = PDE_stage3(
                 _f_t, _f_x, _f_y, _f_z,
                 _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
                 _vel, _u_x, _u_y, _u_z, 
                 Du_Dt)
+            # split_nse = PDE_stage4(
+                # _f_t, _f_x, _f_y, _f_z,
+                # _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                # _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
+                # _vel, _u_x, _u_y, _u_z, 
+                # Du_Dt)
             
+            split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
+            # split_nse_wei = [1.0, 0.1, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
             # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
             # split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
-            split_nse_wei = [1.0, 0.1, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
             # split_nse_wei = [1.0, 1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
             # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
             # split_nse_wei = [1.0, 1e-2, 1e-3, 1e-3, 1e-3] 
