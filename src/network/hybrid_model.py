@@ -193,7 +193,10 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         elif training_stage == 4:
             if not self.single_scene:
                 for name, p in self.static_model.named_parameters():
-                    p.requires_grad = False
+                    if self.args.neus_early_terminated:
+                        p.requires_grad = False
+                    else:
+                        p.requires_grad = True
             if self.args.use_two_level_density:
                 for name, p in self.dynamic_model_siren.named_parameters():
                     p.requires_grad = True

@@ -40,6 +40,7 @@ def config_parser():
     ## Stage 3
     parser.add_argument("--stage3_finish_init_feature", type=int, default=20000, help="stage 2 total training steps" )
     parser.add_argument("--stage4_train_vel_interval", type=int, default=10, help="stage 2 total training steps" )
+    parser.add_argument('--neus_early_terminated', action = 'store_true')
 
 
     # network model
