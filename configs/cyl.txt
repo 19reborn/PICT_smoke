@@ -1,4 +1,4 @@
-expname = cyl/1029_v1
+expname = cyl/1029_v2_from_start
 basedir = ./log
 
 ### data info
@@ -72,16 +72,16 @@ inside_sdf = 0.02
 
 # boundary_delay = 10000
 
-stage1_finish_recon = 60000
-uniform_sample_step = 30000
+stage1_finish_recon = 10000
+uniform_sample_step = 3000000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 10000
 sdf_loss_delay = 2000
 
-stage2_finish_init_lagrangian = 0
+stage2_finish_init_lagrangian = 1000
 stage3_finish_init_feature = 0
 
 use_two_level_density = True
 # nseW = 1e-4
 
-model_path = /root/data/wym/workspace/pinf_clean/log/cyl/1028_v1_two_level_density/050000.tar
+# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/1028_v1_two_level_density/050000.tar

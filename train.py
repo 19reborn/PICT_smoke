@@ -322,17 +322,26 @@ def train(args):
             loss += rendering_loss
 
 
-        # supervise the lagrangian density
-        if args.use_two_level_density and global_step >= 2000:
-            # pass
-            smoke_samples_xyz = extras['samples_xyz_dynamic']
-            samples_xyzt = torch.cat([smoke_samples_xyz, time_locate * torch.ones_like(smoke_samples_xyz[..., :1])], dim=-1) # [N, 4]
-            training_samples = samples_xyzt.reshape(-1,4).detach()
+            # supervise the lagrangian density
+            if args.use_two_level_density and global_step >= 2000:
+                # pass
+                if global_step % 2 == 0:
 
-            _den_lagrangian = model.dynamic_model_lagrangian.density(training_samples)
-            _den_siren = model.dynamic_model_siren.density(training_samples)
+                    smoke_samples_xyz = extras['samples_xyz_dynamic']
+                    samples_xyzt = torch.cat([smoke_samples_xyz, time_locate * torch.ones_like(smoke_samples_xyz[..., :1])], dim=-1) # [N, 4]
+                    training_samples = samples_xyzt.reshape(-1,4).detach()
+                else:
+                    train_random = np.random.choice(trainZ*trainY*trainX, 32*32*32)
+                    training_samples = training_pts[train_random]
 
-            loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
+                    training_samples = training_samples.view(-1,3)
+                    training_t = torch.ones([training_samples.shape[0], 1])*time_locate
+                    training_samples = torch.cat([training_samples,training_t], dim=-1).detach()
+
+                _den_lagrangian = model.dynamic_model_lagrangian.density(training_samples)
+                _den_siren = model.dynamic_model_siren.density(training_samples)
+
+                loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
 
 
         if trainVel:

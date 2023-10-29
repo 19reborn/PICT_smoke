@@ -216,7 +216,11 @@ class Voxel_Tool(object):
         for i in range(0, pts_N, chunk):
             pts_i = pts_flat[i:i+chunk]
             
-            raw_i = model.forward_geometry(pts_i) 
+            # raw_i = model.forward_geometry(pts_i) 
+            if model.use_two_level_density:
+                raw_i = model.forward_geometry_all(pts_i) 
+            else:
+                raw_i = model.forward_geometry(pts_i) 
             if model.training:
                 all_raw.append(raw_i)
             else:
@@ -227,10 +231,11 @@ class Voxel_Tool(object):
 
     def get_density_flat(self, model, cur_pts, chunk=1024*32, getSDF = False):
         flat_raw = self.get_raw_geometry_at_pts(model, cur_pts, chunk)
-        den_raw = F.relu(flat_raw[...,-1:])
+
+        den_raw = [F.relu(flat_raw[...,-1:]).reshape(-1,1)] if not model.use_two_level_density else [F.relu(flat_raw[...,-2:-1].reshape(-1,1)), F.relu(flat_raw[...,-1:].reshape(-1,1))]
         
         if model.single_scene:
-            return [den_raw.reshape(-1,1)]
+            return den_raw
         
         else:
             static_sdf = flat_raw[...,0:1]
@@ -239,7 +244,7 @@ class Voxel_Tool(object):
                 static_sdf = torch.sigmoid(static_sdf * inv_s).squeeze(-1)
                 static_sdf = inv_s * static_sdf * (1. - static_sdf)
 
-            return [den_raw.reshape(-1,1), static_sdf.reshape(-1,1)]
+            return [*den_raw, static_sdf.reshape(-1,1)]
             # static_normal = flat_raw[...,1:3]
             # return [den_raw, static_sdf, static_normal]
    

@@ -103,6 +103,15 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         
         sdf, gradient = self.static_model.sdf_with_gradient(x[..., :3])
         return torch.cat([sdf, gradient, density], dim=-1)  
+    
+    def forward_geometry_all(self, x):
+        density_siren = self.dynamic_model_siren.density(x)
+        density_lagrangian = self.dynamic_model_lagrangian.density(x)
+        if self.single_scene:
+            return density_lagrangian, density_siren
+        
+        sdf, gradient = self.static_model.sdf_with_gradient(x[..., :3])
+        return torch.cat([sdf, gradient, density_lagrangian, density_siren], dim=-1)  
 
     def get_deviation(self):
         return self.static_model.deviation_network(torch.zeros([1, 3]))[:, :1].clamp(1e-6, 1e6)

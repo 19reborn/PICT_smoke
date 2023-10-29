@@ -390,7 +390,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
             _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
             _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
             _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
-            _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
+            # _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
             
 
             split_nse = PDE_stage3(
