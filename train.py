@@ -331,7 +331,7 @@ def train(args):
                     samples_xyzt = torch.cat([smoke_samples_xyz, time_locate * torch.ones_like(smoke_samples_xyz[..., :1])], dim=-1) # [N, 4]
                     training_samples = samples_xyzt.reshape(-1,4).detach()
                 else:
-                    train_random = np.random.choice(trainZ*trainY*trainX, 32*32*32)
+                    train_random = np.random.choice(trainZ*trainY*trainX, args.train_vel_grid_size**3)
                     training_samples = training_pts[train_random]
 
                     training_samples = training_samples.view(-1,3)
@@ -358,7 +358,7 @@ def train(args):
                     static_samples_xyz = extras['samples_xyz_static']
                     samples_xyz = torch.cat([static_samples_xyz,smoke_samples_xyz], dim = 0)
 
-                max_samples = 32**3
+                max_samples = args.train_vel_grid_size**3
                 if samples_xyz.shape[0] > max_samples:
                     print("[DEBUG]: train vel samples_xyz.shape[0] > max_samples", samples_xyz.shape[0], max_samples)
                 samples_xyz = samples_xyz[:max_samples] ## todo:: random choose
@@ -366,7 +366,7 @@ def train(args):
                 training_samples = samples_xyzt
                 
             else:
-                train_random = np.random.choice(trainZ*trainY*trainX, 32*32*32)
+                train_random = np.random.choice(trainZ*trainY*trainX, args.train_vel_grid_size**3)
                 training_samples = training_pts[train_random]
 
                 training_samples = training_samples.view(-1,3)

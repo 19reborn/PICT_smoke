@@ -223,8 +223,8 @@ class VelocityNetwork(nn.Module):
     def forward_with_middle_output(self, xyzt, need_vorticity = False):
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
-        xyz.requires_grad_(True) ## allow for futhre order derivative
-        t.requires_grad_(True) ## todo:: check whether put it after feature_map
+        # xyz.requires_grad_(True) ## allow for futhre order derivative
+        # t.requires_grad_(True) ## todo:: check whether put it after feature_map
         t1 = t.clone().detach()
         t1.requires_grad_(True)
 
@@ -401,8 +401,8 @@ class DensityNetwork(nn.Module):
     def density_with_jacobian(self, xyzt):
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
-        xyz.requires_grad_(True) ## allow for futhre order derivative
-        t.requires_grad_(True) ## todo:: check whether put it after feature_map
+        # xyz.requires_grad_(True) ## allow for futhre order derivative
+        # t.requires_grad_(True) ## todo:: check whether put it after feature_map
 
         features = self.feature_map(xyz, t)
         density = self.density_map(features)

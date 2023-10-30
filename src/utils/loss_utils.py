@@ -307,12 +307,14 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
     if args.use_two_level_density:
         den_model_siren = model.dynamic_model_siren
     
-    
+    training_samples = training_samples.requires_grad_(True)
     if not model.single_scene:
-        _sdf, _normal = model.static_model.sdf_with_gradient(training_samples[..., :3].clone().detach().requires_grad_(True))
+        _sdf, _normal = model.static_model.sdf_with_gradient(training_samples[..., :3])
+        # _sdf, _normal = model.static_model.sdf_with_gradient(training_samples[..., :3].clone().detach().requires_grad_(True))
 
     if args.use_two_level_density:
-        _den_siren, _d_x_siren, _d_y_siren, _d_z_siren, _d_t_siren = den_model_siren.density_with_jacobian(training_samples.clone().detach().requires_grad_(True) )
+        _den_siren, _d_x_siren, _d_y_siren, _d_z_siren, _d_t_siren = den_model_siren.density_with_jacobian(training_samples)
+        # _den_siren, _d_x_siren, _d_y_siren, _d_z_siren, _d_t_siren = den_model_siren.density_with_jacobian(training_samples.clone().detach().requires_grad_(True) )
         # _den_lagrangian, features = den_model_lagrangian(training_samples)
         _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
         _d_x_lagrangian, _d_y_lagrangian, _d_z_lagrangian, _d_t_lagrangian = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
