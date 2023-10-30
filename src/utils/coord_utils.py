@@ -233,6 +233,7 @@ class Voxel_Tool(object):
         flat_raw = self.get_raw_geometry_at_pts(model, cur_pts, chunk)
 
         den_raw = [F.relu(flat_raw[...,-1:]).reshape(-1,1)] if not model.use_two_level_density else [F.relu(flat_raw[...,-2:-1].reshape(-1,1)), F.relu(flat_raw[...,-1:].reshape(-1,1))]
+        # lagrangian_density, siren_density
         
         if model.single_scene:
             return den_raw
@@ -319,7 +320,10 @@ class Voxel_Tool(object):
         voxel_den_list = self.get_voxel_density_list(model, t, chunk, middle_slice=not (jpg_mix or save_npz) )
         
         head_tail = os.path.split(den_path)
-        namepre = ["","static_"]
+        if model.use_two_level_density:
+            namepre = ["lagrangian_","","static_"]
+        else:
+            namepre = ["","static_"]
         for voxel_den, npre in zip(voxel_den_list, namepre):
             voxel_den = voxel_den.detach().cpu().numpy()
             if save_jpg:

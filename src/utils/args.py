@@ -18,6 +18,8 @@ def config_parser():
                         help='the random seed.')
     parser.add_argument("--model_path", type=str, default=None, 
                         help='specific weights npy file to reload for coarse network')
+    parser.add_argument("--train_vel_grid_size", type=int, default=32,
+                        help='the random seed.')
 
     ## Stage 1
     parser.add_argument("--stage1_finish_recon", type=int, default=50000, help="stage 1 total training steps" )
