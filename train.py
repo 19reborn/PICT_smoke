@@ -227,13 +227,14 @@ def train(args):
             # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
 
         model.iter_step = global_step
-        model.update_model_type(training_stage)
+        model.update_model(training_stage, global_step) # progressive training for siren smoke
+        # model.update_model_type(training_stage)
+        # model.update_fading_step(min(args.fading_layers, global_step)) # progressive training for siren smoke
     
 
 
         # if training_stage == 1:
         # model.update_fading_step(min(args.stage1_finish_recon, global_step)) # progressive training for siren smoke
-        model.update_fading_step(min(args.fading_layers, global_step)) # progressive training for siren smoke
         
         if trainImg and global_step >= args.uniform_sample_step:
             update_occ_grid(args, model, global_step, update_interval = 1000, neus_early_terminated = training_stage is not 1 and args.neus_early_terminated)

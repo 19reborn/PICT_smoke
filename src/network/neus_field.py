@@ -72,8 +72,10 @@ class SDFNetwork(nn.Module):
                 inside_outside=False):
         super(SDFNetwork, self).__init__()
 
+        self.args = args
         self.encoding_type = encoding_type
         self.geometric_init = geometric_init
+
 
         dims = [3] + [d_hidden for _ in range(n_layers)] + [d_out]
         if self.encoding_type == "HashGrid":
@@ -112,12 +114,14 @@ class SDFNetwork(nn.Module):
                 AssertionError("i_embed_neus should be 0 or -1")
             if multires > 0:
                 embed_fn, input_ch = get_embedder(multires, i_embed_neus, 3)
-                self.encoder= embed_fn
+                self.encoder = embed_fn
                 dims[0] = input_ch
         else:
             raise Exception(f"SDFNetwork not support encoding {self.encoding_type}")
 
 
+        self.pe_dim = dims[0]
+        self.pe_mask = torch.ones(self.pe_dim)
 
         # suppose encoding is finished before passing to SDFNetwork
         # if multires > 0:
@@ -164,6 +168,15 @@ class SDFNetwork(nn.Module):
 
         self.activation = nn.Softplus(beta=100)
 
+    def update_progressive_pe(self, global_step):
+        start_step = self.args.neus_progressive_pe_start
+        end_step = self.args.neus_progressive_pe_duration + start_step
+        pe_dim = self.pe_dim
+        unmasked_ratio =  (global_step - start_step) / (end_step - start_step)
+        unmasked_ratio = max(min(1.0, unmasked_ratio), 0.0)
+        unmasked_dim = int(pe_dim * (0.5 * unmasked_ratio + 0.5))
+        self.pe_mask = torch.cat([torch.ones(unmasked_dim), torch.zeros(pe_dim - unmasked_dim)])
+
     def forward(self, inputs):
 
         if self.encoding_type == "HashGrid":
@@ -182,6 +195,9 @@ class SDFNetwork(nn.Module):
                 inputs = self.encoder(inputs)
         else:
             raise Exception(f"SDFNetwork not support encoding {self.encoding_type}")
+
+        if self.args.neus_progressive_pe:
+            inputs = inputs * self.pe_mask.unsqueeze(0)
 
         x = inputs
         for l in range(0, self.num_layers - 1):
@@ -321,8 +337,10 @@ class NeuS(nn.Module):
 
         self.args = args
 
-        # self.scene_scale = args.scene_scale
-        self.scene_scale = 1.0
+        if args.use_scene_scale_before_pe:
+            self.scene_scale = args.scene_scale
+        else:
+            self.scene_scale = 1.0
 
         encoding_type = 'HashGrid' if args.use_neus2_network else 'PE'
         if args.use_neus2_network:
@@ -342,6 +360,8 @@ class NeuS(nn.Module):
         self.bbox_model = bbox_model
         self.eval_mode = False
 
+    def update_progressive_pe(self, global_step):
+        self.sdf_network.update_progressive_pe(global_step)
 
     # def forward(self, x):
     def forward(self, pts, views=None, xyz_bound = 1.0):

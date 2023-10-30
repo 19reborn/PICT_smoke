@@ -204,8 +204,10 @@ class SIREN_NeRFt(nn.Module):
 
         self.args = args
 
-        # self.scene_scale = args.scene_scale
-        self.scene_scale = 1.0
+        if args.use_scene_scale_before_pe:
+            self.scene_scale = args.scene_scale
+        else:
+            self.scene_scale = 1.0
 
         self.D = D
         self.W = W

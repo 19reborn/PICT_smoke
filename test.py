@@ -283,9 +283,7 @@ def test(args):
     init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None)
 
     model.iter_step = global_step
-    model.update_model_type(4)
-    # model.update_model_type(3) // visualze lagrangian density
-    model.update_fading_step(min(args.fading_layers, global_step)) # progressive training for siren smoke
+    model.update_model(4, global_step)
     
     if args.mesh_only:
         print('mesh ONLY')

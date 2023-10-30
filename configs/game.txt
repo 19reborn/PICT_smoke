@@ -1,4 +1,4 @@
-expname = game/1026_two_level_density
+expname = game/1029_v1_neus_progressive_pe
 basedir = ./log
 
 ### data info
@@ -47,7 +47,7 @@ bbox_max = 1.2,0.9,1.35
 ekW = 0.1
 i_weights = 5000
 i_embed_neus = 0
-multires_neus = 4
+multires_neus = 6
 anneal_end = 5000
 
 i_img = 1000
@@ -86,6 +86,9 @@ stage2_finish_init_lagrangian = 1000
 stage3_finish_init_feature = 1000
 
 use_two_level_density = True
+
+neus_progressive_pe = True
+use_scene_scale_before_pe = True
 
 # nseW = 1e-4
 

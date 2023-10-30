@@ -45,6 +45,10 @@ class FeatureMapping(nn.Module):
         self.W = W
         self.skips = skips
 
+        if args.use_scene_scale_before_pe:
+            self.scene_scale = args.scene_scale
+        else:
+            self.scene_scale = 1.0
 
         first_omega_0 = args.feature_map_first_omega
         hidden_omega_0 = 1.0
@@ -57,6 +61,8 @@ class FeatureMapping(nn.Module):
         )
 
     def forward(self, xyz, t=None):
+
+        xyz = xyz / self.scene_scale
 
         # xyz = xyz /  0.33
         if xyz.shape[-1] == 3:

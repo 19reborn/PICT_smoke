@@ -65,6 +65,13 @@ def config_parser():
     parser.add_argument("--siren_nerf_first_omega", type=int, default=30, 
                         help='layers in network')
     
+    ## neus
+    parser.add_argument('--use_scene_scale_before_pe', action = 'store_true')
+    parser.add_argument('--neus_progressive_pe', action = 'store_true')
+    parser.add_argument('--neus_progressive_pe_start', type=int, default=20000)
+    parser.add_argument('--neus_progressive_pe_duration', type=int, default=10000)
+
+
     parser.add_argument("--net_model", type=str, default='nerf',
                         help='which model to use, nerf, siren, hybrid..')
     parser.add_argument("--netdepth", type=int, default=8, 

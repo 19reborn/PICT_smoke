@@ -108,7 +108,7 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         density_siren = self.dynamic_model_siren.density(x)
         density_lagrangian = self.dynamic_model_lagrangian.density(x)
         if self.single_scene:
-            return density_lagrangian, density_siren
+            return torch.cat([density_lagrangian, density_siren], dim = -1)
         
         sdf, gradient = self.static_model.sdf_with_gradient(x[..., :3])
         return torch.cat([sdf, gradient, density_lagrangian, density_siren], dim=-1)  
@@ -133,6 +133,12 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
     def update_fading_step(self, global_step):
         if self.args.use_two_level_density:
             self.dynamic_model_siren.fading_step = global_step
+
+    def update_model(self, training_stage, global_step):
+        self.update_model_type(training_stage)
+        self.update_fading_step(min(self.args.fading_layers, global_step))
+        if self.args.neus_progressive_pe and not self.single_scene:
+            self.static_model.update_progressive_pe(global_step)
 
     def update_model_type(self, training_stage):
 
