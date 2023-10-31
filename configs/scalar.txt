@@ -1,4 +1,4 @@
-expname = scalar/1029_v4_smaller_omega
+expname = scalar/1031_v1_match_smaller_omega
 basedir = ./log
 
 ### data info
@@ -20,7 +20,9 @@ use_viewdirs = False
 # density_activation = leakyrelu
 # lagrangian_density_activation = leakyrelu
 # density_map_first_omega = 10
-position_map_first_omega = 10
+# position_map_first_omega = 10
+density_map_first_omega = 1
+position_map_first_omega = 1
 
 ### train params - sampling
 N_samples = 64
@@ -59,7 +61,7 @@ i_video = 50000
 
 
 stage1_finish_recon = 10000
-uniform_sample_step = 2000000
+uniform_sample_step = 5000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
 
@@ -69,9 +71,10 @@ stage4_train_vel_interval = 20
 
 max_mapping_frame_range = 3
 use_two_level_density = True
-vel_regulization_weight = 1
+vel_regulization_weight = 10
+use_scene_scale_before_pe = True
 
-model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1029_v4_smaller_omega/100000.tar
+# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1029_v4_smaller_omega/100000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1028_v11_lagrangian_transport/010000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1028_v2_two_level_density/010000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1025_v14_no_activation/010000.tar
