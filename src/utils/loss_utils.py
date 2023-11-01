@@ -544,32 +544,41 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
 
     if training_stage == 4:
-        pass
-        ## density mapping loss to supervise density
-        # density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 20000, 10000) # 
+        # pass
+        # density mapping loss to supervise density
+        density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 50000, 10000) # 
 
-        # density_mapping_loss = None
-        # if args.use_two_level_density:
-        #     _den = _den_siren
-        #     den_model = den_model_siren
-        # else:
-        #     _den = _den_lagrangian
-        #     den_model = den_model_lagrangian
+        density_mapping_loss = None
+        if args.use_two_level_density:
+            _den = _den_siren
+            den_model = den_model_siren
+        else:
+            _den = _den_lagrangian
+            den_model = den_model_lagrangian
 
-        # density_in_xyz = _den
+        density_in_xyz = _den
 
-        # predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
-        # density_in_mapped_xyz = den_model.density(predict_xyzt_cross.detach()) ## todo:: whether detach this
-        # # density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
-        # # density_in_mapped_xyz = den_model.forward_with_features(cross_features.detach(), cross_training_t) ## todo:: whether detach this
+        predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
+        density_in_mapped_xyz = den_model.density(predict_xyzt_cross.detach()) ## todo:: whether detach this
+        # density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
+        # density_in_mapped_xyz = den_model.forward_with_features(cross_features.detach(), cross_training_t) ## todo:: whether detach this
         
 
-        # density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz)
+        density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) # todo:: detach one 
         
-        # # vel_loss += 0.05 * density_mapping_loss * density_mapping_fading
-
+        vel_loss += 0.001 * density_mapping_loss * density_mapping_fading
+        vel_loss_dict['density_mapping_loss'] = density_mapping_loss
         
-        # vel_loss_dict['density_mapping_loss'] = density_mapping_loss
+        
+        velocity_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 50000, 10000)
+        
+        velcotiy_in_xyz = _vel
+        velocity_in_mapped_xyz = velocity_model.velocity_mapping_loss(x = training_samples[..., :3], t = training_samples[..., 3:4], mapped_t = cross_training_t) 
+        
+        velocity_mapping_loss = smooth_l1_loss(velocity_in_mapped_xyz, velcotiy_in_xyz) ## todo:: detach one 
+        # vel_loss += 0.001 * velocity_mapping_loss * velocity_mapping_fading
+        vel_loss += 0.01 * velocity_mapping_loss * velocity_mapping_fading
+        vel_loss_dict['velocity_mapping_loss'] = velocity_mapping_loss
 
 
 

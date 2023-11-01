@@ -529,6 +529,7 @@ def train(args):
                 cycle_loss = vel_loss_dict['feature_cycle_loss'] if "feature_cycle_loss" in vel_loss_dict else None
                 cross_cycle_loss = vel_loss_dict['feature_cross_cycle_loss'] if "feature_cross_cycle_loss" in vel_loss_dict else None
                 density_mapping_loss = vel_loss_dict['density_mapping_loss'] if "density_mapping_loss" in vel_loss_dict else None
+                velocity_mapping_loss = vel_loss_dict['velocity_mapping_loss'] if "velocity_mapping_loss" in vel_loss_dict else None
 
                 if cycle_loss is not None:
                     print("cycle_loss = ", cycle_loss.item())
@@ -541,6 +542,10 @@ def train(args):
                 if density_mapping_loss is not None:
                     print("density_mapping_loss = ", density_mapping_loss.item())
                     writer.add_scalar('Loss/density_mapping_loss', density_mapping_loss.item(), global_step)
+
+                if velocity_mapping_loss is not None:
+                    print("velocity_mapping_loss = ", velocity_mapping_loss.item())
+                    writer.add_scalar('Loss/velocity_mapping_loss', velocity_mapping_loss.item(), global_step)
 
 
         if (global_step) % args.i_img==0:
