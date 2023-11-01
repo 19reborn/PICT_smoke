@@ -1,4 +1,4 @@
-expname = scalar/1031_v1_match_smaller_omega
+expname = scalar/1031_v5_smaller_reg
 basedir = ./log
 
 ### data info
@@ -71,8 +71,12 @@ stage4_train_vel_interval = 20
 
 max_mapping_frame_range = 3
 use_two_level_density = True
-vel_regulization_weight = 10
+vel_regulization_weight = 1
 use_scene_scale_before_pe = True
+
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v4_from_50k/400000.tar
+model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v1_match_smaller_omega/050000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v1_match_smaller_omega/300000.tar
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1029_v4_smaller_omega/100000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1028_v11_lagrangian_transport/010000.tar

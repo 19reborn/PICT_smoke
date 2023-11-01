@@ -339,6 +339,35 @@ class VelocityNetwork(nn.Module):
 
         return mapped_xyz
 
+    def velocity_mapping_loss(self, x, t, mapped_t):
+ 
+        xyz = x.clone().detach().requires_grad_(True)
+ 
+        features = self.feature_map(xyz, t)
+
+        mapped_xyz = self.position_map(features, mapped_t)
+        
+        jacobian = _get_minibatch_jacobian(mapped_xyz, xyz)
+
+        mapped_features = self.feature_map(mapped_xyz, mapped_t).detach()
+        t1 = mapped_t.clone().detach()
+        t1.requires_grad_(True)
+
+
+        mapped_self_xyz = self.position_map(mapped_features, t1)
+
+        velocity = self.gradients(mapped_self_xyz, t1)
+        
+        mapped_velocity = torch.matmul(jacobian.permute(0,2,1), velocity.unsqueeze(-1)).squeeze(-1)
+        # mapped_velocity = jacobian.T @ velocity
+        
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(x) == 0
+            mapped_velocity[bbox_mask] = 0.0
+            
+        return mapped_velocity
+        
+
     def update_fading_step(self, steps):
         return
 

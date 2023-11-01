@@ -565,12 +565,21 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         # density_in_mapped_xyz = den_model.forward_with_features(cross_features.detach(), cross_training_t) ## todo:: whether detach this
         
 
-        density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz)
+        density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) # todo:: detach one 
         
         vel_loss += 0.001 * density_mapping_loss * density_mapping_fading
-
-        
         vel_loss_dict['density_mapping_loss'] = density_mapping_loss
+        
+        
+        velocity_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 50000, 10000)
+        
+        velcotiy_in_xyz = _vel
+        velocity_in_mapped_xyz = velocity_model.velocity_mapping_loss(x = training_samples[..., :3], t = training_samples[..., 3:4], mapped_t = cross_training_t) 
+        
+        velocity_mapping_loss = smooth_l1_loss(velocity_in_mapped_xyz, velcotiy_in_xyz) ## todo:: detach one 
+        # vel_loss += 0.001 * velocity_mapping_loss * velocity_mapping_fading
+        vel_loss += 0.01 * velocity_mapping_loss * velocity_mapping_fading
+        vel_loss_dict['velocity_mapping_loss'] = velocity_mapping_loss
 
 
 
