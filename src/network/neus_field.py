@@ -259,17 +259,17 @@ class RenderingNetwork(nn.Module):
         self.squeeze_out = squeeze_out
 
         self.embed_fn = None
-        i_embed_neus = args.i_embed_neus
-        if i_embed_neus == 0:
-            multires = args.multires_neus
-        elif i_embed_neus == -1:
-            multires = 0
-        else:
-            AssertionError("i_embed_neus should be 0 or -1")
-        if multires > 0:
-            embed_fn, input_ch = get_embedder(multires, i_embed_neus, 3)
-            self.embed_fn = embed_fn
-            d_in += input_ch - 3
+        # i_embed_neus = args.i_embed_neus
+        # if i_embed_neus == 0:
+        #     multires = args.multires_neus
+        # elif i_embed_neus == -1:
+        #     multires = 0
+        # else:
+        #     AssertionError("i_embed_neus should be 0 or -1")
+        # if multires > 0:
+        #     embed_fn, input_ch = get_embedder(multires, i_embed_neus, 3)
+        #     self.embed_fn = embed_fn
+        #     d_in += input_ch - 3
 
         # embed_fn, input_ch = get_embedder(6, 0, 3)
         # d_in += input_ch - 3

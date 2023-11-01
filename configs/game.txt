@@ -1,4 +1,4 @@
-expname = game/1029_v1_neus_progressive_pe
+expname = game/1101_v1_ray_batch512
 basedir = ./log
 
 ### data info
@@ -16,7 +16,7 @@ use_viewdirs = False
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 1024
+N_rand = 512
 i_embed = -1
 train_warp = True
 vol_output_W = 256
@@ -47,7 +47,7 @@ bbox_max = 1.2,0.9,1.35
 ekW = 0.1
 i_weights = 5000
 i_embed_neus = 0
-multires_neus = 6
+multires_neus = 8
 anneal_end = 5000
 
 i_img = 1000
@@ -83,14 +83,16 @@ smoke_recon_delay_last = 10000
 sdf_loss_delay = 2000
 
 stage2_finish_init_lagrangian = 1000
-stage3_finish_init_feature = 1000
+stage3_finish_init_feature = 0
 
 use_two_level_density = True
 
-neus_progressive_pe = True
 use_scene_scale_before_pe = True
+neus_progressive_pe = True
 
 # nseW = 1e-4
+
+model_path = /root/data/wym/workspace/pinf_clean/log/game/1031_v2_use_progressive_pe/100000.tar
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1015_v2_small_warmup/100000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1011_v4_less_pe/100000.tar
