@@ -433,6 +433,7 @@ def train(args):
                 curvature_loss = rendering_loss_dict['curvature_loss']
                 smoke_inside_sdf_loss = rendering_loss_dict['smoke_inside_sdf_loss']
                 ghost_loss = rendering_loss_dict['ghost_loss']
+                color_divergence_loss = rendering_loss_dict['color_divergence_loss'] if 'color_divergence_loss' in rendering_loss_dict.keys() else None
                 
                 print("img_loss: ", img_loss.item())
                 writer.add_scalar('Loss/img_loss', img_loss.item(), global_step)
@@ -455,6 +456,10 @@ def train(args):
                 if ghost_loss is not None:
                     print("ghost_loss: ", ghost_loss.item())
                     writer.add_scalar('Loss/ghost_loss', ghost_loss.item(), global_step)
+                    
+                if color_divergence_loss is not None:
+                    print("color_divergence_loss: ", color_divergence_loss.item())
+                    writer.add_scalar('Loss/color_divergence_loss', color_divergence_loss.item(), global_step)
 
                 if "num_points" in extras:
                     samples_per_ray = extras["num_points"] / (extras["num_rays"] + 1e-6)
@@ -529,6 +534,7 @@ def train(args):
                 cycle_loss = vel_loss_dict['feature_cycle_loss'] if "feature_cycle_loss" in vel_loss_dict else None
                 cross_cycle_loss = vel_loss_dict['feature_cross_cycle_loss'] if "feature_cross_cycle_loss" in vel_loss_dict else None
                 density_mapping_loss = vel_loss_dict['density_mapping_loss'] if "density_mapping_loss" in vel_loss_dict else None
+                color_mapping_loss = vel_loss_dict['color_mapping_loss'] if "color_mapping_loss" in vel_loss_dict else None
                 velocity_mapping_loss = vel_loss_dict['velocity_mapping_loss'] if "velocity_mapping_loss" in vel_loss_dict else None
 
                 if cycle_loss is not None:
@@ -542,6 +548,10 @@ def train(args):
                 if density_mapping_loss is not None:
                     print("density_mapping_loss = ", density_mapping_loss.item())
                     writer.add_scalar('Loss/density_mapping_loss', density_mapping_loss.item(), global_step)
+           
+                if color_mapping_loss is not None:
+                    print("color_mapping_loss = ", color_mapping_loss.item())
+                    writer.add_scalar('Loss/color_mapping_loss', color_mapping_loss.item(), global_step)
 
                 if velocity_mapping_loss is not None:
                     print("velocity_mapping_loss = ", velocity_mapping_loss.item())

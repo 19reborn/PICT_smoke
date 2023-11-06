@@ -361,7 +361,7 @@ class Voxel_Tool(object):
         feature_t = []
         for i in range(0, pts_N, chunk):
             input_i = pts_flat[i:i+chunk]
-            mapped_xyz = dynamic_model_lagrangian.map_model(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(t)], dim = -1), torch.ones([input_i.shape[0], 1])*float(0)).detach()
+            mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(t)], dim = -1), torch.ones([input_i.shape[0], 1])*float(0)).detach()
             feature = dynamic_model_lagrangian.feature_map(mapped_xyz, torch.ones([mapped_xyz.shape[0], 1])*float(t)).detach()
             feature_t.append(feature)
             
@@ -467,7 +467,7 @@ class Voxel_Tool(object):
         for frame_i in frame_list:
 
             cur_t = t_list[frame_i]
-            mapped_xyz = dynamic_model_lagrangian.map_model.forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
+            mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
             if (frame_i - 1) % change_feature_interval == 0:
                 feature_sampled = dynamic_model_lagrangian.feature_map(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
             all_xyz.append(mapped_xyz.detach().cpu().numpy())

@@ -205,6 +205,11 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
         img_loss += (extras['acch1'] * (target_mask[:,0].float())).mean() * 0.2
         # if provide static scene mask
     
+    # for car, sperate 
+    if args.ColorDivergenceW > 0.0 and not model.single_scene:
+        color_divergence_loss = (0.3 -  (extras['rgbh1'].detach() - extras['rgbh2']).abs()).clamp(0.0, 1.0).mean()
+        rendering_loss_dict['color_divergence_loss'] = color_divergence_loss
+        img_loss += color_divergence_loss* args.ColorDivergenceW
     
     rendering_loss += img_loss
     rendering_loss_dict['img_loss'] = img_loss
@@ -569,7 +574,16 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         vel_loss += 0.001 * density_mapping_loss * density_mapping_fading
         vel_loss_dict['density_mapping_loss'] = density_mapping_loss
         
-        
+
+        color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 10000, 10000) # 
+
+        color_in_xyz = den_model.color(training_samples.detach())
+        color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
+        color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
+        vel_loss += 0.1 * color_mapping_loss * color_mapping_fading
+        vel_loss_dict['color_mapping_loss'] = color_mapping_loss
+
+
         velocity_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 50000, 10000)
         
         velcotiy_in_xyz = _vel

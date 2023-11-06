@@ -73,6 +73,44 @@ def config_parser():
     parser.add_argument('--neus_progressive_pe_start', type=int, default=20000)
     parser.add_argument('--neus_progressive_pe_duration', type=int, default=10000)
 
+    # loss hyper params, negative values means to disable the loss terms
+    parser.add_argument("--vgg_strides", type=int, default=4,
+                        help='vgg stride, should >= 2')
+    parser.add_argument("--ghostW", type=float,
+                        default=-0.0, help='weight for the ghost density regularization')
+    parser.add_argument("--vggW", type=float,
+                        default=-0.0, help='weight for the VGG loss')
+    parser.add_argument("--ColorDivergenceW", type=float,
+                        default=0.0, help='weight for the VGG loss')
+    parser.add_argument("--overlayW", type=float,
+                        default=-0.0, help='weight for the overlay regularization')
+    parser.add_argument("--d2vW", type=float,
+                        default=-0.0, help='weight for the d2v loss')
+    parser.add_argument("--nseW", type=float,
+                        default=0.001, help='velocity model, training weight for the physical equations')
+    parser.add_argument("--ekW", type=float,
+                        default=0.0, help='weight for the Ekinoal loss')
+    parser.add_argument("--boundaryW", type=float,
+                        default=0.0, help='weight for the Boardary constrain loss')
+    parser.add_argument("--hardW", type=float,
+                        default=0.0, help='weight for the Boardary constrain loss')
+    parser.add_argument("--MinusDensityW", type=float,
+                        default=0.0, help='weight for the Boardary constrain loss')
+    parser.add_argument("--SmokeInsideSDFW", type=float,
+                        default=0.0, help='weight for the Boardary constrain loss')
+    parser.add_argument("--SmokeAlphaReguW", type=float,
+                        default=0.05, help='weight for the Boardary constrain loss')
+    parser.add_argument("--CurvatureW", type=float,
+                        default=0.00, help='weight for the Boardary constrain loss')
+    parser.add_argument("--FlowW", type=float,
+                        default=0.00, help='weight for the Boardary constrain loss')
+    parser.add_argument("--flow_debug", action='store_true')
+    parser.add_argument("--train_vel_within_rendering", action='store_true')
+    parser.add_argument("--train_vel_uniform_sample", type=int, default = 1)
+    parser.add_argument("--inside_sdf", type=float, default = 0.0)
+    parser.add_argument("--vel_regulization_weight", type=float,
+                        default=1, help='weight for the Boardary constrain loss')
+
 
     parser.add_argument("--net_model", type=str, default='nerf',
                         help='which model to use, nerf, siren, hybrid..')
@@ -132,41 +170,6 @@ def config_parser():
     
 
 
-    # loss hyper params, negative values means to disable the loss terms
-    parser.add_argument("--vgg_strides", type=int, default=4,
-                        help='vgg stride, should >= 2')
-    parser.add_argument("--ghostW", type=float,
-                        default=-0.0, help='weight for the ghost density regularization')
-    parser.add_argument("--vggW", type=float,
-                        default=-0.0, help='weight for the VGG loss')
-    parser.add_argument("--overlayW", type=float,
-                        default=-0.0, help='weight for the overlay regularization')
-    parser.add_argument("--d2vW", type=float,
-                        default=-0.0, help='weight for the d2v loss')
-    parser.add_argument("--nseW", type=float,
-                        default=0.001, help='velocity model, training weight for the physical equations')
-    parser.add_argument("--ekW", type=float,
-                        default=0.0, help='weight for the Ekinoal loss')
-    parser.add_argument("--boundaryW", type=float,
-                        default=0.0, help='weight for the Boardary constrain loss')
-    parser.add_argument("--hardW", type=float,
-                        default=0.0, help='weight for the Boardary constrain loss')
-    parser.add_argument("--MinusDensityW", type=float,
-                        default=0.0, help='weight for the Boardary constrain loss')
-    parser.add_argument("--SmokeInsideSDFW", type=float,
-                        default=0.0, help='weight for the Boardary constrain loss')
-    parser.add_argument("--SmokeAlphaReguW", type=float,
-                        default=0.05, help='weight for the Boardary constrain loss')
-    parser.add_argument("--CurvatureW", type=float,
-                        default=0.00, help='weight for the Boardary constrain loss')
-    parser.add_argument("--FlowW", type=float,
-                        default=0.00, help='weight for the Boardary constrain loss')
-    parser.add_argument("--flow_debug", action='store_true')
-    parser.add_argument("--train_vel_within_rendering", action='store_true')
-    parser.add_argument("--train_vel_uniform_sample", type=int, default = 1)
-    parser.add_argument("--inside_sdf", type=float, default = 0.0)
-    parser.add_argument("--vel_regulization_weight", type=float,
-                        default=1, help='weight for the Boardary constrain loss')
 
 
     # task params

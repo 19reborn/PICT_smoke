@@ -253,10 +253,15 @@ def draw_mapping(path, data):
         x = data[i, :, 0]
         y = data[i, :, 1]
         
-        plt.plot(x, y, marker='o', linestyle='-')
+        # plt.plot(x, y, marker='o', linestyle='-')
+        # plt.plot(x, y, linestyle='-')
+        plt.plot(x, y, linestyle='--')
+        # plt.plot(x, y, linestyle=':')
+        # plt.plot(x, y, linestyle='-.')
 
     plt.xlim(-1, 1)
-    plt.ylim(-1, 1)
+    # plt.ylim(-1, 1)
+    plt.ylim(-0.2, 0.4)
 
     plt.savefig(path)
 
