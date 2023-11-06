@@ -1,4 +1,4 @@
-expname = scalar/1031_v5_smaller_reg
+expname = scalar/1103_v1_longer_term_mapping_exp_activation
 basedir = ./log
 
 ### data info
@@ -23,6 +23,7 @@ use_viewdirs = False
 # position_map_first_omega = 10
 density_map_first_omega = 1
 position_map_first_omega = 1
+density_activation = exp
 
 ### train params - sampling
 N_samples = 64
@@ -69,13 +70,13 @@ stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 stage4_train_vel_interval = 20
 
-max_mapping_frame_range = 3
+max_mapping_frame_range = 30
 use_two_level_density = True
 vel_regulization_weight = 1
 use_scene_scale_before_pe = True
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v4_from_50k/400000.tar
-model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v1_match_smaller_omega/050000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v1_match_smaller_omega/050000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v1_match_smaller_omega/300000.tar
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1029_v4_smaller_omega/100000.tar

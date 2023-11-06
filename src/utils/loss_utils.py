@@ -331,7 +331,6 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
     else:
         _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
         _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
-
          
     vel_loss_dict = {}
     vel_loss = 0.0
