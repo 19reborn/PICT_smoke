@@ -19,6 +19,7 @@ from src.utils.training_utils import set_rand_seed, save_log
 from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D, get_voxel_pts
 from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
 from src.utils.visualize_utils import draw_mapping, vel_uv2hsv, den_scalar2rgb
+from src.utils.evaluate_utils import evaluate_mapping
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -347,6 +348,10 @@ def test(args):
         testsavedir = os.path.join(basedir, expname, 'vis_mapping_{:06d}'.format(start+1))
         voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
         visualize_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
+    elif args.evaluate_mapping:
+        testsavedir = os.path.join(basedir, expname, 'eval_mapping_{:06d}'.format(start+1))
+        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
+        evaluate_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
     elif args.render_only:
         testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('test' if args.render_test else 'path', start+1))
         if args.render_eval:

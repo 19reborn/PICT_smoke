@@ -480,6 +480,82 @@ class Voxel_Tool(object):
 
 
     @torch.no_grad()
+    def eval_mapping_error(self, frame_list, t_list, model, sample_pts = 128, chunk = 1024*32):
+
+        dynamic_model_lagrangian = model.dynamic_model_lagrangian
+        # dynamic_model = model.dynamic_model_siren
+        dynamic_model = model.dynamic_model_lagrangian
+        # middle_slice, only for fast visualization of the middle slice
+        D,H,W = self.D,self.H,self.W
+
+        pts_flat = self.pts_mid
+        # only use xy plane with z = 0.5
+   
+        # pts_flat = pts_flat[-pts_flat.shape[0]//3:]
+        # pts_flat = pts_flat[:pts_flat.shape[0]//3]
+        pts_flat = pts_flat[:pts_flat.shape[0]//3]
+        # pts_flat = pts_flat[:-pts_flat.shape[0]//3]
+
+        pts_flat = self.pts.view(-1, 3)
+
+        time0 = t_list[frame_list[0]]
+        
+        # only choose density points
+        pts_N = pts_flat.shape[0]
+        density_0 = []
+        for i in range(0, pts_N, chunk):
+            input_i = pts_flat[i:i+chunk]
+            density = dynamic_model.density(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*time0], dim = -1)).detach()
+            density_0.append(density)
+
+        density_0 = torch.cat(density_0, dim = 0)
+
+        pts_flat = pts_flat[density_0.squeeze(-1) >= 0.50]
+            
+        pts_num = sample_pts
+
+        import random
+        sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        pts_sampled = pts_flat[sample_id].reshape(-1,3)
+
+        feature_sampled_0 = dynamic_model_lagrangian.feature_map(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*time0).detach()
+
+
+        gt_all_xyz = []
+        feature_sampled = feature_sampled_0
+        for frame_i in frame_list[1:]:
+
+            cur_t = t_list[frame_i]
+            mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
+            feature_sampled = dynamic_model_lagrangian.feature_map(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
+            gt_all_xyz.append(mapped_xyz.detach().cpu().numpy())
+
+        pred_all_xyz = []
+        pred_all_feature = []
+        pred_all_feature_error = []
+
+        for frame_i in frame_list[1:]:
+
+            cur_t = t_list[frame_i]
+            mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled_0, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
+            pred_all_xyz.append(mapped_xyz.detach().cpu().numpy())
+            feature_sampled = dynamic_model_lagrangian.feature_map(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
+            pred_all_feature.append(feature_sampled.detach().cpu().numpy())
+            pred_all_feature_error.append((feature_sampled - feature_sampled_0).detach().cpu().numpy())
+          
+
+
+        pred_mapped_xyz = np.array(pred_all_xyz)
+        gt_mapped_xyz = np.array(gt_all_xyz) # [frame_N, sample_pts, 3]
+        
+        l2_error = np.linalg.norm(pred_mapped_xyz - gt_mapped_xyz, axis=-1).mean(axis=-1)
+        pred_all_feature_error = np.array(pred_all_feature_error)
+        feature_l2_error =  np.linalg.norm(pred_all_feature_error, axis=-1).mean(axis=-1)
+
+        return l2_error, feature_l2_error
+
+
+    @torch.no_grad()
     def save_voxel_vel_npz(self,vel_path,deltaT,t,batchify_fn,chunk=1024*32, velocity_model=None,save_npz=True,save_jpg=False,save_vort=False):
         vel_scale = 160
         voxel_vel = self.get_voxel_velocity(deltaT,t,batchify_fn,chunk,velocity_model,middle_slice=not save_npz).detach().cpu().numpy()
