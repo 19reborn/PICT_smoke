@@ -301,6 +301,8 @@ class SIREN_NeRFt(nn.Module):
 
     def density_with_jacobian(self, x):
         density = self.density(x)
+        # relu
+        density = F.relu(density)
         jac = _get_minibatch_jacobian(density, x)
         _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,1)
         return density, _d_x, _d_y, _d_z, _d_t
