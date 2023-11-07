@@ -49,7 +49,8 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     
     # change_feature_interval = 50
     # sample_pts = 32
-    change_feature_interval = 20
+    # change_feature_interval = 20
+    change_feature_interval = 100
     sample_pts = 128
     mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
        
@@ -345,10 +346,18 @@ def test(args):
         testsavedir = os.path.join(basedir, expname, 'volumeout_{:06d}'.format(start+1))
         output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = args.voxel_video)
     elif args.visualize_mapping:
+        resX = args.vol_output_W
+        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
+        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
+        
         testsavedir = os.path.join(basedir, expname, 'vis_mapping_{:06d}'.format(start+1))
         voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
         visualize_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
     elif args.evaluate_mapping:
+        resX = args.vol_output_W
+        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
+        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
+        
         testsavedir = os.path.join(basedir, expname, 'eval_mapping_{:06d}'.format(start+1))
         voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
         evaluate_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)

@@ -351,7 +351,7 @@ class Voxel_Tool(object):
         feature_0 = []
         for i in range(0, pts_N, chunk):
             input_i = pts_flat[i:i+chunk]
-            feature = dynamic_model_lagrangian.feature_map(input_i, torch.ones([input_i.shape[0], 1])*float(0)).detach()
+            feature = dynamic_model_lagrangian.velocity_model.forward_feature(input_i, torch.ones([input_i.shape[0], 1])*float(0)).detach()
             feature_0.append(feature)
 
         feature_0 = torch.cat(feature_0, 0)
@@ -362,7 +362,7 @@ class Voxel_Tool(object):
         for i in range(0, pts_N, chunk):
             input_i = pts_flat[i:i+chunk]
             mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(t)], dim = -1), torch.ones([input_i.shape[0], 1])*float(0)).detach()
-            feature = dynamic_model_lagrangian.feature_map(mapped_xyz, torch.ones([mapped_xyz.shape[0], 1])*float(t)).detach()
+            feature = dynamic_model_lagrangian.velocity_model.forward_feature(mapped_xyz, torch.ones([mapped_xyz.shape[0], 1])*float(t)).detach()
             feature_t.append(feature)
             
         feature_t = torch.cat(feature_t, 0)
@@ -402,7 +402,7 @@ class Voxel_Tool(object):
         feature_t = []
         for i in range(0, pts_N, chunk):
             input_i = pts_flat[i:i+chunk]
-            feature = dynamic_model_lagrangian.feature_map(input_i, torch.ones([input_i.shape[0], 1])*float(t)).detach()
+            feature = dynamic_model_lagrangian.velocity_model.forward_feature(input_i, torch.ones([input_i.shape[0], 1])*float(t)).detach()
             feature_t.append(feature)
             
         feature_t = torch.cat(feature_t, 0)
@@ -460,7 +460,7 @@ class Voxel_Tool(object):
         sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
         pts_sampled = pts_flat[sample_id].reshape(-1,3)
 
-        feature_sampled = dynamic_model_lagrangian.feature_map(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*float(0)).detach()
+        feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*float(0)).detach()
 
         all_xyz = []
 
@@ -469,7 +469,7 @@ class Voxel_Tool(object):
             cur_t = t_list[frame_i]
             mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
             if (frame_i - 1) % change_feature_interval == 0:
-                feature_sampled = dynamic_model_lagrangian.feature_map(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
+                feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
             all_xyz.append(mapped_xyz.detach().cpu().numpy())
 
         write_ply(np.array(all_xyz).reshape(-1,3),'vis_mapping.ply')
@@ -483,17 +483,18 @@ class Voxel_Tool(object):
     def eval_mapping_error(self, frame_list, t_list, model, sample_pts = 128, chunk = 1024*32):
 
         dynamic_model_lagrangian = model.dynamic_model_lagrangian
-        # dynamic_model = model.dynamic_model_siren
-        dynamic_model = model.dynamic_model_lagrangian
+        dynamic_model = model.dynamic_model_siren
+        # dynamic_model = model.dynamic_model_lagrangian
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
 
-        pts_flat = self.pts_mid
+
+        # pts_flat = self.pts_mid
         # only use xy plane with z = 0.5
+        # pts_flat = pts_flat[:pts_flat.shape[0]//3]
    
         # pts_flat = pts_flat[-pts_flat.shape[0]//3:]
         # pts_flat = pts_flat[:pts_flat.shape[0]//3]
-        pts_flat = pts_flat[:pts_flat.shape[0]//3]
         # pts_flat = pts_flat[:-pts_flat.shape[0]//3]
 
         pts_flat = self.pts.view(-1, 3)
@@ -510,7 +511,9 @@ class Voxel_Tool(object):
 
         density_0 = torch.cat(density_0, dim = 0)
 
+
         pts_flat = pts_flat[density_0.squeeze(-1) >= 0.50]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 0.05]
             
         pts_num = sample_pts
 
@@ -518,30 +521,66 @@ class Voxel_Tool(object):
         sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
         pts_sampled = pts_flat[sample_id].reshape(-1,3)
 
-        feature_sampled_0 = dynamic_model_lagrangian.feature_map(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*time0).detach()
+        feature_sampled_0 = dynamic_model_lagrangian.velocity_model.forward_feature(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*time0).detach()
+        density_0 = dynamic_model.density(torch.cat([pts_sampled, torch.ones([pts_sampled.shape[0], 1])*time0], dim = -1)).detach()
 
-
+        
         gt_all_xyz = []
         feature_sampled = feature_sampled_0
+        mapped_xyz = pts_sampled
         for frame_i in frame_list[1:]:
+            this_time = t_list[frame_i]
+            last_time = t_list[frame_i-1]
+            mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward(torch.cat([mapped_xyz, torch.ones([mapped_xyz.shape[0], 1])*float(last_time)], dim = -1), torch.ones([mapped_xyz.shape[0], 1])*float(this_time))
 
-            cur_t = t_list[frame_i]
-            mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
-            feature_sampled = dynamic_model_lagrangian.feature_map(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
+            # cur_t = t_list[frame_i]
+            # mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
+            # feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
             gt_all_xyz.append(mapped_xyz.detach().cpu().numpy())
-
+            
         pred_all_xyz = []
-        pred_all_feature = []
         pred_all_feature_error = []
-
+        pred_all_feature_relative_error = []
+        pred_all_ratio = []
+        mapped_xyz = pts_sampled
+        feature_sampled = feature_sampled_0
+        
         for frame_i in frame_list[1:]:
 
             cur_t = t_list[frame_i]
-            mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled_0, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
+            # velocity = dynamic_model_lagrangian.velocity_model(torch.cat([mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)], dim=-1))
+            mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled_0, torch.ones([pts_sampled.shape[0], 1])*float(cur_t), xyz = mapped_xyz)
+            # mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t), xyz = mapped_xyz)
             pred_all_xyz.append(mapped_xyz.detach().cpu().numpy())
-            feature_sampled = dynamic_model_lagrangian.feature_map(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
-            pred_all_feature.append(feature_sampled.detach().cpu().numpy())
-            pred_all_feature_error.append((feature_sampled - feature_sampled_0).detach().cpu().numpy())
+            feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
+            
+            den_t = dynamic_model.density(torch.cat([mapped_xyz, torch.ones([mapped_xyz.shape[0], 1])*cur_t], dim = -1)).detach()
+            den_error = (den_t - density_0).mean()
+            den_relative_error = (((den_t - density_0).abs()) / (torch.max(den_t, density_0) + 1e-6)).mean()
+            # feature_error = ((feature_sampled - feature_sampled_0) ** 2).mean()
+            # pred_all_feature_error.append(feature_error.detach().cpu().numpy())
+            # pred_all_feature.append(feature_sampled.detach().cpu().numpy())
+            # F.smooth_l1_loss(feature_sampled, feature_sampled_0)
+            # F.l1_loss(feature_sampled, feature_sampled_0)
+            error = (feature_sampled - feature_sampled_0).norm(dim=-1).mean()
+            # (relative_error[relative_error < 0.2]).mean()
+            # msre = torch.mean(((feature_sampled - feature_sampled_0) / (feature_sampled_0 + 1e-6)) ** 2)
+            # import pdb
+            # pdb.set_trace()
+            # import pdb
+            # pdb.set_trace()
+
+            # ((feature_sampled-feature_sampled_0)**2).mean()
+            # (((feature_sampled-feature_sampled_0)**2) / (feature_sampled_0**2)).mean()
+            relative_error = (feature_sampled - feature_sampled_0).norm(dim=-1) / torch.max((feature_sampled_0.norm(dim=-1) + 1e-6), feature_sampled.norm(dim=-1) + 1e-6)
+            relative_error_num = (relative_error < 0.2).sum()
+            relative_error = relative_error.mean()
+            feature_ratio = relative_error_num / sample_pts
+            pred_all_feature_error.append(error.detach().cpu().numpy())
+            pred_all_feature_relative_error.append(relative_error.detach().cpu().numpy())
+            pred_all_ratio.append(feature_ratio.detach().cpu().numpy())
+            # F.l1_loss(feature_sampled, feature_sampled_0)
+
           
 
 
@@ -549,10 +588,30 @@ class Voxel_Tool(object):
         gt_mapped_xyz = np.array(gt_all_xyz) # [frame_N, sample_pts, 3]
         
         l2_error = np.linalg.norm(pred_mapped_xyz - gt_mapped_xyz, axis=-1).mean(axis=-1)
-        pred_all_feature_error = np.array(pred_all_feature_error)
-        feature_l2_error =  np.linalg.norm(pred_all_feature_error, axis=-1).mean(axis=-1)
+        l2_distane = np.linalg.norm(pred_mapped_xyz - gt_mapped_xyz, axis=-1)
+        
+        # l2_distane_num = np.linalg.norm(pred_mapped_xyz - gt_mapped_xyz, axis=-1) < 0.1
+        # l2_distane_num = (np.linalg.norm(pred_mapped_xyz - gt_mapped_xyz, axis=-1) < 0.2).sum(axis=-1)
+        l2_distane_num = (np.linalg.norm(pred_mapped_xyz - gt_mapped_xyz, axis=-1) < 0.1).sum(axis=-1)
+        ratio = l2_distane_num / sample_pts
+        # l2_distane_num = l2_distane_num
+        # l2_distane = np.linalg.norm(pred_mapped_xyz - gt_mapped_xyz, axis=-1).min(axis=-1)
+        # np.linalg.norm(pred_mapped_xyz - gt_mapped_xyz, axis=-1).max(axis=-1)
 
-        return l2_error, feature_l2_error
+        # l2_error = np.linalg.norm(pred_mapped_xyz - gt_mapped_xyz, axis=-1).mean(axis=-1)
+        # pred_all_feature_error = np.array(pred_all_feature_error)
+        feature_l2_error =  np.array(pred_all_feature_error)
+        pred_all_feature_relative_error = np.array(pred_all_feature_relative_error)
+        pred_all_ratio = np.array(pred_all_ratio)
+        # feature_relative_l2_error =  np.mean(pred_all_feature_relative_error, axis=1)
+        # feature_relative_l2_error =  np.mean(np.mean(pred_all_feature_relative_error, axis=1), axis=1)
+
+
+
+        return ratio, feature_l2_error, pred_all_feature_relative_error, pred_all_ratio
+        # return ratio, pred_all_feature_relative_error
+        # return feature_l2_error
+        # return feature_l2_error, feature_relative_l2_error
 
 
     @torch.no_grad()

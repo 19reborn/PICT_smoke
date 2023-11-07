@@ -410,7 +410,9 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
                 # _vel, _u_x, _u_y, _u_z, 
                 # Du_Dt)
             
-            split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
+            # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
+            split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
+            # split_nse_wei = [1.0, 10.0, 1e-2, args.vel_regulization_weight, 1e-2]
             # split_nse_wei = [1.0, 0.1, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
             # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
             # split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
@@ -514,7 +516,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         cycle_loss = None
     
         predict_xyz = vel_middle_output['mapped_xyz']
-        cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
+        # cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
+        cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
         # vel_loss += 0.1 * cycle_loss
         vel_loss += 1.0 * cycle_loss
 
@@ -538,11 +541,13 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
 
 
         predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
-        cross_features = velocity_model.feature_map(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
+        cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
-        cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
+        # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
+        cross_cycle_loss = L1_loss(cross_features, mapped_features)
         # vel_loss += 0.05 * cross_cycle_loss * args.nseW
-        vel_loss += 0.1 * cross_cycle_loss
+        vel_loss += 1.0 * cross_cycle_loss
+        # vel_loss += 10.0 * cross_cycle_loss
 
         vel_loss_dict['feature_cycle_loss'] = cycle_loss
         vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
@@ -590,7 +595,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         
         velocity_mapping_loss = smooth_l1_loss(velocity_in_mapped_xyz, velcotiy_in_xyz) ## todo:: detach one 
         # vel_loss += 0.001 * velocity_mapping_loss * velocity_mapping_fading
-        vel_loss += 0.01 * velocity_mapping_loss * velocity_mapping_fading
+        # vel_loss += 0.01 * velocity_mapping_loss * velocity_mapping_fading
         vel_loss_dict['velocity_mapping_loss'] = velocity_mapping_loss
 
 
@@ -631,7 +636,8 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
     # eqs += [feature]
-    eqs += [mean_squared_error(feature,0.0)]
+    # eqs += [mean_squared_error(feature,0.0)]
+    eqs += [L1_loss(feature,torch.zeros_like(feature))]
 
     # eqs += [ U_x[:,0] + U_y[:,1] + U_z[:,2] ] # velocity divergence constrain
     eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]

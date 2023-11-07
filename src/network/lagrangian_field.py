@@ -226,6 +226,15 @@ class VelocityNetwork(nn.Module):
         jac = torch.cat(jac, 1)
         return jac.squeeze(-1)
 
+    def forward_feature(self, xyz, t):
+        features = self.feature_map(xyz, t)
+        
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+            features[bbox_mask] = 0.0
+            
+        return features
+
     def forward_with_middle_output(self, xyzt, need_vorticity = False):
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 

@@ -1,4 +1,4 @@
-expname = cyl/1105_v4_neus_no_early_terminated
+expname = cyl/1107_v1_no_vel_mapping_loss
 basedir = ./log
 
 ### data info
@@ -12,16 +12,17 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 5
-position_map_first_omega = 5
+density_map_first_omega = 1
+position_map_first_omega = 1
 
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 1024
+N_rand = 512
 i_embed = -1
 train_warp = True
 vol_output_W = 256
+train_vel_grid_size = 24
 
 ### train params - iterations
 precrop_iters = 500
@@ -90,7 +91,7 @@ use_two_level_density = True
 # use_scene_scale_before_pe = True
 use_scene_scale_before_pe = False
 vel_regulization_weight = 10
-neus_early_terminated = False
+neus_early_terminated = True
 neus_progressive_pe = True
 
 # nseW = 1e-4
