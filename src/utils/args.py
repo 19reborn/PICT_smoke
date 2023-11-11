@@ -61,6 +61,7 @@ def config_parser():
                         default='identity', help='activation function for density')
     parser.add_argument("--lagrangian_density_activation", type=str,
                         default='exp', help='activation function for density')
+    
     ## siren nerf    
     parser.add_argument("--siren_nerf_netdepth", type=int, default=8, 
                         help='layers in network')
@@ -110,6 +111,14 @@ def config_parser():
     parser.add_argument("--inside_sdf", type=float, default = 0.0)
     parser.add_argument("--vel_regulization_weight", type=float,
                         default=1, help='weight for the Boardary constrain loss')
+    ## Lagrangian Feature loss
+    parser.add_argument("--self_cycle_loss_weight", type=float, default = 1.0)
+    parser.add_argument("--cross_cycle_loss_weight", type=float, default = 0.1)
+    
+    ## Lagrangian mapping loss
+    parser.add_argument("--density_mapping_loss_weight", type=float, default = 0.05)
+    parser.add_argument("--velocity_mapping_loss_weight", type=float, default = 0.01)
+    parser.add_argument("--color_mapping_loss_weight", type=float, default = 0.0)
 
 
     parser.add_argument("--net_model", type=str, default='nerf',

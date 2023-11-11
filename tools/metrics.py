@@ -180,13 +180,12 @@ def save_error(errors, save_dir):
 # In[7]:
 
 
-# files_dir = '/home/wym/workspace/my_pinerf/log/scalar/pinf_test1/eval_600001'
-# files_dir = '/home/wym/workspace/my_pinerf/log/scalar/cuda_ray_novgg_test1/eval_600001'
-# files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v4_from_50k/renderonly_eval_600001'
-# files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v4_from_50k/renderonly_eval_600001'
-
 # cyl
 files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/renderonly_eval_300001'
+
+# game
+files_dir = '/root/data/wym/workspace/pinf_clean/log/game/1101_v2_full_loss/renderonly_eval_400001'
+
 
 
 estim_dir = os.path.join(files_dir, "pred")

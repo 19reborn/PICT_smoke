@@ -74,7 +74,7 @@ max_mapping_frame_range = 30
 use_two_level_density = True
 vel_regulization_weight = 0.1
 use_scene_scale_before_pe = True
-nseW = 5e-2
+# nseW = 5e-2
 
 max_mapping_frame_range = 100
 nseW = 1e-1

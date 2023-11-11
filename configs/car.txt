@@ -13,8 +13,8 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 1
-position_map_first_omega = 1
+density_map_first_omega = 5
+position_map_first_omega = 5
 
 ### train params - sampling
 N_samples = 64
@@ -101,9 +101,11 @@ neus_progressive_pe_start = 20000
 
 use_scene_scale_before_pe = True
 max_mapping_frame_range = 100
-stage4_train_vel_interval = 10
+stage4_train_vel_interval = 1
 
-# nseW = 1e-4
+nseW = 1e-1
+vel_regulization_weight = 0.1
+color_mapping_loss_weight = 0.5
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/Car/1110_v1_test/050000.tar
  

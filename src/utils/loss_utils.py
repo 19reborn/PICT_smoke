@@ -409,9 +409,10 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
                 # _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
                 # _vel, _u_x, _u_y, _u_z, 
                 # Du_Dt)
+            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
             
             # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
-            split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
+            # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
             # split_nse_wei = [1.0, 10.0, 1e-2, args.vel_regulization_weight, 1e-2]
             # split_nse_wei = [1.0, 0.1, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
             # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
@@ -519,7 +520,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         # cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
         cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
         # vel_loss += 0.1 * cycle_loss
-        vel_loss += 1.0 * cycle_loss
+        vel_loss += args.self_cycle_loss_weight * cycle_loss
 
         cross_cycle_loss = None
 
@@ -543,10 +544,10 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
         cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
-        # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
-        cross_cycle_loss = L1_loss(cross_features, mapped_features)
+        cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
+        # cross_cycle_loss = L1_loss(cross_features, mapped_features)
         # vel_loss += 0.05 * cross_cycle_loss * args.nseW
-        vel_loss += 1.0 * cross_cycle_loss
+        vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss
         # vel_loss += 10.0 * cross_cycle_loss
 
         vel_loss_dict['feature_cycle_loss'] = cycle_loss
@@ -575,7 +576,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
 
         density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) # todo:: detach one 
         
-        vel_loss += 0.05 * density_mapping_loss * density_mapping_fading
+        # vel_loss += 0.05 * density_mapping_loss * density_mapping_fading
+        vel_loss += args.density_mapping_loss_weight * density_mapping_loss * density_mapping_fading
         vel_loss_dict['density_mapping_loss'] = density_mapping_loss
         
 
@@ -584,7 +586,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         color_in_xyz = den_model.color(training_samples.detach())
         color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
         color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
-        vel_loss += 0.1 * color_mapping_loss * color_mapping_fading
+        vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading
         vel_loss_dict['color_mapping_loss'] = color_mapping_loss
 
 
@@ -595,7 +597,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         
         velocity_mapping_loss = smooth_l1_loss(velocity_in_mapped_xyz, velcotiy_in_xyz) ## todo:: detach one 
         # vel_loss += 0.001 * velocity_mapping_loss * velocity_mapping_fading
-        # vel_loss += 0.01 * velocity_mapping_loss * velocity_mapping_fading
+        vel_loss += args.velocity_mapping_loss_weight * velocity_mapping_loss * velocity_mapping_fading
         vel_loss_dict['velocity_mapping_loss'] = velocity_mapping_loss
 
 
