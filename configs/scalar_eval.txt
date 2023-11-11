@@ -1,4 +1,4 @@
-expname = scalar/1031_v5_smaller_reg
+expname = scalar/1031_v4_from_50k
 basedir = ./log
 
 ### data info
@@ -7,7 +7,7 @@ dataset_type = pinf_data
 no_batching = True
 half_res = half
 white_bkgd = True
-testskip = 60
+testskip = 20
 
 ### network arch
 net_model = siren

@@ -1,4 +1,4 @@
-expname = cyl/0928_zxy_v5_less_density_mapping_loss_from_start_no_relu_true
+expname = cyl/1107_v2_with_vel_mapping_loss
 basedir = ./log
 
 ### data info
@@ -7,25 +7,28 @@ dataset_type = pinf_data
 no_batching = True
 half_res = normal
 white_bkgd = True
-testskip = 20
+testskip = 1
 
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
+density_map_first_omega = 1
+position_map_first_omega = 1
 
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 1024
+N_rand = 512
 i_embed = -1
 train_warp = True
 vol_output_W = 256
+train_vel_grid_size = 24
 
 ### train params - iterations
 precrop_iters = 500
 precrop_frac = 0.5
 lrate_decay = 500
-fading_layers = 50000
+fading_layers = 20000
 tempo_delay = 0
 vel_delay = 20000
 
@@ -48,23 +51,24 @@ ekW = 0.1
 i_weights = 5000
 i_embed_neus = 0
 multires_neus = 6
-anneal_end = 50000
+anneal_end = 30000
 
-i_img = 100
-i_test = 1000
-i_weights = 1000
-i_video = 10000
+i_img = 1000
+i_test = 5000
+i_weights = 10000
+i_video = 20000
 N_iter = 400000
 
 cuda_ray = True
 scene_scale = 0.33
-density_thresh = 1
+density_thresh = 2.0
 density_thresh_static = 30
 # density_activation = relu
+# lagrangian_density_activation = relu
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.01
-train_vel_within_rendering = True
+SmokeAlphaReguW = 0.05
+train_vel_within_rendering = False
 boundaryW = 0.5
 train_vel_uniform_sample = 2
 inside_sdf = 0.02
@@ -73,22 +77,29 @@ inside_sdf = 0.02
 # boundary_delay = 10000
 
 stage1_finish_recon = 50000
-uniform_sample_step = 10000000
+uniform_sample_step = 40000
+smoke_recon_delay_start = 0
+smoke_recon_delay_last = 10000
+sdf_loss_delay = 2000
 
-stage2_finish_init_lagrangian = 5000
-stage3_finish_init_feature = 5000
+stage2_finish_init_lagrangian = 1000
+stage3_finish_init_feature = 0
+
+# train_vel_grid_size = 24
+
+use_two_level_density = True
+# use_scene_scale_before_pe = True
+use_scene_scale_before_pe = False
+vel_regulization_weight = 10
+neus_early_terminated = True
+neus_progressive_pe = True
 
 # nseW = 1e-4
 
-# output_voxel=True
+model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/200000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v1_no_vel_mapping_loss/300000.tar
 
-model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0928_zxy_v5_less_density_mapping_loss_from_start_no_relu_true/200000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/014000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start_debug/014000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/016000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v2_stage2_train_feature/060000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/120000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v9_from_start/085000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v3_stage1_recon/010000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v4_stage2_3/015000.tar
-# model_path =/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v5_stage3/020000.tar
+# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/1031_v1_neus_early_terminated/050000.tar
+
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1029_v2_from_start/010000.tar
+# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/1028_v1_two_level_density/050000.tar

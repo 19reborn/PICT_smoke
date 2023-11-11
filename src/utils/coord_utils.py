@@ -334,7 +334,7 @@ class Voxel_Tool(object):
                 npz_path = os.path.join(head_tail[0], npre + os.path.splitext(head_tail[1])[0]+".npz")
                 voxel_den = np.float16(voxel_den)
                 np.savez_compressed(npz_path, vel=voxel_den)
-            if noStatic:
+            if noStatic and 'static' in npre:
                 break
 
     @torch.no_grad()

@@ -1187,10 +1187,12 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
 
     pred_dir = os.path.join(savedir, 'pred')
     gt_dir = os.path.join(savedir, 'gt')
-    other_dir = os.path.join(savedir, 'other')
+    other_dir = os.path.join(savedir, 'others')
+    decomposed_dir = os.path.join(savedir, 'decomposed')
     os.makedirs(pred_dir, exist_ok=True)
     os.makedirs(gt_dir, exist_ok=True)
     os.makedirs(other_dir, exist_ok=True)
+    os.makedirs(decomposed_dir, exist_ok=True)
     
     for i, c2w in enumerate(tqdm(render_poses)):
         print(i, time.time() - t)
@@ -1235,13 +1237,21 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             #     filename = os.path.join(savedir, '_{:03d}.png'.format(i))
             #     imageio.imwrite(filename, other_rgb8)
 
-            filename = os.path.join(other_dir, 'disp_{:03d}.png'.format(i))
-            imageio.imwrite(filename, to8b(disp.detach().cpu().numpy()))
+            filename = os.path.join(savedir, 'others','disp_{:03d}.png'.format(i))
+            imageio.imwrite(filename, to8b(disp.squeeze(-1).detach().cpu().numpy()))
 
             ## acc map
-            filename = os.path.join(other_dir, 'acc_{:03d}.png'.format(i))
-            imageio.imwrite(filename, to8b(acc.detach().cpu().numpy()))
-
+            filename = os.path.join(savedir, 'others', 'acc_{:03d}.png'.format(i))
+            imageio.imwrite(filename, to8b(acc.squeeze(-1).detach().cpu().numpy()))
+            
+            ## output decomposed rendering
+            filename = os.path.join(savedir, 'decomposed', 'static_{:03d}.png'.format(i))
+            rgb_static = extras['rgbh1']
+            imageio.imwrite(filename, to8b(rgb_static.squeeze(-1).detach().cpu().numpy()))
+            
+            filename = os.path.join(savedir, 'decomposed', 'dynamic_{:03d}.png'.format(i))
+            rgb_static = extras['rgbh2']
+            imageio.imwrite(filename, to8b(rgb_static.squeeze(-1).detach().cpu().numpy()))
 
     rgbs = np.stack(rgbs, 0)
     disps = np.stack(disps, 0)
