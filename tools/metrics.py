@@ -188,6 +188,11 @@ files_dir = '/root/data/wym/workspace/pinf_clean/log/game/1101_v2_full_loss/rend
 
 
 
+
+# car
+files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v3_larger_cycle_loss/renderonly_eval_300001'
+
+
 estim_dir = os.path.join(files_dir, "pred")
 gt_dir = os.path.join(files_dir, "gt")
 

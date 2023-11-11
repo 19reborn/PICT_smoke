@@ -1,4 +1,4 @@
-expname = cyl/1108_v3_no_density_mapping_loss
+expname = cyl/1107_v2_with_vel_mapping_loss
 basedir = ./log
 
 ### data info
@@ -95,6 +95,8 @@ neus_early_terminated = True
 neus_progressive_pe = True
 
 # nseW = 1e-4
+
+model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v1_no_vel_mapping_loss/100000.tar
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/cyl/1031_v1_neus_early_terminated/050000.tar
 
