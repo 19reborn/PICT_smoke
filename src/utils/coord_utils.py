@@ -334,7 +334,7 @@ class Voxel_Tool(object):
                 npz_path = os.path.join(head_tail[0], npre + os.path.splitext(head_tail[1])[0]+".npz")
                 voxel_den = np.float16(voxel_den)
                 np.savez_compressed(npz_path, vel=voxel_den)
-            if noStatic:
+            if noStatic and 'static' in npre:
                 break
 
     @torch.no_grad()
@@ -575,10 +575,10 @@ class Voxel_Tool(object):
             relative_error = (feature_sampled - feature_sampled_0).norm(dim=-1) / torch.max((feature_sampled_0.norm(dim=-1) + 1e-6), feature_sampled.norm(dim=-1) + 1e-6)
             relative_error_num = (relative_error < 0.2).sum()
             relative_error = relative_error.mean()
-            feature_ratio = relative_error_num / sample_pts
+            feature_ratio = relative_error_num.item() / sample_pts
             pred_all_feature_error.append(error.detach().cpu().numpy())
             pred_all_feature_relative_error.append(relative_error.detach().cpu().numpy())
-            pred_all_ratio.append(feature_ratio.detach().cpu().numpy())
+            pred_all_ratio.append(feature_ratio)
             # F.l1_loss(feature_sampled, feature_sampled_0)
 
           

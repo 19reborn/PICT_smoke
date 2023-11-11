@@ -78,6 +78,7 @@ def render_only(args, model, testsavedir, render_poses, render_timesteps, test_b
     print('test poses shape', render_poses.shape)
     if args.render_eval:
         rgbs, _ = render_eval(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
+        imageio.mimwrite(os.path.join(testsavedir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
     else:
         rgbs, _ = render_path(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
         imageio.mimwrite(os.path.join(testsavedir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
@@ -185,7 +186,6 @@ def test(args):
     voxel_tran_inv = torch.Tensor(voxel_tran_inv)
     voxel_tran = torch.Tensor(voxel_tran)
     voxel_scale = torch.Tensor(voxel_scale)
-
     i_train, i_val, i_test = i_split
     if bkg_color is not None:
         args.white_bkgd = torch.Tensor(bkg_color).to(device)
@@ -376,8 +376,9 @@ def test(args):
             # render_test switches to test poses
             images = images[i_test]
             hwf = hwfs[i_test[0]]
-            hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
+            hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])] # todo:: support multi-view testset
             K = Ks[i_test[0]]
+      
         elif args.render_train:
             # render_train switches to train poses
             images = images[i_train]
