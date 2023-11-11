@@ -189,6 +189,11 @@ def save_error(errors, save_dir):
 files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/renderonly_eval_300001'
 
 
+
+# car
+files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v3_larger_cycle_loss/renderonly_eval_300001'
+
+
 estim_dir = os.path.join(files_dir, "pred")
 gt_dir = os.path.join(files_dir, "gt")
 

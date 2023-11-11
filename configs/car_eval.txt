@@ -1,4 +1,4 @@
-expname = Car/1105_v2_larger_color_reg
+expname = Car/1105_v3_larger_cycle_loss
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -8,7 +8,7 @@ dataset_type = pinf_data
 no_batching = True
 half_res = normal
 white_bkgd = True
-testskip = 20
+testskip = 1
 
 ### network arch
 net_model = hybrid_neus
