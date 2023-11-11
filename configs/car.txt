@@ -1,6 +1,6 @@
-expname = Car/1110_v2_less_vel_constrain
-basedir = ./log
-# basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = Car/1105_v7_train_vel_1_interval
+# basedir = ./log
+basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Car

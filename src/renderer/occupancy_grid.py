@@ -903,12 +903,13 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
     if args.test_mode:
       
         if "hybrid_neus" in args.net_model:
-            def get_density_dynamic(x, t):
+            def get_density_dynamic(x, t, chunk=64**3):
                 x_t = torch.cat([x, t * torch.ones_like(x[..., :1])], dim = -1)
-                return model.density_dynamic(x_t.reshape(-1, 4))
+                
+                return batchify(model.density_dynamic, chunk)(x_t)
 
             for i in range(2):
-                model.occupancy_grid_dynamic.update_grid(get_density_dynamic, S = 128)
+                model.occupancy_grid_dynamic.update_grid(get_density_dynamic, S = 64)
       
             def get_density_static(x):
                 neus = model.static_model
@@ -921,11 +922,12 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
       
       
         else:
-            def get_density_dynamic(x, t):
+            def get_density_dynamic(x, t, chunk=64**3):
                 x_t = torch.cat([x, t * torch.ones_like(x[..., :1])], dim = -1)
-                return model.density_dynamic(x_t.reshape(-1, 4))
+                
+                return batchify(model.density_dynamic, chunk)(x_t)
 
-            for i in range(2):
+            for i in range(16):
                 model.occupancy_grid_dynamic.update_grid(get_density_dynamic, S = 128)
       
         
@@ -961,7 +963,6 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
         else:
             def get_density_dynamic(x, t, chunk=64**3):
                 x_t = torch.cat([x, t * torch.ones_like(x[..., :1])], dim = -1)
-                
                 
                 return batchify(model.density_dynamic, chunk)(x_t)
                 # return model.density_dynamic(x_t.reshape(-1, 4))

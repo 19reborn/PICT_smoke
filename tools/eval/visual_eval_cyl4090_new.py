@@ -16,8 +16,16 @@ from _helpers import FFmpegTool
 
 ref_path = '/home/yiming/Documents/workspace/Project_PINF/eval_sample_data/gt/'
 
-out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/v3_1030_new_large_scale_vis/'
-our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1029_v3_no_neus_early_terminated/volumeout_080001/'
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1029_v3_no_neus_early_terminated/volumeout_080001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/v3_1030_new_large_scale_vis/'
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v1_no_vel_mapping_loss/volumeout_300001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v1_ablation_no_vel_mapping_loss/'
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/volumeout_300001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v2_ablation_with_vel_mapping_loss/'
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v3_larger_frame_mapping/volumeout_300001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v3_longer_frame_mapping_300k/'
+our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v4_no_density_mapping/volumeout_300001/'
+out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v4_no_density_mapping_300k/'
 
 glo_path = None
 hull_path = None
