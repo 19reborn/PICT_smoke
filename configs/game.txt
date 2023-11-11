@@ -1,4 +1,4 @@
-expname = game/1101_v1_ray_batch512
+expname = game/1101_v2_full_loss
 basedir = ./log
 
 ### data info
@@ -12,6 +12,8 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
+density_map_first_omega = 10
+position_map_first_omega = 10
 
 ### train params - sampling
 N_samples = 64
@@ -90,9 +92,13 @@ use_two_level_density = True
 use_scene_scale_before_pe = True
 neus_progressive_pe = True
 
+max_mapping_frame_range = 100
+nseW = 1e-1
+vel_regulization_weight = 0.1
+
 # nseW = 1e-4
 
-model_path = /root/data/wym/workspace/pinf_clean/log/game/1031_v2_use_progressive_pe/100000.tar
+# model_path = /root/data/wym/workspace/pinf_clean/log/game/1031_v2_use_progressive_pe/100000.tar
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1015_v2_small_warmup/100000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1011_v4_less_pe/100000.tar

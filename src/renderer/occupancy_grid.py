@@ -935,7 +935,7 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
 
     
         if "hybrid_neus" in args.net_model:
-            def get_density_dynamic(x, t, chunk=64**3):
+            def get_density_dynamic(x, t, chunk=48**3):
                 x_t = torch.cat([x, t * torch.ones_like(x[..., :1])], dim = -1)
                 
                 

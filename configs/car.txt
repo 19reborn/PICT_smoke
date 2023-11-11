@@ -1,4 +1,4 @@
-expname = Car/1111_v1_test
+expname = Car/1105_v7_train_vel_1_interval
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -101,7 +101,7 @@ neus_progressive_pe_start = 20000
 
 use_scene_scale_before_pe = True
 max_mapping_frame_range = 100
-stage4_train_vel_interval = 1
+stage4_train_vel_interval = 10
 
 # nseW = 1e-4
 

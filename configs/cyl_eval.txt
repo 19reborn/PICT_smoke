@@ -1,4 +1,4 @@
-expname = cyl/1107_v2_with_vel_mapping_loss
+expname = cyl/1108_v3_no_density_mapping_loss
 basedir = ./log
 
 ### data info
@@ -96,10 +96,15 @@ neus_progressive_pe = True
 
 # nseW = 1e-4
 
-model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/200000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v1_no_vel_mapping_loss/300000.tar
+# output_voxel=True
 
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/1031_v1_neus_early_terminated/050000.tar
-
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1029_v2_from_start/010000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/1028_v1_two_level_density/050000.tar
+model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0928_zxy_v5_less_density_mapping_loss_from_start_no_relu_true/200000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/014000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start_debug/014000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/016000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v2_stage2_train_feature/060000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/120000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v9_from_start/085000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v3_stage1_recon/010000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v4_stage2_3/015000.tar
+# model_path =/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v5_stage3/020000.tar

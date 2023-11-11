@@ -1,9 +1,9 @@
-expname = Car/1105_v3_larger_cycle_loss
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = Car/1110_v1_test
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
-datadir = ./data/Car_smoke
+datadir = ./data/Car
 dataset_type = pinf_data
 no_batching = True
 half_res = normal
