@@ -7,10 +7,12 @@ import glob
 from torch.utils.tensorboard import SummaryWriter
 
 
-torch.backends.cudnn.enabled = True
-torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.enabled = False
+torch.backends.cudnn.benchmark = False
 
 def set_rand_seed(seed):
+    import random
+    random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)

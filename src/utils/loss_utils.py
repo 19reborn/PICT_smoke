@@ -245,7 +245,7 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
    
         inside_sdf = args.inside_sdf
 
-        if global_step >= args.uniform_sample_step:
+        if global_step > args.uniform_sample_step and args.cuda_ray:
           
             samples_xyz_static = extras['samples_xyz_static'].clone().detach()
 
@@ -268,7 +268,8 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
 
             smoke_inside_loss_on_dynamic = torch.sum((smoke_den_on_dynamic*inside_mask_on_dynamic) ** 2) / (inside_mask_on_dynamic.sum() + 1e-6)
 
-            smoke_inside_sdf_loss = smoke_inside_loss_on_static + smoke_inside_loss_on_dynamic
+            # smoke_inside_sdf_loss = smoke_inside_loss_on_static + smoke_inside_loss_on_dynamic
+            smoke_inside_sdf_loss = smoke_inside_loss_on_dynamic
 
         else:
             smoke_den = extras['raw'][...,3:4]

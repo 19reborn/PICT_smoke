@@ -18,14 +18,25 @@ ref_path = '/home/yiming/Documents/workspace/Project_PINF/eval_sample_data/gt/'
 
 # our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1029_v3_no_neus_early_terminated/volumeout_080001/'
 # out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/v3_1030_new_large_scale_vis/'
+
 # our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v1_no_vel_mapping_loss/volumeout_300001/'
 # out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v1_ablation_no_vel_mapping_loss/'
+
 # our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/volumeout_300001/'
 # out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v2_ablation_with_vel_mapping_loss/'
+
 # our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v3_larger_frame_mapping/volumeout_300001/'
 # out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v3_longer_frame_mapping_300k/'
-our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v4_no_density_mapping/volumeout_300001/'
-out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v4_no_density_mapping_300k/'
+
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v4_no_density_mapping/volumeout_300001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v4_no_density_mapping_300k/'
+
+# our_path = '/mnt/sda/workspace/PINF_Project/our_output/cyl/1112_v1_test/volumeout_400001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1112_v1_test_larger_nseW/'
+
+our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1116_v2_modified_sdf_loss/volumeout_200001'
+out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1116_v1_modified_sdf_loss/'
+
 
 glo_path = None
 hull_path = None
@@ -239,8 +250,10 @@ our_list, glo_list, ref_list =[], [], []
 fr = 0
 
 testWarp = True
+frame_num = 0
 for framei in range(15,115,10): # [100]
     print(framei)
+    frame_num += 1
     rden, rvel = readData(ref_path, den_file%framei, vel_file%framei, oref_grids)
     rden = np.reshape(rden, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
     rvel = np.reshape(rvel, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
@@ -442,14 +455,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_den_%04d.ppm'), stt=0, fps=15)
     myffmpeg.join_cmd()
     
-    text_off = 2
-    myffmpeg.add_label("ref", 2, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 2, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 2, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 2, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 2, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 2, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "eval_vel.mp4"), row=n, col=3 if hullmask else 2) # if use hull_data. col should be 3
@@ -540,5 +553,44 @@ if True:
     myffmpeg.export(overwrite=True)
 
 if True:
+# if False:
     ppm_list = os.listdir(out_path)
+    
+    # save useful images for comparison
+    density_output_dir = os.path.join(out_path, "density")
+    os.makedirs(density_output_dir, exist_ok=True)
+    vel_output_dir = os.path.join(out_path, "velocity")
+    os.makedirs(vel_output_dir, exist_ok=True)
+    vor_output_dir = os.path.join(out_path, "vorticity")
+    os.makedirs(vor_output_dir, exist_ok=True)
+    for frame_id in range(frame_num):
+        ref_den_path = os.path.join(out_path, "ref_den_%04d.ppm"%frame_id)
+        imageio.imwrite(os.path.join(density_output_dir, "ref_den_%04d.png"%frame_id), imageio.imread(ref_den_path))
+        
+        our_den_path = os.path.join(out_path, "our_den_%04d.ppm"%frame_id)
+        imageio.imwrite(os.path.join(density_output_dir, "our_den_%04d.png"%frame_id), imageio.imread(our_den_path))
+        
+        comparison_density = np.concatenate((imageio.imread(ref_den_path), imageio.imread(our_den_path)), axis=0)
+        imageio.imwrite(os.path.join(density_output_dir, "comparison_den_%04d.png"%frame_id), comparison_density)
+        
+        ref_vel_path = os.path.join(out_path, "ref_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vel_output_dir, "ref_vel_%04d.png"%frame_id), imageio.imread(ref_vel_path))
+        
+        our_vel_path = os.path.join(out_path, "our_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vel_output_dir, "our_vel_%04d.png"%frame_id), imageio.imread(our_vel_path))
+        
+        comparison_velocity = np.concatenate((imageio.imread(ref_vel_path), imageio.imread(our_vel_path)), axis=0)
+        imageio.imwrite(os.path.join(vel_output_dir, "comparison_vel_%04d.png"%frame_id), comparison_velocity)
+        
+        
+        ref_vort_path = os.path.join(out_path, "ref_vort_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vor_output_dir, "ref_vort_vel_%04d.png"%frame_id), imageio.imread(ref_vort_path))
+        
+        our_vort_path = os.path.join(out_path, "our_vort_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vor_output_dir, "our_vort_vel_%04d.png"%frame_id), imageio.imread(our_vort_path))
+        
+        comparison_vorticity = np.concatenate((imageio.imread(ref_vort_path), imageio.imread(our_vort_path)), axis=0)
+        imageio.imwrite(os.path.join(vor_output_dir, "comparison_vort_%04d.png"%frame_id), comparison_vorticity)
+        
+        
     ppm_list = [os.remove(os.path.join(out_path, _)) for _ in ppm_list if _.endswith(".ppm") or _.endswith(".png")] 

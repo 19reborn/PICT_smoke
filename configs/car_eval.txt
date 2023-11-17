@@ -14,8 +14,8 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 30
-position_map_first_omega = 30
+density_map_first_omega = 1
+position_map_first_omega = 1
 
 ### train params - sampling
 N_samples = 64

@@ -19,7 +19,7 @@ position_map_first_omega = 30
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 512
+N_rand = 400
 i_embed = -1
 train_warp = True
 vol_output_W = 256
@@ -101,22 +101,12 @@ neus_progressive_pe_start = 20000
 
 use_scene_scale_before_pe = True
 max_mapping_frame_range = 100
-stage4_train_vel_interval = 2
+stage4_train_vel_interval = 1
 
 nseW = 1e-2
 vel_regulization_weight = 0.1
-cross_cycle_loss_weight = 1.0
-self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 1e-3
-velocity_mapping_loss_weight = 1e-3
-color_mapping_loss_weight = 1.0
+color_mapping_loss_weight = 0.5
 
-density_distillation_delay = 90000
-
-# model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/Car/1116_v1_train_vel_per_1/220000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/Car/1114_v4_larger_neus_early_teminated/090000.tar
-model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/Car/1114_v4_larger_neus_early_teminated/200000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/Car/1112_v1_larger_nseW/100000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/Car/1110_v1_test/050000.tar
  
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v6_much_longer_range/220000.tar
