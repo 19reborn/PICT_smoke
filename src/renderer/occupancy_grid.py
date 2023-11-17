@@ -895,10 +895,10 @@ class OccupancyGridDynamic():
         #print(f'[sdf grid] min={self.density_grid.min().item():.4f}, max={self.density_grid.max().item():.4f}, mean={self.mean_density:.4f}, occ_rate={(self.density_grid > 0.01).sum() / (128**3 * self.cascade):.3f} | [step counter] mean={self.mean_count}')
 
 
-
-def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_early_terminated = False):
+def update_occ_grid(args, model, global_step = 0, update_interval = 1000, update_interval_static = 100, neus_early_terminated = False):
     if not args.cuda_ray:
         return
+    
     
     if args.test_mode:
       
@@ -932,7 +932,6 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
       
         
     else:
-
     
         if "hybrid_neus" in args.net_model:
             def get_density_dynamic(x, t, chunk=48**3):
@@ -957,7 +956,7 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
                 sdf = 1.0 / (torch.abs(sdf)+1e-6)
                 return sdf
          
-            if global_step % 100 == 0 :
+            if global_step % update_interval_static == 0 :
                 model.occupancy_grid_static.update_grid(get_density_static, S = 128)
 
         else:
@@ -975,8 +974,6 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, neus_e
 def update_static_occ_grid(args, model, times=100):
     if not args.cuda_ray:
         return
-
-
 
     def get_density_static(x):
         neus = model.static_model

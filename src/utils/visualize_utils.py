@@ -255,7 +255,7 @@ def draw_mapping(path, data):
         
         # plt.plot(x, y, marker='o', linestyle='-')
         # plt.plot(x, y, linestyle='-')
-        plt.plot(x, y, linestyle='--')
+        plt.plot(x, y, linestyle='--', linewidth=0.75)
         # plt.plot(x, y, linestyle=':')
         # plt.plot(x, y, linestyle='-.')
 
@@ -265,6 +265,31 @@ def draw_mapping(path, data):
 
     plt.savefig(path)
 
+
+def draw_mapping_3d(path, data):
+
+    fig = plt.figure()
+
+    N = data.shape[0]
+    # ax = plt.axes(projection='3d')
+    ax = fig.add_subplot(111, projection='3d')
+    for i in range(N):
+        x = data[i, :, 0]
+        y = data[i, :, 1]
+        z = data[i, :, 2]
+        
+        # plt.plot(x, y, marker='o', linestyle='-')
+        # plt.plot(x, y, linestyle='-')
+        ax.plot(x, y, z, linestyle='--', linewidth=0.75)
+        # plt.plot(x, y, linestyle=':')
+        # plt.plot(x, y, linestyle='-.')
+
+    ax.legend()
+    # plt.xlim(-1, 1)
+    # plt.ylim(-1, 1)
+    # plt.ylim(-0.2, 0.4)
+    plt.show()
+    plt.savefig(path)
 
 def write_ply(points, filename, text=False):
     """

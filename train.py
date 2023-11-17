@@ -181,29 +181,32 @@ def train(args):
 
     total_loss_fading = 1.0
     
-    if not model.single_scene and global_step > args.uniform_sample_step:
-        update_static_occ_grid(args, model, 100)
+    # if not model.single_scene and global_step >= args.uniform_sample_step:
+    #     update_static_occ_grid(args, model, 100)
 
     local_step = 0
-    for global_step in trange(start, N_iters + 1):
+    model.train()
+
+    training_stage = 0
+    first_update_occ_grid = True
+    
+    for global_step in trange(start + 1, N_iters + 1):
         
-        training_stage = 0
-        
-        if global_step < args.stage1_finish_recon:
+        if global_step <= args.stage1_finish_recon:
             # smoke and obstacle reconstruction
             training_stage = 1 
             trainImg = True
             trainVel = False
             trainVel_using_rendering_samples = False
 
-        elif global_step < args.stage1_finish_recon + args.stage2_finish_init_lagrangian:
+        elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian:
             # init d,g, not learn feature
             training_stage = 2
             trainImg = False
             trainVel = True
             trainVel_using_rendering_samples = False
         
-        elif global_step < args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature:
+        elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature:
             # start learn feature, add its relevant constrain
             # but still only learn from reference density and color , do not use image
             # total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian, 10000) # 
@@ -217,6 +220,10 @@ def train(args):
             # start learn feature, add its relevant constrain
             # but still only learn from reference density and color , do not use image
             # total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature, 10000) # 
+            # if training_stage is not 4:
+            #     # first convert to stage 4
+            #     update_static_occ_grid(args, model, 10)
+
             total_loss_fading = 1.0
             training_stage = 4
             trainImg = True
@@ -236,8 +243,16 @@ def train(args):
         # if training_stage == 1:
         # model.update_fading_step(min(args.stage1_finish_recon, global_step)) # progressive training for siren smoke
         
-        if trainImg and global_step >= args.uniform_sample_step:
-            update_occ_grid(args, model, global_step, update_interval = 1000, neus_early_terminated = training_stage is not 1 and args.neus_early_terminated)
+        if trainImg and global_step > args.uniform_sample_step and args.cuda_ray:
+            if first_update_occ_grid:
+ 
+                for i in range(2):
+                    update_occ_grid(args, model, global_step, update_interval = 1, update_interval_static = 1, neus_early_terminated = False)
+                update_static_occ_grid(args, model, times=10)
+                
+                first_update_occ_grid = False
+            else:
+                update_occ_grid(args, model, global_step, update_interval = 1000, neus_early_terminated = training_stage is not 1 and args.neus_early_terminated)
               
  
         optimizer.zero_grad()
@@ -306,7 +321,7 @@ def train(args):
                                         far = far,
                                         bkgd_color=bg_color,
                                         # cuda_ray = trainImg and global_step >= args.uniform_sample_step,
-                                        cuda_ray = global_step >= args.uniform_sample_step,
+                                        cuda_ray = global_step > args.uniform_sample_step and args.cuda_ray,
                                         perturb = args.perturb
                                         )
             
@@ -397,7 +412,7 @@ def train(args):
             param_group['lr'] = new_lrate
 
 
-        if args.adaptive_num_rays and args.cuda_ray == True and global_step >= args.uniform_sample_step:
+        if args.adaptive_num_rays and args.cuda_ray == True and global_step > args.uniform_sample_step:
             samples_per_ray = extras["num_points"] / (extras["num_rays"] + 1e-6)
             num_rays = extras["num_rays"]
             cur_batch_size = num_rays * samples_per_ray
@@ -559,25 +574,25 @@ def train(args):
 
 
         if (global_step) % args.i_img==0:
-          
-                voxel_den_list = voxel_writer.get_voxel_density_list(model, 0.5, args.chunk, 
-                    middle_slice=False)[::-1]
-               
-                if trainVel:
-                    voxel_den_list.append(
-                        voxel_writer.get_voxel_velocity(model, t_info[-1]*float(args.vol_output_W)/resX, 0.5, middle_slice=True)
-                    )
-                    
-                voxel_img = []
-                for voxel in voxel_den_list:
-                    voxel = voxel.detach().cpu().numpy()
-                    if voxel.shape[-1] == 1:
-                        voxel_img.append(den_scalar2rgb(voxel, scale=None, is3D=True, logv=False, mix=True))
-                    else:
-                        voxel_img.append(vel_uv2hsv(voxel, scale=300, is3D=True, logv=False))
-                voxel_img = np.concatenate(voxel_img, axis=0) # 128,64*3,3
-                imageio.imwrite( os.path.join(testimgdir, 'vox_{:06d}.png'.format(global_step)), voxel_img)
+            model.eval()
+            voxel_den_list = voxel_writer.get_voxel_density_list(model, 0.5, args.chunk, 
+                middle_slice=False)[::-1]
             
+            if trainVel:
+                voxel_den_list.append(
+                    voxel_writer.get_voxel_velocity(model, t_info[-1]*float(args.vol_output_W)/resX, 0.5, middle_slice=True)
+                )
+                
+            voxel_img = []
+            for voxel in voxel_den_list:
+                voxel = voxel.detach().cpu().numpy()
+                if voxel.shape[-1] == 1:
+                    voxel_img.append(den_scalar2rgb(voxel, scale=None, is3D=True, logv=False, mix=True))
+                else:
+                    voxel_img.append(vel_uv2hsv(voxel, scale=300, is3D=True, logv=False))
+            voxel_img = np.concatenate(voxel_img, axis=0) # 128,64*3,3
+            imageio.imwrite( os.path.join(testimgdir, 'vox_{:06d}.png'.format(global_step)), voxel_img)
+            model.train()
 
         if global_step % args.i_video==0 and local_step is not 0:
             model.eval()
@@ -586,7 +601,7 @@ def train(args):
                 hwf = hwfs[0]
                 hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
                 # the path rendering can be very slow.
-                rgbs, disps = render_path(model, render_poses, hwf, Ks[0], args.test_chunk, near, far, netchunk=args.netchunk, cuda_ray = trainImg and global_step >= args.uniform_sample_step, render_steps=render_timesteps, bkgd_color=test_bkg_color)
+                rgbs, disps = render_path(model, render_poses, hwf, Ks[0], args.test_chunk, near, far, netchunk=args.netchunk, cuda_ray = trainImg and args.cuda_ray and global_step > args.uniform_sample_step, render_steps=render_timesteps, bkgd_color=test_bkg_color)
                 print('Done, saving', rgbs.shape, disps.shape)
                 # moviebase = os.path.join(basedir, expname, '{}_spiral_{:06d}_'.format(expname, global_step))
                 moviebase = os.path.join(basedir, expname, 'spiral_{:06d}_'.format(global_step))
@@ -612,14 +627,16 @@ def train(args):
                 imageio.mimwrite(moviebase + 'velrgb.mp4', np.stack(vel_rgbs,axis=0).astype(np.uint8), fps=30, quality=8)
             model.train()
 
-        if global_step % args.i_testset==0 and global_step > 0 and trainImg:
+        # if global_step % args.i_testset==0 and global_step > 0 and trainImg:
+        if global_step % args.i_testset==0 and global_step > 0:
             model.eval()
             testsavedir = os.path.join(basedir, expname, 'testset_{:06d}'.format(global_step))
             os.makedirs(testsavedir, exist_ok=True)
             print('test poses shape', poses[i_test].shape)
             hwf = hwfs[i_test[0]]
             hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
-            render_path(model, torch.Tensor(poses[i_test]).to(device), hwf, Ks[i_test[0]], args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = trainImg and global_step >= args.uniform_sample_step, gt_imgs=images[i_test], savedir=testsavedir, render_steps=time_steps[i_test], bkgd_color=test_bkg_color)
+            # render_path(model, torch.Tensor(poses[i_test]).to(device), hwf, Ks[i_test[0]], args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = trainImg and global_step >= args.uniform_sample_step, gt_imgs=images[i_test], savedir=testsavedir, render_steps=time_steps[i_test], bkgd_color=test_bkg_color)
+            render_path(model, torch.Tensor(poses[i_test]).to(device), hwf, Ks[i_test[0]], args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = trainImg and global_step > args.uniform_sample_step and args.cuda_ray, gt_imgs=images[i_test], savedir=testsavedir, render_steps=time_steps[i_test], bkgd_color=test_bkg_color)
             print('Saved test set')
             model.train()
     

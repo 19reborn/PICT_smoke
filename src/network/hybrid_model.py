@@ -147,7 +147,8 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
                 self.dynamic_model = self.dynamic_model_siren
             # elif training_stage == 2 or training_stage == 3 or training_stage == 4:
             elif training_stage == 2 or training_stage == 3:
-                self.dynamic_model = self.dynamic_model_lagrangian
+                # self.dynamic_model = self.dynamic_model_lagrangian
+                self.dynamic_model = self.dynamic_model_siren
             elif training_stage == 4:
                 self.dynamic_model = self.dynamic_model_siren
             else:
@@ -242,7 +243,7 @@ def create_model(args, device, bbox_model):
         expname = args.expname
         
         ckpts = [os.path.join(basedir, expname, f) for f in sorted(os.listdir(os.path.join(basedir, expname))) if 'tar' in f]
-
+        
         print('Found ckpts', ckpts)
         if len(ckpts) > 0:
             load_model_path = ckpts[-1]

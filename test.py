@@ -18,7 +18,7 @@ from src.utils.args import config_parser
 from src.utils.training_utils import set_rand_seed, save_log
 from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D, get_voxel_pts
 from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
-from src.utils.visualize_utils import draw_mapping, vel_uv2hsv, den_scalar2rgb
+from src.utils.visualize_utils import draw_mapping, draw_mapping_3d, vel_uv2hsv, den_scalar2rgb
 from src.utils.evaluate_utils import evaluate_mapping
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -37,23 +37,29 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     frame_N = args.time_size
     delta_T = 1.0 / frame_N
     
-    if args.full_vol_output:
-        frame_list = range(0,frame_N, 1)
-        testsavedir += "_full_frame"
-    else:
-        frame_list = range(frame_N//10,frame_N, 10)
+    # if args.full_vol_output:
+    #     frame_list = range(0,frame_N, 1)
+    #     testsavedir += "_full_frame"
+    # else:
+    frame_list = range(30,frame_N, 2)
         
+    
+    # frame_list = range(30,frame_N, 1)
     
     os.makedirs(testsavedir, exist_ok=True)
 
     
     # change_feature_interval = 50
     # sample_pts = 32
-    # change_feature_interval = 20
-    change_feature_interval = 100
+    change_feature_interval = 10
+    # change_feature_interval = 100
+    # sample_pts = 512
     sample_pts = 128
+    # sample_pts = 10
+    
     mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
        
+    draw_mapping_3d(os.path.join(testsavedir, f'vis_map_3d_interval{change_feature_interval}.png'), mapping_xyz.permute(1,0,2).cpu().numpy())
     
     # draw grid_xyz on image
     grid_yz = mapping_xyz[..., [1,2]].permute(1,0,2)

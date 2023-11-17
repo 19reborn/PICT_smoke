@@ -220,9 +220,7 @@ def config_parser():
                         help='render the training set instead of render_poses path')
     parser.add_argument("--vis_feature", action='store_true', 
                         help='render the training set instead of render_poses path')
-    parser.add_argument("--vis_mapping", action='store_true', 
-                        help='render the training set instead of render_poses path')
-
+   
     # rendering options
     parser.add_argument("--N_samples", type=int, default=64, 
                         help='number of coarse samples per ray')
