@@ -69,6 +69,36 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
 
     exit(0)
 
+def visualize_feature(args, model, testsavedir, voxel_writer, t_info):
+
+    model.eval()
+    print('vis_features ONLY')
+    
+
+    t_list = list(np.arange(t_info[0],t_info[1],t_info[-1]))
+    frame_N = len(t_list)
+    
+
+    frame_N = args.time_size
+    delta_T = 1.0 / frame_N
+    
+    if args.full_vol_output:
+        frame_list = range(0,frame_N, 1)
+        testsavedir += "_full_frame"
+    else:
+        frame_list = range(frame_N//10,frame_N, 10)
+        
+    
+    os.makedirs(testsavedir, exist_ok=True)
+    for frame_i in frame_list:
+        cur_t = t_list[frame_i]
+        voxel_writer.vis_feature_voxel(model, testsavedir + '/time_%d.png'%frame_i, cur_t)
+        
+    print('Done output', testsavedir)
+    
+    exit(0)
+
+
 def render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, cuda_ray, gt_images):
     model.eval()
     os.makedirs(testsavedir, exist_ok=True)
@@ -345,6 +375,16 @@ def test(args):
 
         testsavedir = os.path.join(basedir, expname, 'volumeout_{:06d}'.format(start+1))
         output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = args.voxel_video)
+    elif args.visualize_feature:
+        resX = args.vol_output_W
+        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
+        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
+        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
+
+        testsavedir = os.path.join(basedir, expname, 'vis_feature_{:06d}'.format(start+1))
+        os.makedirs(testsavedir, exist_ok=True)
+        visualize_feature(args, model, testsavedir, voxel_writer, t_info)
+        
     elif args.visualize_mapping:
         resX = args.vol_output_W
         resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)

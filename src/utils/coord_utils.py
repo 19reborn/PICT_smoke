@@ -387,9 +387,10 @@ class Voxel_Tool(object):
         return error_img
 
     @torch.no_grad()
-    def vis_feature_voxel(self, path, t, dynamic_model_lagrangian, middle_slice = False, chunk = 1024*32):
+    def vis_feature_voxel(self, model, path, t = 0.0, middle_slice = False, chunk = 1024*32):
+        # t: the time step of this feature mapc
 
-        dynamic_model_lagrangian.eval_mode = True
+        model.eval()
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
         pts_flat = self.pts_mid if middle_slice else self.pts.view(-1, 3)
@@ -398,11 +399,10 @@ class Voxel_Tool(object):
 
         # get feature0
 
-
         feature_t = []
         for i in range(0, pts_N, chunk):
             input_i = pts_flat[i:i+chunk]
-            feature = dynamic_model_lagrangian.velocity_model.forward_feature(input_i, torch.ones([input_i.shape[0], 1])*float(t)).detach()
+            feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(input_i, torch.ones([input_i.shape[0], 1])*float(t)).detach()
             feature_t.append(feature)
             
         feature_t = torch.cat(feature_t, 0)
@@ -416,9 +416,9 @@ class Voxel_Tool(object):
         else:
             feature_t = feature_t.view(D,H,W,-1) 
             
-        dynamic_model_lagrangian.eval_mode = False
 
         feature_img = vel_uv2hsv(feature_t.cpu(), scale=160, is3D=True, logv=False)
+        
         imageio.imwrite(path, feature_img)
 
         return feature_img

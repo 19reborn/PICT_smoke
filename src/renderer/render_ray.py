@@ -1,3 +1,4 @@
+# from sklearn.manifold import TSNE
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -294,6 +295,14 @@ def render(H, W, K, model, N_samples = 64, chunk=1024*32, rays=None, c2w=None, n
                 # all_ret[rgb_i] = all_ret[rgb_i] + torch_bkgd_color*(1.-all_ret[acc_i][..., None])
                 all_ret[rgb_i] = all_ret[rgb_i] + torch_bkgd_color*(1.-all_ret[acc_i].reshape([*all_ret[rgb_i].shape[:-1], 1]))
 
+    # tsne = TSNE(n_components=3)
+    # feature =  all_ret['feature_map'].detach().cpu().numpy()
+    # rgb = tsne.fit_transform(feature.reshape(H*W, -1)).reshape(H, W, 3)
+
+    # import pdb
+    # pdb.set_trace()
+    # cv2.imwrite('test_feature.png', all_ret['feature_map'][...,:3].detach().cpu().numpy()*255)
+    # cv2.imwrite('test_feature.png', all_ret['feature_map'][...,6:9].detach().cpu().numpy()*255)
     k_extract = ['rgb_map', 'disp_map', 'acc_map']
     ret_list = [all_ret[k] for k in k_extract]
     ret_dict = {k : all_ret[k] for k in all_ret if k not in k_extract}
@@ -745,6 +754,13 @@ def render_rays_cuda(ray_batch,
     dynamic_weights, dynamic_weights_sum, dynamic_depth, dynamic_image = raymarching.composite_rays_train(smoke_alpha, smoke_color, ts_dynamic, rays_dynamic, True) # alpha_mode = True
     static_weights, static_weights_sum, static_depth, static_image = raymarching.composite_rays_train_neus(static_alpha, static_color, ts_static, rays_static)
 
+    if model.training is False:
+        # render feature map
+        features = model.dynamic_model_lagrangian.velocity_model.forward_feature(pts_dynamic[...,:3], pts_dynamic[...,-1:]).detach()
+        weighted_features = dynamic_weights.unsqueeze(-1) * features
+        feature_map = torch.zeros((N_rays, features.shape[-1])).cuda()
+        feature_map.scatter_add_(0, rays_dynamic_id.long(), weighted_features)
+        ret['feature_map'] = feature_map
 
     # todo: make name more clear
     rgbh2_map = dynamic_image # dynamic

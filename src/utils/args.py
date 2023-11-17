@@ -32,6 +32,7 @@ def config_parser():
                         help='for hybrid models, the step to start learning the temporal dynamic component.')
     parser.add_argument("--fading_layers", type=int, default=-1,
                         help='for siren and hybrid models, the step to finish fading model layers one by one during training.')
+    parser.add_argument("--density_distillation_delay", type=int, default=2000, help="stage 2 total training steps" )
 
     ## Stage 2
     parser.add_argument("--stage2_finish_init_lagrangian", type=int, default=20000, help="stage 2 total training steps" )
@@ -189,6 +190,8 @@ def config_parser():
     parser.add_argument("--voxel_video", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
     parser.add_argument("--visualize_mapping", action='store_true', 
+                        help='do not optimize, reload weights and output volumetric density and velocity')
+    parser.add_argument("--visualize_feature", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
     parser.add_argument("--evaluate_mapping", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')

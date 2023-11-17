@@ -1,4 +1,4 @@
-expname = game/1101_v2_full_loss
+expname = game/1117_v1_train_vel_interval1
 basedir = ./log
 
 ### data info
@@ -54,8 +54,8 @@ anneal_end = 5000
 
 i_img = 1000
 i_test = 5000
-i_weights = 10000
-i_video = 50000
+i_weights = 5000
+i_video = 10000
 N_iter = 400000
 
 cuda_ray = True
@@ -93,11 +93,19 @@ use_scene_scale_before_pe = True
 neus_progressive_pe = True
 
 max_mapping_frame_range = 100
-nseW = 1e-1
+stage4_train_vel_interval = 1
+
+nseW = 1e-2
 vel_regulization_weight = 0.1
+cross_cycle_loss_weight = 1.0
+self_cycle_loss_weight = 1.0
+density_mapping_loss_weight = 1e-2
+velocity_mapping_loss_weight = 1e-2
+color_mapping_loss_weight = 1.0
 
 # nseW = 1e-4
 
+model_path = /root/data/wym/workspace/pinf_clean/log/game/1101_v2_full_loss/200000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1031_v2_use_progressive_pe/100000.tar
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1015_v2_small_warmup/100000.tar

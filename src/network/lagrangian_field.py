@@ -531,6 +531,12 @@ class Lagrangian_NeRF(nn.Module):
 
         return density
     
+    def density_with_feature(self, x):
+
+        density, features = self.density_model(x)
+
+        return density, features
+    
     def color(self, x):
 
         color = self.color_model(x)

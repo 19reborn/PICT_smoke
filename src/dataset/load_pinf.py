@@ -341,10 +341,15 @@ def load_pinf_frame_data(args, basedir, half_res='normal', testskip=1, train_ski
     #     pose_spherical(angle, phi, radius, rotZ, r_center[0], r_center[1], r_center[2]) 
     #     for angle in np.linspace(-180,180,sp_n+1)[:-1]
     # ]
-    sp_n = 80 # an even number!
+    # sp_n = 80 # an even number!
+    # sp_poses = [
+    #     pose_spherical(angle, phi, radius, rotZ, r_center[0], r_center[1], r_center[2]) 
+    #     for angle in np.linspace(90,180,sp_n+1)[:-1] # for game scene
+    # ]
+    sp_n = 120 # an even number! # scalar opposite
     sp_poses = [
-        pose_spherical(angle, phi, radius, rotZ, r_center[0], r_center[1], r_center[2]) 
-        for angle in np.linspace(90,180,sp_n+1)[:-1] # for game scene
+        pose_spherical(-117, phi, radius, rotZ, r_center[0], r_center[1], r_center[2]) 
+        for angle in np.linspace(-180,180,sp_n+1)[:-1] # for game scene
     ]
     sp_steps = np.linspace(t_info[0],t_info[1], num=sp_n) # [ float(ct) ]*sp_n, for testing a frozen t
     render_poses = torch.stack(sp_poses,0) # [sp_poses[36]]*sp_n, for testing a single pose

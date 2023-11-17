@@ -544,8 +544,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
         cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
-        cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
-        # cross_cycle_loss = L1_loss(cross_features, mapped_features)
+        # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
+        cross_cycle_loss = L1_loss(cross_features, mapped_features)
         # vel_loss += 0.05 * cross_cycle_loss * args.nseW
         vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss
         # vel_loss += 10.0 * cross_cycle_loss
@@ -661,6 +661,8 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
 
     # eqs += [Du_Dt]
     eqs += [mean_squared_error(Du_Dt,0.0)]
+    
+    # feature norm regulization
     
     return eqs
 

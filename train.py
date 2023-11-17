@@ -324,7 +324,7 @@ def train(args):
 
 
             # supervise the lagrangian density
-            if args.use_two_level_density and global_step >= 2000:
+            if args.use_two_level_density and global_step >= args.density_distillation_delay:
                 # pass
                 if global_step % 2 == 0:
 
@@ -339,10 +339,12 @@ def train(args):
                     training_t = torch.ones([training_samples.shape[0], 1])*time_locate
                     training_samples = torch.cat([training_samples,training_t], dim=-1).detach()
 
-                _den_lagrangian = model.dynamic_model_lagrangian.density(training_samples)
+                # _den_lagrangian = model.dynamic_model_lagrangian.density(training_samples)
+                _den_lagrangian, features = model.dynamic_model_lagrangian.density_with_feature(training_samples)
                 _den_siren = model.dynamic_model_siren.density(training_samples)
 
                 loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
+                loss += F.smooth_l1_loss(features, torch.zeros_like(features)) * 0.001 # feature regulization
 
 
         if trainVel:
