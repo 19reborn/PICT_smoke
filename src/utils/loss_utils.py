@@ -410,7 +410,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
                 # _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
                 # _vel, _u_x, _u_y, _u_z, 
                 # Du_Dt)
-            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
+            split_nse_wei = [1.0, 10.0, 1e-1, args.vel_regulization_weight, 1e-1]
             
             # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
             # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]

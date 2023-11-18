@@ -1,4 +1,4 @@
-expname = cyl/1117_v6_from_start
+expname = cyl/1118_v1_interval_5
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -56,7 +56,7 @@ anneal_end = 30000
 
 i_img = 1000
 i_test = 10000
-i_weights = 20000
+i_weights = 10000
 i_video = 100000
 N_iter = 200000
 
@@ -96,32 +96,16 @@ use_scene_scale_before_pe = False
 neus_early_terminated = True
 neus_progressive_pe = True
 
-density_mapping_loss_weight = 0.05
-velocity_mapping_loss_weight = 0.05
+stage4_train_vel_interval = 5
+density_mapping_loss_weight = 0.01
+velocity_mapping_loss_weight = 0.01
 color_mapping_loss_weight = 0.01
-nseW = 5e-2
+nseW = 1e-1
 vel_regulization_weight = 0.01
 max_mapping_frame_range = 100
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
 SmokeInsideSDFW = 0.01
-
 boundaryW = 0.1
 
 # color_mapping_loss_weight = 0.5
-
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1116_v4_from_start/040000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1115_v8_no_finetune_for_occ_grid_from_start/050000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1114_v4_no_occ_grid/050000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1115_v2_cudnn_disabled/050000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1114_v4_no_occ_grid/050000.tar
-
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1113_v6_check_static/100000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1113_v2_check_static/120000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1112_v1_test/050000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v1_no_vel_mapping_loss/100000.tar
-
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/1031_v1_neus_early_terminated/050000.tar
-
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1029_v2_from_start/010000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/1028_v1_two_level_density/050000.tar

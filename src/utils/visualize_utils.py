@@ -256,23 +256,42 @@ def draw_mapping(path, data):
         # plt.plot(x, y, marker='o', linestyle='-')
         # plt.plot(x, y, linestyle='-')
         plt.plot(x, y, linestyle='--', linewidth=0.75)
+        # plt.plot(x, y, linestyle='--', linewidth=0.75, marker='o')
         # plt.plot(x, y, linestyle=':')
         # plt.plot(x, y, linestyle='-.')
 
-    plt.xlim(-1, 1)
+    # plt.xlim(-1, 1)
     # plt.ylim(-1, 1)
-    plt.ylim(-0.2, 0.4)
+    # plt.ylim(-0.2, 0.4)
 
     plt.savefig(path)
 
 
 def draw_mapping_3d(path, data):
 
-    fig = plt.figure()
 
     N = data.shape[0]
+    fig = plt.figure(dpi = 200)
     # ax = plt.axes(projection='3d')
     ax = fig.add_subplot(111, projection='3d')
+    ax.view_init(azim=-75, elev=25) # for car scene
+    
+    x_min = data[:, :, 0].min()
+    x_min = min(x_min, -0.5)
+    x_max = data[:, :, 0].max()
+    x_max = max(x_max, 0.5)
+    y_min = data[:, :, 1].min()
+    y_min = min(y_min, -0.5)
+    y_max = data[:, :, 1].max()
+    y_max = max(y_max, 0.5)
+    z_min = data[:, :, 2].min()
+    z_min = min(z_min, -0.5)
+    z_max = data[:, :, 2].max()
+    z_max = max(z_max, 0.5)
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_zlim(z_min, z_max)
+    
     for i in range(N):
         x = data[i, :, 0]
         y = data[i, :, 1]
@@ -281,6 +300,7 @@ def draw_mapping_3d(path, data):
         # plt.plot(x, y, marker='o', linestyle='-')
         # plt.plot(x, y, linestyle='-')
         ax.plot(x, y, z, linestyle='--', linewidth=0.75)
+        # ax.plot(x, y, z, linestyle='--', linewidth=0.75, marker='o')
         # plt.plot(x, y, linestyle=':')
         # plt.plot(x, y, linestyle='-.')
 
@@ -288,8 +308,70 @@ def draw_mapping_3d(path, data):
     # plt.xlim(-1, 1)
     # plt.ylim(-1, 1)
     # plt.ylim(-0.2, 0.4)
-    plt.show()
     plt.savefig(path)
+    plt.show()
+    
+def draw_mapping_3d_animation(path, data):
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib.animation import FuncAnimation
+
+    fig = plt.figure(dpi = 200)
+    ax = fig.add_subplot(111, projection='3d')
+    ax.view_init(azim=-75, elev=25) # for car scene
+    
+    M = data.shape[0] # points number
+    N = data.shape[1] # frames number
+    # ax = plt.axes(projection='3d')
+    
+    x_min = data[:, :, 0].min()
+    x_min = min(x_min, -0.5)
+    x_max = data[:, :, 0].max()
+    x_max = max(x_max, 0.5)
+    y_min = data[:, :, 1].min()
+    y_min = min(y_min, -0.5)
+    y_max = data[:, :, 1].max()
+    y_max = max(y_max, 0.5)
+    z_min = data[:, :, 2].min()
+    z_min = min(z_min, -0.5)
+    z_max = data[:, :, 2].max()
+    z_max = max(z_max, 0.5)
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_zlim(z_min, z_max)
+    
+
+    # sc = ax.scatter([], [], [], s=10)
+
+
+    # 轨迹存储数组
+    trajectories = np.zeros_like(data)
+
+    # 画出轨迹线
+    lines = [ax.plot([], [], [], linestyle='--', linewidth=0.75)[0] for _ in range(M)]
+
+    # 更新函数，用于在每一帧更新轨迹线的数据
+    def update(frame):
+        # 更新轨迹线
+        for i in range(M):
+            lines[i].set_data(data[i, :frame, 0], data[i, :frame, 1])
+            lines[i].set_3d_properties(data[i, :frame, 2])
+
+        return lines
+
+    # 创建动画
+    animation = FuncAnimation(fig, update, frames=N, interval=10000/N, blit=False)
+    # def update(frame):
+    #     sc._offsets3d = (data[frame, :, 0], data[frame, :, 1], data[frame, :, 2])
+    #     return sc,
+
+    # animation = FuncAnimation(fig, update, frames=N, interval=50, blit=True)
+
+    # 显示动画
+    # plt.savefig(path)
+    animation.save(path, writer='imagemagick', fps=20)
+    plt.show()
+
 
 def write_ply(points, filename, text=False):
     """

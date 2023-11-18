@@ -1,10 +1,9 @@
-expname = Car/1117_v1_train_vel_per_2
-# expname = Car/1116_v3_from_start_later_density_distllation
+expname = Car/1105_v6_much_longer_range
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
-datadir = ./data/Car
+datadir = ./data/Car_smoke
 dataset_type = pinf_data
 no_batching = True
 half_res = normal
@@ -30,6 +29,7 @@ train_vel_grid_size = 24
 precrop_iters = 500
 precrop_frac = 0.5
 lrate_decay = 500
+fading_layers = 50000
 tempo_delay = 0
 vel_delay = 20000
 fading_layers = 10000
@@ -53,20 +53,20 @@ bbox_max = 0.95,0.82,0.95
 
 ## for neus
 ekW = 0.1
-i_weights = 20000
+i_weights = 5000
 i_embed_neus = 0
-multires_neus = 6
+multires_neus = 4
 anneal_end = 50000
 
 i_img = 2000
 i_test = 5000
-i_weights = 1000
+i_weights = 10000
 i_video = 50000
 N_iter = 400000
 
 cuda_ray = True
 scene_scale = 0.33
-density_thresh = 2
+density_thresh = 1
 density_thresh_static = 30
 # density_activation = relu
 # density_activation = relu
@@ -74,18 +74,18 @@ density_thresh_static = 30
 
 SmokeInsideSDFW = 0.5
 SmokeAlphaReguW = 0.02
-train_vel_within_rendering = False
+train_vel_within_rendering = True
 boundaryW = 0.5
 train_vel_uniform_sample = 2
 inside_sdf = 0.02
-ColorDivergenceW = 0.00
+ColorDivergenceW = 0.01
 
 # boundary_delay = 10000
 
-stage1_finish_recon = 100000
-uniform_sample_step = 30000
+stage1_finish_recon = 30000
+uniform_sample_step = 10000
 smoke_recon_delay_start = 0
-smoke_recon_delay_last = 100
+smoke_recon_delay_last = 0
 sdf_loss_delay = 200
 
 stage2_finish_init_lagrangian = 1000
@@ -93,29 +93,18 @@ stage3_finish_init_feature = 0
 
 use_two_level_density = True
 vel_regulization_weight = 1
-neus_early_terminated = True
+neus_early_terminated = False
 neus_progressive_pe = True
-# neus_progressive_pe = False
 neus_progressive_pe_start = 20000
 # siren_nerf_netdepth = 6
 # siren_nerf_first_omega = 10
 
 use_scene_scale_before_pe = True
 max_mapping_frame_range = 100
-stage4_train_vel_interval = 5
 
-nseW = 1e-2
-vel_regulization_weight = 0.1
-cross_cycle_loss_weight = 1e-2
-self_cycle_loss_weight = 1e-1
-density_mapping_loss_weight = 1e-2
-velocity_mapping_loss_weight = 1e-2
-color_mapping_loss_weight = 1.0
 
-# model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/Car/1112_v1_larger_nseW/100000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/Car/1110_v1_test/050000.tar
+# nseW = 1e-4
  
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v6_much_longer_range/220000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v5_longer_range/210000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v4_l1_loss/200000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v1/100000.tar

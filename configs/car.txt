@@ -1,4 +1,4 @@
-expname = Car/1117_v1_train_vel_per_2
+expname = Car/1118_v1_retrieve_previous_best
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -13,13 +13,13 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 30
-position_map_first_omega = 30
+density_map_first_omega = 1
+position_map_first_omega = 1
 
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 400
+N_rand = 512
 i_embed = -1
 train_warp = True
 vol_output_W = 256
@@ -87,42 +87,23 @@ smoke_recon_delay_start = 0
 smoke_recon_delay_last = 100
 sdf_loss_delay = 200
 
-stage2_finish_init_lagrangian = 1000
+stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 
 use_two_level_density = True
-vel_regulization_weight = 1
 neus_early_terminated = True
 neus_progressive_pe = True
-# neus_progressive_pe = False
 neus_progressive_pe_start = 20000
-# siren_nerf_netdepth = 6
-# siren_nerf_first_omega = 10
 
 use_scene_scale_before_pe = True
 max_mapping_frame_range = 100
-stage4_train_vel_interval = 1
-
+stage4_train_vel_interval = 10
+vel_regulization_weight = 0.1
 nseW = 1e-2
 vel_regulization_weight = 0.1
 color_mapping_loss_weight = 0.5
-
-# model_path = /root/data/wym/workspace/pinf_clean/log/Car/1110_v1_test/050000.tar
- 
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v6_much_longer_range/220000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v5_longer_range/210000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v4_l1_loss/200000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v1/100000.tar
-
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/Car/1101_v3_correct_ColorDivergenceW/030000.tar
-
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start/010000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/014000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start_debug/014000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/016000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v2_stage2_train_feature/060000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/120000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v9_from_start/085000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v3_stage1_recon/010000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v4_stage2_3/015000.tar
-# model_path =/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v5_stage3/020000.tar
+cross_cycle_loss_weight = 10.0
+self_cycle_loss_weight = 10.0
+density_mapping_loss_weight = 0.001
+velocity_mapping_loss_weight = 0.01
+color_mapping_loss_weight = 0.01
