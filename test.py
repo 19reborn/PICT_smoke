@@ -99,9 +99,61 @@ def visualize_feature(args, model, testsavedir, voxel_writer, t_info):
         
     
     os.makedirs(testsavedir, exist_ok=True)
+    
+    featureX_imgs = []
+    featureY_imgs = []
+    featureZ_imgs = []
+    
+    normalized_featureX_imgs = []
+    normalized_featureY_imgs = []
+    normalized_featureZ_imgs = []
+    
     for frame_i in frame_list:
         cur_t = t_list[frame_i]
-        voxel_writer.vis_feature_voxel(model, testsavedir + '/time_%d.png'%frame_i, cur_t)
+        normalized_feature_img_x, normalized_feature_img_y, normalized_feature_img_z, feature_img_x, feature_img_y, feature_img_z = voxel_writer.vis_feature_voxel(model, testsavedir + '/time_%d'%frame_i, cur_t)
+        
+        featureX_imgs.append(feature_img_x)
+        featureY_imgs.append(feature_img_y)
+        featureZ_imgs.append(feature_img_z)
+        
+        normalized_featureX_imgs.append(normalized_feature_img_x)
+        normalized_featureY_imgs.append(normalized_feature_img_y)
+        normalized_featureZ_imgs.append(normalized_feature_img_z)
+    os.makedirs(testsavedir + "/feature_videos", exist_ok=True)
+    imageio.mimwrite(testsavedir + "/feature_videos/yz.mp4", np.stack(normalized_featureX_imgs,axis=0).astype(np.uint8), fps=20, quality=8)
+    imageio.mimwrite(testsavedir + "/feature_videos/xz.mp4", np.stack(normalized_featureY_imgs,axis=0).astype(np.uint8), fps=20, quality=8)
+    imageio.mimwrite(testsavedir + "/feature_videos/xy.mp4", np.stack(normalized_featureZ_imgs,axis=0).astype(np.uint8), fps=20, quality=8)
+
+        
+    # globally normalize
+    featureX_imgs = np.stack(featureX_imgs,axis=0)
+    featureY_imgs = np.stack(featureY_imgs,axis=0)
+    featureZ_imgs = np.stack(featureZ_imgs,axis=0)
+    
+    featureX_imgs = torch.tensor(featureX_imgs)
+    featureY_imgs = torch.tensor(featureY_imgs)
+    featureZ_imgs = torch.tensor(featureZ_imgs)
+    
+    def normalize_img(feature_img):
+        feature_img = feature_img
+        channel_min = feature_img.reshape(-1,3).min(dim=0)[0].reshape(1, 1,1,3)
+        channel_max = feature_img.reshape(-1,3).max(dim=0)[0].reshape(1, 1,1,3)
+        feature_img = (feature_img - channel_min) / (channel_max - channel_min)
+        
+        feature_img = feature_img.cpu().numpy()
+        feature_img = (feature_img * 255).astype(np.uint8)
+        
+        return feature_img
+    
+    featureX_imgs = normalize_img(featureX_imgs)
+    featureY_imgs = normalize_img(featureY_imgs)
+    featureZ_imgs = normalize_img(featureZ_imgs)
+    
+    imageio.mimwrite(testsavedir + "/feature_videos/yz_global_normalized.mp4", np.stack(featureX_imgs,axis=0).astype(np.uint8), fps=20, quality=8)
+    imageio.mimwrite(testsavedir + "/feature_videos/xz_global_normalized.mp4", np.stack(featureY_imgs,axis=0).astype(np.uint8), fps=20, quality=8)
+    imageio.mimwrite(testsavedir + "/feature_videos/xy_global_normalized.mp4", np.stack(featureZ_imgs,axis=0).astype(np.uint8), fps=20, quality=8)
+    
+    
         
     print('Done output', testsavedir)
     

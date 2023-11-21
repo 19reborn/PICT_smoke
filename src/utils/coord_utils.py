@@ -419,18 +419,42 @@ class Voxel_Tool(object):
         feature_img = feature_t[...,:3].cpu()
         # get three mid slice and concat
         feature_img_x = feature_img[D//2:D//2+1,...].squeeze(0)
-        feature_img_y = feature_img[:,H//2:H//2+1,...].squeeze(0)
-        feature_img_z = feature_img[...,W//2:W//2+1].squeeze(0)
-
-        feature_img = feature_img_x
+        feature_img_y = feature_img[:,H//2:H//2+1,...].squeeze(1)
+        feature_img_z = feature_img[...,W//2:W//2+1,:].squeeze(2)
+        
+        
+        def normalize_img(feature_img):
+            feature_img = feature_img
+            channel_min = feature_img.reshape(-1,3).min(dim=0)[0].reshape(1,1,3)
+            channel_max = feature_img.reshape(-1,3).max(dim=0)[0].reshape(1,1,3)
+            feature_img = (feature_img - channel_min) / (channel_max - channel_min)
+            
+            # feature_img = feature_img.abs()
+            # feature_img  = feature_img / feature_img.max()
+            feature_img = feature_img.cpu().numpy()
+            
+            return feature_img
+        
+        normalized_feature_img_x = normalize_img(feature_img_x)
+        normalized_feature_img_y = normalize_img(feature_img_y)
+        normalized_feature_img_z = normalize_img(feature_img_z)
+        
+        normalized_feature_img_x = (normalized_feature_img_x * 255).astype(np.uint8)
+        normalized_feature_img_y = (normalized_feature_img_y * 255).astype(np.uint8)
+        normalized_feature_img_z = (normalized_feature_img_z * 255).astype(np.uint8)
+        imageio.imwrite(path+'_yz.png', normalized_feature_img_x)
+        imageio.imwrite(path+'_zx.png', normalized_feature_img_y)
+        imageio.imwrite(path+'_xy.png', normalized_feature_img_z)
+        
         # feature_img = torch.cat([feature_img_x, feature_img_y, feature_img_z], dim=0)
         # feature_img = vel_uv2hsv(feature_t.cpu(), scale=160, is3D=True, logv=False)
-        imageio.imwrite(path, feature_img)
+        # imageio.imwrite(path, feature_img.numpy().astype(np.int8))
+        # imageio.imwrite(path, (feature_img.numpy()* 255).astype(np.uint8) )
 
         # imageio.imwrite('test_feature_x.png', feature_img_x * 255)
         
 
-        return feature_img
+        return normalized_feature_img_x, normalized_feature_img_y, normalized_feature_img_z, feature_img_x, feature_img_y, feature_img_z
 
     @torch.no_grad()
     def vis_mapping_voxel(self, frame_list, t_list, model, sample_pts = 128, change_feature_interval = 1, chunk = 1024*32):
@@ -468,10 +492,10 @@ class Voxel_Tool(object):
         # pdb.set_trace()
 
         density_mean = density_0.clamp(0.0, 1e5).mean()
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
+        pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
-        pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
             
         pts_num = sample_pts
 

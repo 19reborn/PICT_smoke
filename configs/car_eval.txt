@@ -1,4 +1,4 @@
-expname = Car/1121_v2_less_more_cycle_constrain
+expname = Car/1121_v3_larger_cross
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 

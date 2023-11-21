@@ -516,6 +516,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
         ## cycle loss for lagrangian feature
         if training_stage == 3 or training_stage == 4:
+            cycle_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature, 10000) # 
+            
             # add cycle loss for lagrangian mapping
             cycle_loss = None
         
@@ -523,7 +525,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             # cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
             cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
             # vel_loss += 0.1 * cycle_loss
-            vel_loss += args.self_cycle_loss_weight * cycle_loss
+            vel_loss += args.self_cycle_loss_weight * cycle_loss * cycle_loss_fading
 
             cross_cycle_loss = None
 
@@ -550,7 +552,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
             cross_cycle_loss = L1_loss(cross_features, mapped_features)
             # vel_loss += 0.05 * cross_cycle_loss * args.nseW
-            vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss
+            vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss * cycle_loss_fading
             # vel_loss += 10.0 * cross_cycle_loss
 
             vel_loss_dict['feature_cycle_loss'] = cycle_loss
