@@ -7,8 +7,7 @@ import glob
 from torch.utils.tensorboard import SummaryWriter
 
 
-torch.backends.cudnn.enabled = False
-torch.backends.cudnn.benchmark = False
+
 
 def set_rand_seed(seed):
     import random

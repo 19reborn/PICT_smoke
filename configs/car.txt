@@ -1,4 +1,4 @@
-expname = Car/1118_v1_retrieve_previous_best
+expname = Car/1119_v5_much_larger_cross_cycle_loss
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -54,7 +54,7 @@ bbox_max = 0.95,0.82,0.95
 ekW = 0.1
 i_weights = 20000
 i_embed_neus = 0
-multires_neus = 6
+multires_neus = 4
 anneal_end = 50000
 
 i_img = 2000
@@ -65,7 +65,7 @@ N_iter = 400000
 
 cuda_ray = True
 scene_scale = 0.33
-density_thresh = 2
+density_thresh = 1
 density_thresh_static = 30
 # density_activation = relu
 # density_activation = relu
@@ -96,14 +96,16 @@ neus_progressive_pe = True
 neus_progressive_pe_start = 20000
 
 use_scene_scale_before_pe = True
-max_mapping_frame_range = 100
-stage4_train_vel_interval = 10
-vel_regulization_weight = 0.1
+max_mapping_frame_range = 150
+stage4_train_vel_interval = 5
+
 nseW = 1e-2
 vel_regulization_weight = 0.1
-color_mapping_loss_weight = 0.5
-cross_cycle_loss_weight = 10.0
+cross_cycle_loss_weight = 1000.0
 self_cycle_loss_weight = 10.0
-density_mapping_loss_weight = 0.001
-velocity_mapping_loss_weight = 0.01
-color_mapping_loss_weight = 0.01
+density_mapping_loss_weight = 0.05
+velocity_mapping_loss_weight = 0.05
+color_mapping_loss_weight = 5.0
+
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1119_v3_larger_cycle_loss/300000.tar
+model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1119_v4_larger_vel_regulization/200000.tar

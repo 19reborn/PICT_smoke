@@ -21,6 +21,8 @@ from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_
 from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch.backends.cudnn.enabled = False
+torch.backends.cudnn.benchmark = False
 
 def train(args):
     # Create log dir and copy the config file
