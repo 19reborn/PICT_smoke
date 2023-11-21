@@ -17,7 +17,7 @@ from src.renderer.render_ray import render_path, render_eval
 from src.utils.args import config_parser
 from src.utils.training_utils import set_rand_seed, save_log
 from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D, get_voxel_pts
-from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
+from src.utils.loss_utils_new import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
 from src.utils.visualize_utils import draw_mapping, draw_mapping_3d, draw_mapping_3d_animation, vel_uv2hsv, den_scalar2rgb
 from src.utils.evaluate_utils import evaluate_mapping
 

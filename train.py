@@ -17,10 +17,12 @@ from src.renderer.render_ray import render, render_path, prepare_rays
 from src.utils.args import config_parser
 from src.utils.training_utils import set_rand_seed, save_log
 from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D
-from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
+from src.utils.loss_utils_new import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
 from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch.backends.cudnn.enabled = False
+torch.backends.cudnn.benchmark = False
 
 def train(args):
     # Create log dir and copy the config file
@@ -248,7 +250,8 @@ def train(args):
  
                 for i in range(2):
                     update_occ_grid(args, model, global_step, update_interval = 1, update_interval_static = 1, neus_early_terminated = False)
-                update_static_occ_grid(args, model, times=10)
+                if not model.single_scene:
+                    update_static_occ_grid(args, model, times=10)
                 
                 first_update_occ_grid = False
             else:
@@ -412,6 +415,10 @@ def train(args):
         new_lrate = args.lrate * (decay_rate ** (global_step / decay_steps))
         for param_group in optimizer.param_groups:
             param_group['lr'] = new_lrate
+            # if args.neus_larger_lr_decay and param_group['name'] == 'static_model':
+            #     neus_decay_rate = 0.02
+            #     new_lrate = args.lrate * (neus_decay_rate ** (global_step / decay_steps))
+            #     param_group['lr'] = new_lrate 
 
 
         if args.adaptive_num_rays and args.cuda_ray == True and global_step > args.uniform_sample_step:

@@ -230,9 +230,19 @@ def create_model(args, device, bbox_model):
     model = Lagrangian_Hybrid_NeuS(args = args, 
                                     bbox_model = bbox_model,
                                     occupancy_grid_static = occupancy_grid_static,
-                                    occupancy_grid_dynamic= occupancy_grid_dynamic).to(device)
+                                    occupancy_grid_dynamic= occupancy_grid_dynamic).to(device)  
     
+    # params_to_train = []
+    # params_to_train.append({'name':'dynamic_model_lagrangian', 'params': list(model.dynamic_model_lagrangian.parameters())})
+    # if args.use_two_level_density:
+    #     # params_to_train += list(model.dynamic_model_siren.parameters())
+    #     params_to_train.append({'name':'dynamic_model_siren', 'params': list(model.dynamic_model_siren.parameters())})
+    # if not model.single_scene:
+    #     # params_to_train += list(model.static_model.parameters())
+    #     params_to_train.append({'name':'static_model', 'params': list(model.static_model.parameters())})
+
     optimizer = torch.optim.Adam(params=model.parameters(), lr=args.lrate, betas=(0.9, 0.999))
+    # optimizer = torch.optim.Adam(params=params_to_train, lr=args.lrate, betas=(0.9, 0.999))
 
     load_model_path = None
 

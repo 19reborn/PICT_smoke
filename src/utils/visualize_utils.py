@@ -309,7 +309,7 @@ def draw_mapping_3d(path, data):
     # plt.ylim(-1, 1)
     # plt.ylim(-0.2, 0.4)
     plt.savefig(path)
-    plt.show()
+    # plt.show()
     
 def draw_mapping_3d_animation(path, data):
     import matplotlib.pyplot as plt
@@ -370,7 +370,7 @@ def draw_mapping_3d_animation(path, data):
     # 显示动画
     # plt.savefig(path)
     animation.save(path, writer='imagemagick', fps=20)
-    plt.show()
+    # plt.show()
 
 
 def write_ply(points, filename, text=False):
