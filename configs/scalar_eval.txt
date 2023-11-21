@@ -1,5 +1,6 @@
-expname = scalar/1031_v4_from_50k
-basedir = ./log
+expname = scalar/1118_v2_larger_cycle_loss
+# basedir = ./log
+basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/ScalarReal
@@ -7,7 +8,7 @@ dataset_type = pinf_data
 no_batching = True
 half_res = half
 white_bkgd = True
-testskip = 20
+testskip = 10
 
 ### network arch
 net_model = siren
@@ -23,6 +24,7 @@ use_viewdirs = False
 # position_map_first_omega = 10
 density_map_first_omega = 1
 position_map_first_omega = 1
+density_activation = exp
 
 ### train params - sampling
 N_samples = 64
@@ -67,25 +69,20 @@ smoke_recon_delay_last = 0
 
 stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
-stage4_train_vel_interval = 20
+stage4_train_vel_interval = 10
 
-max_mapping_frame_range = 3
 use_two_level_density = True
-vel_regulization_weight = 1
+vel_regulization_weight = 0.1
 use_scene_scale_before_pe = True
 
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v4_from_50k/400000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v1_match_smaller_omega/050000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1031_v1_match_smaller_omega/300000.tar
-
-# model_path = /root/data/wym/workspace/pinf_clean/log/scalar/1029_v4_smaller_omega/100000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1028_v11_lagrangian_transport/010000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1028_v2_two_level_density/010000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1025_v14_no_activation/010000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1025_v10_debug/020000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1025_v1_from_start/050000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1024_v5_position_omega_30/020000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1024_v3_larger_omega/020000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1024_v1_smaller_reference/020000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalar/1023_v1_smaller_density_reference/010000.tar
-
+stage4_train_vel_interval = 10
+density_mapping_loss_weight = 0.001
+velocity_mapping_loss_weight = 0.01
+color_mapping_loss_weight = 0.01
+nseW = 1e-1
+vel_regulization_weight = 0.01
+max_mapping_frame_range = 100
+cross_cycle_loss_weight = 10.0
+self_cycle_loss_weight = 10.0
+SmokeInsideSDFW = 0.01
+boundaryW = 0.01

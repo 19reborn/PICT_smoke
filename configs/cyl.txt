@@ -1,4 +1,4 @@
-expname = cyl/1118_v1_interval_5
+expname = cyl/1120_v7_1
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -63,15 +63,14 @@ N_iter = 200000
 cuda_ray = True
 # cuda_ray = False
 scene_scale = 0.33
-density_thresh = 2.0
-density_thresh_static = 10
+density_thresh = 1.0
+density_thresh_static = 5
 # density_activation = relu
 # lagrangian_density_activation = relu
 
 SmokeInsideSDFW = 0.5
 SmokeAlphaReguW = 0.2
 train_vel_within_rendering = False
-boundaryW = 0.5
 train_vel_uniform_sample = 2
 inside_sdf = 0.02
 
@@ -79,7 +78,7 @@ inside_sdf = 0.02
 # boundary_delay = 10000
 
 stage1_finish_recon = 50000
-uniform_sample_step = 45000
+uniform_sample_step = 50000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 2000
 sdf_loss_delay = 2000
@@ -90,22 +89,23 @@ stage3_finish_init_feature = 0
 # train_vel_grid_size = 24
 
 use_two_level_density = True
-# use_scene_scale_before_pe = True
 use_scene_scale_before_pe = False
-# vel_regulization_weight = 10
 neus_early_terminated = True
+# neus_early_terminated = False
 neus_progressive_pe = True
 
-stage4_train_vel_interval = 5
-density_mapping_loss_weight = 0.01
+stage4_train_vel_interval = 10
+density_mapping_loss_weight = 0.001
 velocity_mapping_loss_weight = 0.01
 color_mapping_loss_weight = 0.01
+ColorDivergenceW = 0.00
 nseW = 1e-1
 vel_regulization_weight = 0.01
 max_mapping_frame_range = 100
-cross_cycle_loss_weight = 1.0
-self_cycle_loss_weight = 1.0
+cross_cycle_loss_weight = 10.0
+self_cycle_loss_weight = 10.0
 SmokeInsideSDFW = 0.01
 boundaryW = 0.1
 
 # color_mapping_loss_weight = 0.5
+fix_seed = 66
