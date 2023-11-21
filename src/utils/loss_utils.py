@@ -300,14 +300,11 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
     return rendering_loss, rendering_loss_dict
 
 
-def get_velocity_loss(args, model, training_samples, training_stage, trainVel, global_step):
+def get_velocity_loss(args, model, training_samples, training_stage, local_step, global_step):
 
 
     #####  core velocity optimization loop  #####
     # allows to take derivative w.r.t. training_samples
-
-
-
 
 
     velocity_model = model.dynamic_model_lagrangian.velocity_model
@@ -316,206 +313,303 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
     if args.use_two_level_density:
         den_model_siren = model.dynamic_model_siren
     
-    training_samples = training_samples.requires_grad_(True)
-    
-    if not model.single_scene:
-        _sdf, _normal = model.static_model.sdf_with_gradient(training_samples[..., :3])
-
-    if args.use_two_level_density:
-        _den_siren, _d_x_siren, _d_y_siren, _d_z_siren, _d_t_siren = den_model_siren.density_with_jacobian(training_samples)
-        _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
-        _d_x_lagrangian, _d_y_lagrangian, _d_z_lagrangian, _d_t_lagrangian = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
-    
-        _d_x = _d_x_lagrangian.detach() + 0.01 * _d_x_siren.detach()
-        _d_y = _d_y_lagrangian.detach() + 0.01 * _d_y_siren.detach()
-        _d_z = _d_z_lagrangian.detach() + 0.01 * _d_z_siren.detach()
-        _d_t = _d_t_lagrangian.detach() + 0.01 * _d_t_siren.detach()
-    else:
-        _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
-        _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
-         
     vel_loss_dict = {}
     vel_loss = 0.0
 
-    if args.use_two_level_density:
-        # if training_stage == 4 and not trainVel:
-        # # supervise lagrangian density using siren density
-        #     density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
-            
-        #     vel_loss_dict['density_reference_loss'] = density_reference_loss
-        #     vel_loss += density_reference_loss
-            
-        #     return vel_loss, vel_loss_dict
-            
-        if training_stage == 2:
-            # warm up the feature using density
-            # warm up the velocity linears using nse equation
-    
-    
-            _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
+    # if local_step % args.stage4_train_vel_interval == 0:
+    if local_step % 4 == 0:
         
-            split_nse = PDE_stage2(
-                _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                _vel, 
-                Du_Dt)
-            
-            split_nse_wei = [1.0, 0.1, 0.1, 1e-2] 
-
-
-        elif training_stage == 3:
-            
-            _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
-            
-            jac = vel_middle_output['jacobian']
-            _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
-            _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
-            _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
-            
-
-            split_nse = PDE_stage3(
-                _f_t, _f_x, _f_y, _f_z,
-                _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                _vel, _u_x, _u_y, _u_z, 
-                Du_Dt)
-            
-            # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
-            # split_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
-            # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
-            split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
-            
-            # density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
-                    
-            # vel_loss_dict['density_reference_loss'] = density_reference_loss 
-            
-            # vel_loss += density_reference_loss 
-
+        training_samples = training_samples.requires_grad_(True)
         
-        elif training_stage == 4:
-            
-            _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
-            jac = vel_middle_output['jacobian']
-            _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
-            _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
-            _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
-            # _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
-            
+        if not model.single_scene:
+            _sdf, _normal = model.static_model.sdf_with_gradient(training_samples[..., :3])
 
-            split_nse = PDE_stage3(
-                _f_t, _f_x, _f_y, _f_z,
-                _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                _vel, _u_x, _u_y, _u_z, 
-                Du_Dt)
-            # split_nse = PDE_stage4(
-                # _f_t, _f_x, _f_y, _f_z,
-                # _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                # _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
-                # _vel, _u_x, _u_y, _u_z, 
-                # Du_Dt)
-            split_nse_wei = [1.0, 10.0, 1e-1, args.vel_regulization_weight, 1e-1]
-            
-            # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
-            # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
-            # split_nse_wei = [1.0, 10.0, 1e-2, args.vel_regulization_weight, 1e-2]
-            # split_nse_wei = [1.0, 0.1, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
-            # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
-            # split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
-            # split_nse_wei = [1.0, 1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
-            # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
-            # split_nse_wei = [1.0, 1e-2, 1e-3, 1e-3, 1e-3] 
-            # spl0it_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
-            
-            # density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
-                    
-            # vel_loss_dict['density_reference_loss'] = density_reference_loss 
-
-            # vel_loss += density_reference_loss 
-
+        if args.use_two_level_density:
+            _den_siren, _d_x_siren, _d_y_siren, _d_z_siren, _d_t_siren = den_model_siren.density_with_jacobian(training_samples)
+            _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
+            _d_x_lagrangian, _d_y_lagrangian, _d_z_lagrangian, _d_t_lagrangian = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
+        
+            _d_x = _d_x_lagrangian.detach() + 0.01 * _d_x_siren.detach()
+            _d_y = _d_y_lagrangian.detach() + 0.01 * _d_y_siren.detach()
+            _d_z = _d_z_lagrangian.detach() + 0.01 * _d_z_siren.detach()
+            _d_t = _d_t_lagrangian.detach() + 0.01 * _d_t_siren.detach()
         else:
-            AssertionError("training stage should be set to 1,2,3,4")
+            _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
+            _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
             
+
+        if args.use_two_level_density:
+            # if training_stage == 4 and not trainVel:
+            # # supervise lagrangian density using siren density
+            #     density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
+                
+            #     vel_loss_dict['density_reference_loss'] = density_reference_loss
+            #     vel_loss += density_reference_loss
+                
+            #     return vel_loss, vel_loss_dict
+                
+            if training_stage == 2:
+                # warm up the feature using density
+                # warm up the velocity linears using nse equation
+        
+        
+                _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
+            
+                split_nse = PDE_stage2(
+                    _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                    _vel, 
+                    Du_Dt)
+                
+                split_nse_wei = [1.0, 0.1, 0.1, 1e-2] 
+
+
+            elif training_stage == 3:
+                
+                _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
+                
+                jac = vel_middle_output['jacobian']
+                _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
+                _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
+                _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
+                
+
+                split_nse = PDE_stage3(
+                    _f_t, _f_x, _f_y, _f_z,
+                    _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                    _vel, _u_x, _u_y, _u_z, 
+                    Du_Dt)
+                
+                # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
+                # split_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
+                # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+                split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
+                
+                # density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
+                        
+                # vel_loss_dict['density_reference_loss'] = density_reference_loss 
+                
+                # vel_loss += density_reference_loss 
+
+            
+            elif training_stage == 4:
+                
+                _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
+                jac = vel_middle_output['jacobian']
+                _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
+                _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
+                _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
+                # _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
+                
+
+                split_nse = PDE_stage3(
+                    _f_t, _f_x, _f_y, _f_z,
+                    _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                    _vel, _u_x, _u_y, _u_z, 
+                    Du_Dt)
+                # split_nse = PDE_stage4(
+                    # _f_t, _f_x, _f_y, _f_z,
+                    # _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                    # _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
+                    # _vel, _u_x, _u_y, _u_z, 
+                    # Du_Dt)
+                split_nse_wei = [1.0, 10.0, 1e-1, args.vel_regulization_weight, 1e-1]
+                
+                # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
+                # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
+                # split_nse_wei = [1.0, 10.0, 1e-2, args.vel_regulization_weight, 1e-2]
+                # split_nse_wei = [1.0, 0.1, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
+                # density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt,
+                # split_nse_wei = [0.1, 0.1, 0.1, 0.1, 1e-3] 
+                # split_nse_wei = [1.0, 1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
+                # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+                # split_nse_wei = [1.0, 1e-2, 1e-3, 1e-3, 1e-3] 
+                # spl0it_nse_wei = [1e-1, 1e-1, 1e-3, 1e-3, 1e-3] 
+                
+                # density_reference_loss = smooth_l1_loss(F.relu(_den_siren.detach()), F.relu(_den_lagrangian))
+                        
+                # vel_loss_dict['density_reference_loss'] = density_reference_loss 
+
+                # vel_loss += density_reference_loss 
+
+            else:
+                AssertionError("training stage should be set to 1,2,3,4")
+                
+        else:
+            # start train velocity using lagrangian density, and give up siren density
+
+
+            _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
+            _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
+            jac = vel_middle_output['jacobian']
+            _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
+            _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
+            _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)       
+        
+            split_nse = PDE_stage3(
+                _f_t, _f_x, _f_y, _f_z,
+                _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                _vel, _u_x, _u_y, _u_z, 
+                Du_Dt)
+                # Du_Dt, density_mask=_den_lagrangian)
+            
+            # density transport, feature continuity, velocitt divergence, scale regularzation, Dd_Dt, Du_Dt
+            # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
+            # split_nse_wei = [1.0, 1.0, 1e-3, 1000000, 1e-3] 
+            # split_nse_wei = [1.0, 1.0, 0.1, 100000, 0.1] 
+            # split_nse_wei = [1.0, 1.0, 1e-3, 100.0, 1e-3] 
+            # split_nse_wei = [10.0, 0.1, 1e-3, 1.0, 1e-3] 
+                
+            # split_nse_wei = [1.0, 1.0, 1e-3, 1000000, 1e-3] 
+            # vel_regulization_weight = 1000 * decay_in_weight(global_step, args.stage1_finish_recon + 3000, 2000, min_decay = 1e-3)
+            # split_nse_wei = [1.0, 1.0, 1e-3, vel_regulization_weight, 1e-3]
+            # split_nse_wei = [1.0, 1.0, 1e-3, 1000, 1e-3] 
+            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
+
+                
+
+        # nse_errors = [smooth_l1_loss(x, torch.zeros_like(x)) for x in split_nse]
+        # nse_errors = [L1_loss(x, torch.zeros_like(x)) for x in split_nse]
+        # nse_errors = [mean_squared_error(x,0.0) for x in split_nse]
+        nse_errors = split_nse
+
+
+        nseloss_fine = 0.0
+        for ei,wi in zip (nse_errors, split_nse_wei):
+            nseloss_fine = ei*wi + nseloss_fine
+        vel_loss += nseloss_fine * args.nseW
+        
+        vel_loss_dict['nse_errors'] = nse_errors
+        vel_loss_dict['nseloss_fine'] = nseloss_fine
+
+
+        # boundary loss
+        if not model.single_scene:
+            # if the sampling point's sdf < 0.05 and > -0.05, we assume it's on the boundary: The velocity along the normal direction must be zero.
+            # If the sampling point's sdf < -0.05, we assume it's inside the object : The velocity should be 0.
+            _sdf = _sdf.detach()
+            _normal = _normal.detach()
+
+            # boundary_sdf = 0.05
+            # boundary_sdf = 0.02 * args.scene_scale
+            # boundary_sdf = 0.00 * args.scene_scale
+            boundary_sdf = args.inside_sdf
+            boundary_mask = torch.abs(_sdf) < boundary_sdf
+            boundary_vel = _vel * boundary_mask
+            
+            # boundary_vel_normal = torch.dot(boundary_vel, _normal) 
+            boundary_vel_normal = (boundary_vel * _normal).sum(-1)
+            _normal_norm_squared = torch.sum(_normal ** 2, dim = -1, keepdim=True)
+            boundary_vel_project2normal = boundary_vel_normal[:,None] / (_normal_norm_squared + 1e-6) * boundary_vel
+            boundary_loss = torch.sum(boundary_vel_project2normal ** 2) / (boundary_mask.sum() + 1e-6)
+            # boundary_loss = mean_squared_error(boundary_vel_project2normal, torch.zeros_like(boundary_vel_project2normal))
+
+            inside_sdf = args.inside_sdf
+            inside_mask = _sdf < -inside_sdf
+            inside_vel = _vel * inside_mask
+            inside_loss = torch.sum(inside_vel ** 2) / (boundary_mask.sum() + 1e-6)
+
+            vel_loss += (boundary_loss + inside_loss) * args.boundaryW
+
+            vel_loss_dict['boundary_loss'] = boundary_loss
+            vel_loss_dict['inside_loss'] = inside_loss
+
+
+        ## cycle loss for lagrangian feature
+        if training_stage == 3 or training_stage == 4:
+            # add cycle loss for lagrangian mapping
+            cycle_loss = None
+        
+            predict_xyz = vel_middle_output['mapped_xyz']
+            # cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
+            cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
+            # vel_loss += 0.1 * cycle_loss
+            vel_loss += args.self_cycle_loss_weight * cycle_loss
+
+            cross_cycle_loss = None
+
+            mapped_features = vel_middle_output['mapped_features']
+            
+            mapping_frame_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_frame_range_fading_start, args.mapping_frame_range_fading_last) # 
+
+            min_mapping_frame = 3
+            max_mapping_frame = args.max_mapping_frame_range
+            mapping_frame_range = (max_mapping_frame - min_mapping_frame) * mapping_frame_fading + min_mapping_frame
+            random_warpT = torch.rand_like(training_samples[:,0:1]) * mapping_frame_range * 2 - mapping_frame_range # todo:: change to long term frame
+            # random_warpT = torch.rand_like(training_samples[:,0:1]) * 6.0 - 3.0 # todo:: change to long term frame
+
+            cross_delta_t =  random_warpT * 1.0 / args.time_size
+
+            cross_training_t = training_samples[...,3:4] + cross_delta_t
+    
+            cross_training_t = torch.clamp(cross_training_t, 0.0, 1.0) # clamp to (0,1)
+
+
+            predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
+            cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
+
+            # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
+            cross_cycle_loss = L1_loss(cross_features, mapped_features)
+            # vel_loss += 0.05 * cross_cycle_loss * args.nseW
+            vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss
+            # vel_loss += 10.0 * cross_cycle_loss
+
+            vel_loss_dict['feature_cycle_loss'] = cycle_loss
+            vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
+
+        if training_stage == 4:
+            # pass
+            # density mapping loss to supervise density
+            density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 50000, 10000) # 
+
+            density_mapping_loss = None
+            if args.use_two_level_density:
+                _den = _den_siren
+                den_model = den_model_siren
+            else:
+                _den = _den_lagrangian
+                den_model = den_model_lagrangian
+
+            density_in_xyz = _den
+
+            predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
+            density_in_mapped_xyz = den_model.density(predict_xyzt_cross.detach()) ## todo:: whether detach this
+            # density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
+            # density_in_mapped_xyz = den_model.forward_with_features(cross_features.detach(), cross_training_t) ## todo:: whether detach this
+            
+
+            density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) # todo:: detach one 
+            
+            # vel_loss += 0.05 * density_mapping_loss * density_mapping_fading
+            vel_loss += args.density_mapping_loss_weight * density_mapping_loss * density_mapping_fading
+            vel_loss_dict['density_mapping_loss'] = density_mapping_loss
+            
+
+            color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 10000, 10000) # 
+
+            color_in_xyz = den_model.color(training_samples.detach())
+            color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
+            # color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
+            color_mapping_loss = L1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
+            vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading
+            vel_loss_dict['color_mapping_loss'] = color_mapping_loss
+
+
+            velocity_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 50000, 10000)
+            
+            velcotiy_in_xyz = _vel
+            velocity_in_mapped_xyz = velocity_model.velocity_mapping_loss(x = training_samples[..., :3], t = training_samples[..., 3:4], mapped_t = cross_training_t) 
+            
+            velocity_mapping_loss = smooth_l1_loss(velocity_in_mapped_xyz, velcotiy_in_xyz) ## todo:: detach one 
+            # vel_loss += 0.001 * velocity_mapping_loss * velocity_mapping_fading
+            vel_loss += args.velocity_mapping_loss_weight * velocity_mapping_loss * velocity_mapping_fading
+            vel_loss_dict['velocity_mapping_loss'] = velocity_mapping_loss
+
+
+
     else:
-        # start train velocity using lagrangian density, and give up siren density
-
-
-        _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=True)
-        _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
-        jac = vel_middle_output['jacobian']
-        _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
-        _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
-        _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)       
-    
-        split_nse = PDE_stage3(
-            _f_t, _f_x, _f_y, _f_z,
-            _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-            _vel, _u_x, _u_y, _u_z, 
-            Du_Dt)
-            # Du_Dt, density_mask=_den_lagrangian)
         
-        # density transport, feature continuity, velocitt divergence, scale regularzation, Dd_Dt, Du_Dt
-        # split_nse_wei = [1.0, 1.0, 1e-3, 1e-3, 1e-3] 
-        # split_nse_wei = [1.0, 1.0, 1e-3, 1000000, 1e-3] 
-        # split_nse_wei = [1.0, 1.0, 0.1, 100000, 0.1] 
-        # split_nse_wei = [1.0, 1.0, 1e-3, 100.0, 1e-3] 
-        # split_nse_wei = [10.0, 0.1, 1e-3, 1.0, 1e-3] 
-            
-        # split_nse_wei = [1.0, 1.0, 1e-3, 1000000, 1e-3] 
-        # vel_regulization_weight = 1000 * decay_in_weight(global_step, args.stage1_finish_recon + 3000, 2000, min_decay = 1e-3)
-        # split_nse_wei = [1.0, 1.0, 1e-3, vel_regulization_weight, 1e-3]
-        # split_nse_wei = [1.0, 1.0, 1e-3, 1000, 1e-3] 
-        split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
-
-            
-
-    # nse_errors = [smooth_l1_loss(x, torch.zeros_like(x)) for x in split_nse]
-    # nse_errors = [L1_loss(x, torch.zeros_like(x)) for x in split_nse]
-    # nse_errors = [mean_squared_error(x,0.0) for x in split_nse]
-    nse_errors = split_nse
-
-
-    nseloss_fine = 0.0
-    for ei,wi in zip (nse_errors, split_nse_wei):
-        nseloss_fine = ei*wi + nseloss_fine
-    vel_loss += nseloss_fine * args.nseW
-    
-    vel_loss_dict['nse_errors'] = nse_errors
-    vel_loss_dict['nseloss_fine'] = nseloss_fine
-
-
-    # boundary loss
-    if not model.single_scene:
-        # if the sampling point's sdf < 0.05 and > -0.05, we assume it's on the boundary: The velocity along the normal direction must be zero.
-        # If the sampling point's sdf < -0.05, we assume it's inside the object : The velocity should be 0.
-        _sdf = _sdf.detach()
-        _normal = _normal.detach()
-
-        # boundary_sdf = 0.05
-        # boundary_sdf = 0.02 * args.scene_scale
-        # boundary_sdf = 0.00 * args.scene_scale
-        boundary_sdf = args.inside_sdf
-        boundary_mask = torch.abs(_sdf) < boundary_sdf
-        boundary_vel = _vel * boundary_mask
+        _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=False)
         
-        # boundary_vel_normal = torch.dot(boundary_vel, _normal) 
-        boundary_vel_normal = (boundary_vel * _normal).sum(-1)
-        _normal_norm_squared = torch.sum(_normal ** 2, dim = -1, keepdim=True)
-        boundary_vel_project2normal = boundary_vel_normal[:,None] / (_normal_norm_squared + 1e-6) * boundary_vel
-        boundary_loss = torch.sum(boundary_vel_project2normal ** 2) / (boundary_mask.sum() + 1e-6)
-        # boundary_loss = mean_squared_error(boundary_vel_project2normal, torch.zeros_like(boundary_vel_project2normal))
-
-        inside_sdf = args.inside_sdf
-        inside_mask = _sdf < -inside_sdf
-        inside_vel = _vel * inside_mask
-        inside_loss = torch.sum(inside_vel ** 2) / (boundary_mask.sum() + 1e-6)
-
-        vel_loss += (boundary_loss + inside_loss) * args.boundaryW
-
-        vel_loss_dict['boundary_loss'] = boundary_loss
-        vel_loss_dict['inside_loss'] = inside_loss
-
-
-    ## cycle loss for lagrangian feature
-    if training_stage == 3 or training_stage == 4:
-        # add cycle loss for lagrangian mapping
         cycle_loss = None
     
         predict_xyz = vel_middle_output['mapped_xyz']
@@ -539,7 +633,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
         cross_delta_t =  random_warpT * 1.0 / args.time_size
 
         cross_training_t = training_samples[...,3:4] + cross_delta_t
-  
+
         cross_training_t = torch.clamp(cross_training_t, 0.0, 1.0) # clamp to (0,1)
 
 
@@ -554,56 +648,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, trainVel, g
 
         vel_loss_dict['feature_cycle_loss'] = cycle_loss
         vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
-
-    if training_stage == 4:
-        # pass
-        # density mapping loss to supervise density
-        density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 50000, 10000) # 
-
-        density_mapping_loss = None
-        if args.use_two_level_density:
-            _den = _den_siren
-            den_model = den_model_siren
-        else:
-            _den = _den_lagrangian
-            den_model = den_model_lagrangian
-
-        density_in_xyz = _den
-
-        predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
-        density_in_mapped_xyz = den_model.density(predict_xyzt_cross.detach()) ## todo:: whether detach this
-        # density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
-        # density_in_mapped_xyz = den_model.forward_with_features(cross_features.detach(), cross_training_t) ## todo:: whether detach this
         
-
-        density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) # todo:: detach one 
-        
-        # vel_loss += 0.05 * density_mapping_loss * density_mapping_fading
-        vel_loss += args.density_mapping_loss_weight * density_mapping_loss * density_mapping_fading
-        vel_loss_dict['density_mapping_loss'] = density_mapping_loss
-        
-
-        color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 10000, 10000) # 
-
-        color_in_xyz = den_model.color(training_samples.detach())
-        color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
-        color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
-        vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading
-        vel_loss_dict['color_mapping_loss'] = color_mapping_loss
-
-
-        velocity_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 50000, 10000)
-        
-        velcotiy_in_xyz = _vel
-        velocity_in_mapped_xyz = velocity_model.velocity_mapping_loss(x = training_samples[..., :3], t = training_samples[..., 3:4], mapped_t = cross_training_t) 
-        
-        velocity_mapping_loss = smooth_l1_loss(velocity_in_mapped_xyz, velcotiy_in_xyz) ## todo:: detach one 
-        # vel_loss += 0.001 * velocity_mapping_loss * velocity_mapping_fading
-        vel_loss += args.velocity_mapping_loss_weight * velocity_mapping_loss * velocity_mapping_fading
-        vel_loss_dict['velocity_mapping_loss'] = velocity_mapping_loss
-
-
-
     return vel_loss, vel_loss_dict
 
 

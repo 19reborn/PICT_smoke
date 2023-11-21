@@ -17,7 +17,7 @@ from src.renderer.render_ray import render, render_path, prepare_rays
 from src.utils.args import config_parser
 from src.utils.training_utils import set_rand_seed, save_log
 from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D
-from src.utils.loss_utils_new import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
+from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
 from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -231,6 +231,7 @@ def train(args):
             trainImg = True
             # trainVel = True
             trainVel = global_step % args.stage4_train_vel_interval == 0
+            # trainVel = True
             trainVel_using_rendering_samples = False # todo:: use this
             # trainVel_using_rendering_samples = True # todo:: use this
             # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
@@ -394,7 +395,7 @@ def train(args):
                 training_t = torch.ones([training_samples.shape[0], 1])*time_locate
                 training_samples = torch.cat([training_samples,training_t], dim=-1)
 
-            vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage, trainVel = trainVel, global_step = global_step)
+            vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage, local_step = global_step // args.stage4_train_vel_interval, global_step = global_step)
 
             loss += vel_loss
 
@@ -520,8 +521,8 @@ def train(args):
                 print("vel_loss: ", vel_loss.item())
                 writer.add_scalar('Loss/vel_loss', vel_loss.item(), global_step)
             
-                nseloss_fine = vel_loss_dict['nseloss_fine']
-                nse_errors = vel_loss_dict['nse_errors']
+                nseloss_fine = vel_loss_dict['nseloss_fine'] if 'nseloss_fine' in vel_loss_dict.keys() else None
+                nse_errors = vel_loss_dict['nse_errors'] if 'nse_errors' in vel_loss_dict.keys() else None
                 if nseloss_fine is not None:
                     print(" ".join(["nse(e1-e6):"]+[str(ei.item()) for ei in nse_errors]))
                     print("NSE loss sum = ", nseloss_fine.item(), "* w_nse(%0.4f)"%(args.nseW))

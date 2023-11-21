@@ -468,10 +468,10 @@ class Voxel_Tool(object):
         # pdb.set_trace()
 
         density_mean = density_0.clamp(0.0, 1e5).mean()
-        pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
+        pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
             
         pts_num = sample_pts
 

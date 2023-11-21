@@ -10,7 +10,7 @@ import imageio
 import raymarching
 
 from src.utils.training_utils import batchify, batchify_func
-from src.utils.loss_utils_new import to8b
+from src.utils.loss_utils import to8b
 
 
 def get_rays(H, W, K, c2w):
