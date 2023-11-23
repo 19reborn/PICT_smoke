@@ -461,6 +461,72 @@ class Voxel_Tool(object):
 
         dynamic_model_lagrangian = model.dynamic_model_lagrangian
         dynamic_model = model.dynamic_model_siren
+
+
+        pts_flat = self.pts.view(-1, 3)
+        def get_density_time(pts_flat, time):
+            # only choose density points
+            pts_N = pts_flat.shape[0]
+            density = []
+            for i in range(0, pts_N, chunk):
+                input_i = pts_flat[i:i+chunk]
+                density_temp = dynamic_model.density(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(time)], dim = -1)).detach()
+                density.append(density_temp)
+
+            density = torch.cat(density, dim = 0)
+            
+            return density
+        
+        time_0 = t_list[frame_list[0]]
+        density_0 = get_density_time(pts_flat, time_0)
+        # import pdb
+        # pdb.set_trace()
+
+        density_mean = density_0.clamp(0.0, 1e5).mean()
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
+        pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
+
+        # random sample points             
+        pts_num = sample_pts
+        import random
+        sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        pts_sampled = pts_flat[sample_id].reshape(-1,3)
+
+        all_xyz = []
+        
+        feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*float(time_0)).detach()
+        base_mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(time_0))
+
+        mapped_xyz = pts_sampled
+        base_world_xyz = pts_sampled
+        for idx, frame_i in enumerate(frame_list):
+            if idx == 0:
+                all_xyz.append(mapped_xyz.detach().cpu().numpy())
+                continue
+            
+            cur_t = t_list[frame_i]
+            mapped_xyz_next = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
+            mapped_xyz = mapped_xyz_next - base_mapped_xyz + base_world_xyz
+            if (idx) % change_feature_interval == 0:
+                feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
+                base_mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
+                base_world_xyz = mapped_xyz
+                
+            all_xyz.append(mapped_xyz.detach().cpu().numpy())
+
+        write_ply(np.array(all_xyz).reshape(-1,3),'vis_mapping.ply')
+
+
+
+        return torch.tensor(all_xyz)
+
+    def vis_vel_integration(self, frame_list, t_list, model, sample_pts = 128, change_feature_interval = 1, chunk = 1024*32):
+
+        dynamic_model_lagrangian = model.dynamic_model_lagrangian
+        dynamic_model = model.dynamic_model_siren
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
 
@@ -493,6 +559,7 @@ class Voxel_Tool(object):
 
         density_mean = density_0.clamp(0.0, 1e5).mean()
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
         pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
@@ -502,27 +569,29 @@ class Voxel_Tool(object):
         import random
         sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
         pts_sampled = pts_flat[sample_id].reshape(-1,3)
-
-        feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*float(time_0)).detach()
+        pts_N = pts_sampled.shape[0]
 
         all_xyz = []
 
+        delta_T = t_list[frame_list[1]] - t_list[frame_list[0]]
+        
+        mapped_xyz = pts_sampled
         for idx, frame_i in enumerate(frame_list):
+         
             if idx == 0:
                 # all_xyz.append(pts_sampled.detach().cpu().numpy())
                 continue
             
             cur_t = t_list[frame_i]
-            mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
-            if (idx) % change_feature_interval == 0:
-                feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
+            input_t = torch.ones([pts_N, 1])*float(cur_t)
+            pts_flat = torch.cat([mapped_xyz, input_t], dim=-1)
+            world_v = self.get_velocity_flat(model, pts_flat, chunk)
+            mapped_xyz = mapped_xyz + world_v * delta_T
             all_xyz.append(mapped_xyz.detach().cpu().numpy())
-
-        write_ply(np.array(all_xyz).reshape(-1,3),'vis_mapping.ply')
-
 
 
         return torch.tensor(all_xyz)
+
 
     @torch.no_grad()
     def vis_mapping_voxel_2d(self, frame_list, t_list, model, sample_pts = 128, change_feature_interval = 1, chunk = 1024*32):

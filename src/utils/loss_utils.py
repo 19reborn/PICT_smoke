@@ -412,7 +412,9 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                     # _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
                     # _vel, _u_x, _u_y, _u_z, 
                     # Du_Dt)
-                split_nse_wei = [1.0, 10.0, 1e-1, args.vel_regulization_weight, 1e-1]
+                # split_nse_wei = [1.0, 10.0, 1e-1, args.vel_regulization_weight, 1e-1]
+                # split_nse_wei = [1.0, 10.0, 1e-1, args.vel_regulization_weight, 0]
+                split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 0]
                 
                 # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
@@ -546,7 +548,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             cross_training_t = torch.clamp(cross_training_t, 0.0, 1.0) # clamp to (0,1)
 
 
-            predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
+            # predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
+            predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
             cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
             # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
@@ -557,6 +560,41 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
             vel_loss_dict['feature_cycle_loss'] = cycle_loss
             vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
+            
+            # advection loss
+            advection_loss = None
+            # mapped_xyz_velocity_advect = training_samples[..., :3].detach() + _vel.detach() * 1.0 / args.time_size
+            # advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
+            # advect_t = torch.clamp(advect_t, 0.0, 1.0)
+            # # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
+            # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features, advect_t.detach()) # todo: whether detach features
+            # advection_loss = L1_loss(mapped_xyz_velocity_advect.detach(), mapped_xyz_direct)
+            # # advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect, mapped_xyz_direct)
+            
+            advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
+            
+            # if advect_t <= 1.0:
+            mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
+            # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features, advect_t.detach()) # todo: whether detach features
+            mapeed_vel = (mapped_xyz_direct - training_samples[..., :3]) * args.time_size
+            
+            mask = (_vel.sum(-1) == 0)
+            masked_mapped_vel = mapeed_vel.clone()
+            masked_mapped_vel[mask] = 0
+
+            mapped_advection_loss = smooth_l1_loss(masked_mapped_vel, _vel.detach())
+            # mapped_advection_loss = L1_loss(masked_mapped_vel, _vel.detach())
+            # advection_loss = L1_loss(mapeed_vel, _vel.detach())
+            # print("mapped_advection_loss: ", mapped_advection_loss)
+            # print("advection_loss: ", advection_loss)    
+            
+            # import pdb
+            # pdb.set_trace()
+            
+            # vel_loss += 1 * advection_loss
+            # vel_loss_dict['advection_loss'] = advection_loss
+            vel_loss += 0.0 * mapped_advection_loss * cycle_loss_fading
+            vel_loss_dict['advection_loss'] = mapped_advection_loss
 
         if training_stage == 4:
             # pass
@@ -575,6 +613,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
             predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
             density_in_mapped_xyz = den_model.density(predict_xyzt_cross.detach()) ## todo:: whether detach this
+            # density_in_mapped_xyz = den_model.density(predict_xyzt_cross) ## todo:: whether detach this
             # density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
             # density_in_mapped_xyz = den_model.forward_with_features(cross_features.detach(), cross_training_t) ## todo:: whether detach this
             
@@ -590,6 +629,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
             color_in_xyz = den_model.color(training_samples.detach())
             color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
+            # color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
             # color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
             color_mapping_loss = L1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
             vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading
@@ -610,6 +650,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
     else:
         
+        cycle_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature, 10000) # 
+
         _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=False)
         
         cycle_loss = None
@@ -618,7 +660,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         # cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
         cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
         # vel_loss += 0.1 * cycle_loss
-        vel_loss += args.self_cycle_loss_weight * cycle_loss
+        vel_loss += args.self_cycle_loss_weight * cycle_loss * cycle_loss_fading
 
         cross_cycle_loss = None
 
@@ -639,17 +681,60 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         cross_training_t = torch.clamp(cross_training_t, 0.0, 1.0) # clamp to (0,1)
 
 
-        predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
+        # predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
+        predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
         cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
+        # mask = (_vel.sum(-1) == 0)
+        # masked_cross_features = cross_features.clone()
+        # masked_cross_features[mask] = 0
+
+        # L1_loss(mapped_features, masked_cross_features)
+        # import pdb
+        # pdb.set_trace()
         # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
         cross_cycle_loss = L1_loss(cross_features, mapped_features)
         # vel_loss += 0.05 * cross_cycle_loss * args.nseW
-        vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss
+        vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss * cycle_loss_fading
         # vel_loss += 10.0 * cross_cycle_loss
 
         vel_loss_dict['feature_cycle_loss'] = cycle_loss
         vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
+        
+        
+        # advection loss
+        advection_loss = None
+        # mapped_xyz_velocity_advect = training_samples[..., :3].detach() + _vel.detach() * 1.0 / args.time_size
+        # advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
+        # advect_t = torch.clamp(advect_t, 0.0, 1.0)
+        # # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
+        # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features, advect_t.detach()) # todo: whether detach features
+        # advection_loss = L1_loss(mapped_xyz_velocity_advect.detach(), mapped_xyz_direct)
+        # # advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect, mapped_xyz_direct)
+        advect_t = training_samples[..., 3:4] + 1.0 / args.time_size # todo:: need clamp?
+        
+        # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features, advect_t.detach()) # todo: whether detach features
+        mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
+        mapeed_vel = (mapped_xyz_direct - training_samples[..., :3]) * args.time_size
+        
+        mask = (_vel.sum(-1) == 0)
+        masked_mapped_vel = mapeed_vel.clone()
+        masked_mapped_vel[mask] = 0
+
+        mapped_advection_loss = smooth_l1_loss(masked_mapped_vel, _vel.detach())
+        # mapped_advection_loss = L1_loss(masked_mapped_vel, _vel.detach())
+        # advection_loss = L1_loss(mapeed_vel, _vel.detach())
+        # print("mapped_advection_loss: ", mapped_advection_loss)
+        # print("advection_loss: ", advection_loss)    
+        
+        # import pdb
+        # pdb.set_trace()
+        
+        # vel_loss += 1 * advection_loss
+        # vel_loss_dict['advection_loss'] = advection_loss
+        # vel_loss += 0.1 * mapped_advection_loss * cycle_loss_fading
+        vel_loss += 0.0 * mapped_advection_loss * cycle_loss_fading
+        vel_loss_dict['advection_loss'] = mapped_advection_loss
         
     return vel_loss, vel_loss_dict
 

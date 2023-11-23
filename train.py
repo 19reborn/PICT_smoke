@@ -561,6 +561,7 @@ def train(args):
                 density_mapping_loss = vel_loss_dict['density_mapping_loss'] if "density_mapping_loss" in vel_loss_dict else None
                 color_mapping_loss = vel_loss_dict['color_mapping_loss'] if "color_mapping_loss" in vel_loss_dict else None
                 velocity_mapping_loss = vel_loss_dict['velocity_mapping_loss'] if "velocity_mapping_loss" in vel_loss_dict else None
+                advection_loss = vel_loss_dict['advection_loss'] if "advection_loss" in vel_loss_dict else None
 
                 if cycle_loss is not None:
                     print("cycle_loss = ", cycle_loss.item())
@@ -581,6 +582,10 @@ def train(args):
                 if velocity_mapping_loss is not None:
                     print("velocity_mapping_loss = ", velocity_mapping_loss.item())
                     writer.add_scalar('Loss/velocity_mapping_loss', velocity_mapping_loss.item(), global_step)
+                
+                if advection_loss is not None:
+                    print("advection_loss = ", advection_loss.item())
+                    writer.add_scalar('Loss/advection_loss', advection_loss.item(), global_step)
 
 
         if (global_step) % args.i_img==0:
