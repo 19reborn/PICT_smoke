@@ -1,4 +1,4 @@
-expname = cyl/1118_v3_no_early_terminated
+expname = cyl/1118_v1_interval_5
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 

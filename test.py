@@ -42,6 +42,7 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     #     testsavedir += "_full_frame"
     # else:
     frame_list = range(0,frame_N, 1)
+    # frame_list = range(0,150, 1)
         
     
     # frame_list = range(30,frame_N, 1)
@@ -51,10 +52,12 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     
     # change_feature_interval = 50
     # sample_pts = 32
-    change_feature_interval = 1000
+    change_feature_interval = 500
+    # change_feature_interval = 30
     # change_feature_interval = 100
-    sample_pts = 64
+    # sample_pts = 2
     # sample_pts = 32
+    sample_pts = 64
     # sample_pts = 10
     
     mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
@@ -74,7 +77,31 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     grid_xz = mapping_xyz[..., [0,2]].permute(1,0,2)
     draw_mapping(os.path.join(testsavedir, f'vis_map_xz_interval{change_feature_interval}.png'), grid_xz.cpu().numpy())
 
+
+
+
+    mapping_xyz = voxel_writer.vis_vel_integration(frame_list, t_list, model, sample_pts = sample_pts)
+    
+    draw_mapping_3d_animation(os.path.join(testsavedir, f'vis_vel_integration_3d.gif'), mapping_xyz.permute(1,0,2).cpu().numpy())
+    
+    draw_mapping_3d(os.path.join(testsavedir, f'vis_vel_integration_3d.png'), mapping_xyz.permute(1,0,2).cpu().numpy())
+    
+    # draw grid_xyz on image
+    grid_yz = mapping_xyz[..., [1,2]].permute(1,0,2)
+    draw_mapping(os.path.join(testsavedir, f'vis_vel_integration_yz.png'), grid_yz.cpu().numpy())
+    
+    grid_xy = mapping_xyz[..., [0,1]].permute(1,0,2)
+    draw_mapping(os.path.join(testsavedir, f'vis_vel_integration_xy.png'), grid_xy.cpu().numpy())
+    
+    grid_xz = mapping_xyz[..., [0,2]].permute(1,0,2)
+    draw_mapping(os.path.join(testsavedir, f'vis_vel_integration_xz.png'), grid_xz.cpu().numpy())
+
+
+
     print('Done output', testsavedir)
+
+
+
 
     exit(0)
 
