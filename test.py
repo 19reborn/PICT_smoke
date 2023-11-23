@@ -51,7 +51,7 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     
     # change_feature_interval = 50
     # sample_pts = 32
-    change_feature_interval = 1000
+    change_feature_interval = 5
     # change_feature_interval = 100
     sample_pts = 64
     # sample_pts = 32
