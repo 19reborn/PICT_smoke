@@ -1,4 +1,6 @@
-expname = Car/1123_v6_less_nse
+expname = Car/1124_v6_larger_cross_cycle_loss
+# expname = Car/1124_v3_smaller_mapping_frame
+# expname = Car/1124_v2_larger_nse_smaller_regulization
 # expname = Car/1105_v4_l1_loss
 # expname = Car/1121_v6_previous_best_mapping
 # basedir = ./log
@@ -110,7 +112,14 @@ velocity_mapping_loss_weight = 0.05
 color_mapping_loss_weight = 5.0
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v4_l1_loss/400000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v4_l1_loss/400000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1121_v5_cycle_loss_fading/200000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v6_much_longer_range/280000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1119_v3_larger_cycle_loss/300000.tar
 # model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1119_v5_much_larger_cross_cycle_loss/200000.tar
+# model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1123_v6_less_nse/300000.tar
+
+# model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1123_v6_less_nse/200000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1124_v3_smaller_mapping_frame/240000.tar
+
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1124_v4_no_velocity_mapping/220000.tar

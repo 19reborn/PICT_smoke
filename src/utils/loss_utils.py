@@ -465,7 +465,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             # vel_regulization_weight = 1000 * decay_in_weight(global_step, args.stage1_finish_recon + 3000, 2000, min_decay = 1e-3)
             # split_nse_wei = [1.0, 1.0, 1e-3, vel_regulization_weight, 1e-3]
             # split_nse_wei = [1.0, 1.0, 1e-3, 1000, 1e-3] 
-            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
+            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-2]
 
                 
 
@@ -524,8 +524,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             cycle_loss = None
         
             predict_xyz = vel_middle_output['mapped_xyz']
-            # cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
-            cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
+            cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
+            # cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
             # vel_loss += 0.1 * cycle_loss
             vel_loss += args.self_cycle_loss_weight * cycle_loss * cycle_loss_fading
 
@@ -552,8 +552,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
             cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
-            # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
-            cross_cycle_loss = L1_loss(cross_features, mapped_features)
+            cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
+            # cross_cycle_loss = L1_loss(cross_features, mapped_features)
             # vel_loss += 0.05 * cross_cycle_loss * args.nseW
             vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss * cycle_loss_fading
             # vel_loss += 10.0 * cross_cycle_loss
@@ -835,3 +835,25 @@ def PDE_stage4(f_t, f_x, f_y, f_z,
     
     return eqs
 
+
+def PDE_constraint(f_t, f_x, f_y, f_z,
+    d_t, d_x, d_y, d_z, U, U_x, U_y, U_z, Du_Dt, density_mask = None):
+    eqs = []
+    u,v,w = U.split(1, dim=-1) # (N,1)
+
+    transport = d_t + (u*d_x + v*d_y + w*d_z) # transport constrain
+    
+    eqs += [mean_squared_error(transport,0.0)]
+    
+    feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
+    
+    eqs += [L1_loss(feature,torch.zeros_like(feature))]
+
+    eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
+    
+    eqs += [mean_squared_error(U, 0.0)]
+
+    eqs += [mean_squared_error(Du_Dt,0.0)]
+    
+    
+    return eqs
