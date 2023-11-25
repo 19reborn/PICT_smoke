@@ -1,4 +1,4 @@
-expname = Car/1124_v6_larger_cross_cycle_loss
+expname = Car/1125_v2_last_regret
 # expname = Car/1124_v3_smaller_mapping_frame
 # expname = Car/1124_v2_larger_nse_smaller_regulization
 # expname = Car/1105_v4_l1_loss

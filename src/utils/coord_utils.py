@@ -486,8 +486,8 @@ class Voxel_Tool(object):
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
-        pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
+        pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
 
         # random sample points             
         pts_num = sample_pts
