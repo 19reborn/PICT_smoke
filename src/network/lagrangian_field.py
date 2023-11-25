@@ -299,6 +299,28 @@ class VelocityNetwork(nn.Module):
 
         return velocity, jaco_t1
 
+    def forward_with_feature(self, xyzt, features):
+        xyz, t = torch.split(xyzt, (3, 1), dim=-1)
+
+        t1 = t.clone().detach()
+        t1.requires_grad_(True)
+
+
+        mapped_xyz = self.position_map(features, t1)
+
+        velocity = self.gradients(mapped_xyz, t1)
+        
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+            
+            mapped_xyz[bbox_mask] = xyz[bbox_mask]
+            velocity[bbox_mask] = 0.0
+
+
+
+
+        return velocity
+
     def forward(self, xyzt):
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
@@ -354,9 +376,14 @@ class VelocityNetwork(nn.Module):
  
         features = self.feature_map(xyz, t)
 
-        mapped_xyz = self.position_map(features, mapped_t)
+        cross_mapped_xyz = self.position_map(features, mapped_t)
+
+        base_mapped_xyz = self.position_map(features, t)
+
+        mapped_xyz = x + cross_mapped_xyz - base_mapped_xyz
+
         
-        jacobian = _get_minibatch_jacobian(mapped_xyz, xyz)
+        jacobian = _get_minibatch_jacobian(mapped_xyz, xyz).detach()
 
         mapped_features = self.feature_map(mapped_xyz, mapped_t).detach()
         t1 = mapped_t.clone().detach()
@@ -364,6 +391,7 @@ class VelocityNetwork(nn.Module):
 
 
         mapped_self_xyz = self.position_map(mapped_features, t1)
+        # mapped_self_xyz = self.position_map(features, t1)
 
         velocity = self.gradients(mapped_self_xyz, t1)
         

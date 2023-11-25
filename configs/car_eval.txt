@@ -1,4 +1,9 @@
-expname = Car/1123_v6_less_nse
+# expname = Car/1124_v5_smaller_mapping_frame
+expname = Car/1125_v4_no_vel_mapping
+# expname = Car/1125_v2_use_mapped_feature_cal_velocity_mapping
+
+# expname = Car/1124_v2_transport_only_train_decoder
+# expname = Car/1124_v1_larger_transport
 # expname = Car/1105_v4_l1_loss
 # expname = Car/1121_v6_previous_best_mapping
 # basedir = ./log

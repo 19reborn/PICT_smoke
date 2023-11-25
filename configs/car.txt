@@ -1,4 +1,4 @@
-expname = Car/1123_v6_less_nse
+expname = Car/1125_v4_no_vel_mapping
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -96,20 +96,21 @@ neus_progressive_pe = True
 neus_progressive_pe_start = 20000
 
 use_scene_scale_before_pe = True
-max_mapping_frame_range = 150
+max_mapping_frame_range = 50
 stage4_train_vel_interval = 1
 
-nseW = 1e-3
-vel_regulization_weight = 1.0
+nseW = 1e-2
+vel_regulization_weight = 1e-1
 cross_cycle_loss_weight = 1.0
-self_cycle_loss_weight = 1.0
+self_cycle_loss_weight = 0.1
 density_mapping_loss_weight = 0.01
-velocity_mapping_loss_weight = 0.01
-color_mapping_loss_weight = 10.0
+velocity_mapping_loss_weight = 0.00
+color_mapping_loss_weight = 1.0
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1119_v3_larger_cycle_loss/300000.tar
 # model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1119_v4_larger_vel_regulization/200000.tar
 # model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1121_v5_cycle_loss_fading/200000.tar
-model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1118_v2_less_car_pe/100000.tar
+# model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/Car/100000.tar
+model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/Car/1124_v2_transport_only_train_decoder/200000.tar
 
 # model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v6_much_longer_range/280000.tar
