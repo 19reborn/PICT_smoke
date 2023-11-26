@@ -474,7 +474,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             # vel_regulization_weight = 1000 * decay_in_weight(global_step, args.stage1_finish_recon + 3000, 2000, min_decay = 1e-3)
             # split_nse_wei = [1.0, 1.0, 1e-3, vel_regulization_weight, 1e-3]
             # split_nse_wei = [1.0, 1.0, 1e-3, 1000, 1e-3] 
-            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-2]
+            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
 
                 
 
@@ -533,8 +533,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             cycle_loss = None
         
             predict_xyz = vel_middle_output['mapped_xyz']
-            cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
-            # cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
+            # cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
+            cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
             # vel_loss += 0.1 * cycle_loss
             vel_loss += args.self_cycle_loss_weight * cycle_loss * cycle_loss_fading
 
@@ -561,8 +561,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
             cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
-            cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
-            # cross_cycle_loss = L1_loss(cross_features, mapped_features)
+            # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
+            cross_cycle_loss = L1_loss(cross_features, mapped_features)
             # vel_loss += 0.05 * cross_cycle_loss * args.nseW
             vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss * cycle_loss_fading
             # vel_loss += 10.0 * cross_cycle_loss
@@ -571,12 +571,12 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             vel_loss_dict['feature_cross_cycle_loss'] = cross_cycle_loss
             
             # advection loss
-            advection_loss = None
-            mapped_xyz_velocity_advect = training_samples[..., :3].detach() + _vel.detach() * 1.0 / args.time_size
-            advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
-            # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
-            mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) - predict_xyz + training_samples[..., :3]
-            advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect.detach(), mapped_xyz_direct)
+            # advection_loss = None
+            # mapped_xyz_velocity_advect = training_samples[..., :3].detach() + _vel.detach() * 1.0 / args.time_size
+            # advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
+            # # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
+            # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) - predict_xyz + training_samples[..., :3]
+            # advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect.detach(), mapped_xyz_direct)
             # advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect, mapped_xyz_direct)
             
             # advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
@@ -602,7 +602,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             # vel_loss += 1 * advection_loss
             # vel_loss_dict['advection_loss'] = advection_loss
             # vel_loss += 0.0 * mapped_advection_loss * cycle_loss_fading
-            vel_loss_dict['advection_loss'] = advection_loss
+            # vel_loss_dict['advection_loss'] = advection_loss
 
         if training_stage == 4:
             # pass
@@ -665,8 +665,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         cycle_loss = None
     
         predict_xyz = vel_middle_output['mapped_xyz']
-        cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
-        # cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
+        # cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
+        cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
         # vel_loss += 0.1 * cycle_loss
         vel_loss += args.self_cycle_loss_weight * cycle_loss * cycle_loss_fading
 
@@ -699,9 +699,9 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
         # L1_loss(mapped_features, masked_cross_features)
         # import pdb
-        # pdb.set_trace()
-        cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
-        # cross_cycle_loss = L1_loss(cross_features, mapped_features)
+        # pdb.set_trace()x
+        # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
+        cross_cycle_loss = L1_loss(cross_features, mapped_features)
         # vel_loss += 0.05 * cross_cycle_loss * args.nseW
         vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss * cycle_loss_fading
         # vel_loss += 10.0 * cross_cycle_loss
@@ -711,14 +711,14 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         
         
         # advection loss
-        advection_loss = None
-        mapped_xyz_velocity_advect = training_samples[..., :3].detach() + _vel.detach() * 1.0 / args.time_size
-        advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
-        # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
-        mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) - predict_xyz + training_samples[..., :3]
-        advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect.detach(), mapped_xyz_direct)
+        # advection_loss = None
+        # mapped_xyz_velocity_advect = training_samples[..., :3].detach() + _vel.detach() * 1.0 / args.time_size
+        # advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
+        # # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
+        # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) - predict_xyz + training_samples[..., :3]
+        # advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect.detach(), mapped_xyz_direct)
         
-        vel_loss_dict['advection_loss'] = advection_loss
+        # vel_loss_dict['advection_loss'] = advection_loss
         
     return vel_loss, vel_loss_dict
 
@@ -751,20 +751,20 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
     transport = d_t + (u*d_x + v*d_y + w*d_z) # transport constrain
     
     # eqs += [transport]
-    # eqs += [mean_squared_error(transport,0.0)]
-    eqs += [smooth_l1_loss(transport,torch.zeros_like(transport))]
+    eqs += [mean_squared_error(transport,0.0)]
+    # eqs += [smooth_l1_loss(transport,torch.zeros_like(transport))]
     
     
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
     # eqs += [feature]
     # eqs += [mean_squared_error(feature,0.0)]
-    # eqs += [L1_loss(feature,torch.zeros_like(feature))]
-    eqs += [smooth_l1_loss(feature,torch.zeros_like(feature))]
+    eqs += [L1_loss(feature,torch.zeros_like(feature))]
+    # eqs += [smooth_l1_loss(feature,torch.zeros_like(feature))]
 
     # eqs += [ U_x[:,0] + U_y[:,1] + U_z[:,2] ] # velocity divergence constrain
-    # eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
-    eqs += [smooth_l1_loss(U_x[:,0] + U_y[:,1] + U_z[:,2], torch.zeros_like(U_x[:,0] + U_y[:,1] + U_z[:,2]))]
+    eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
+    # eqs += [smooth_l1_loss(U_x[:,0] + U_y[:,1] + U_z[:,2], torch.zeros_like(U_x[:,0] + U_y[:,1] + U_z[:,2]))]
     
 
     # if True: # scale regularization
@@ -779,12 +779,12 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
         density_mask = (density_mask < 1e-1).float()
         eqs += [mean_squared_error(U * density_mask, 0.0) + mean_squared_error(U * (1.0 - density_mask), 0.0) * 0.1]
     else:
-        # eqs += [mean_squared_error(U, 0.0)]
-        eqs += [smooth_l1_loss(U, torch.zeros_like(U))]
+        eqs += [mean_squared_error(U, 0.0)]
+        # eqs += [smooth_l1_loss(U, torch.zeros_like(U))]
 
     # eqs += [Du_Dt]
-    # eqs += [mean_squared_error(Du_Dt,0.0)]
-    eqs += [smooth_l1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
+    eqs += [mean_squared_error(Du_Dt,0.0)]
+    # eqs += [smooth_l1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
     
     # feature norm regulization
     
