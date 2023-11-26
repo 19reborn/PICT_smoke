@@ -1,4 +1,4 @@
-expname = scalar/1118_v2_larger_cycle_loss
+expname = scalar/1125_v1_from_start
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -40,7 +40,7 @@ precrop_frac = 0.5
 lrate_decay = 500
 fading_layers = 5000
 tempo_delay = 0
-vel_delay = 10000
+vel_delay = 10000   
 N_iter = 600000
 
 ### train params - loss weights
@@ -88,3 +88,13 @@ SmokeInsideSDFW = 0.01
 boundaryW = 0.01
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/scalar/1118_v1/200000.tar
+
+max_mapping_frame_range = 50
+stage4_train_vel_interval = 2
+
+nseW = 1e-2
+vel_regulization_weight = 1e-1
+cross_cycle_loss_weight = 1.0
+self_cycle_loss_weight = 0.1
+density_mapping_loss_weight = 0.001
+velocity_mapping_loss_weight = 0.001
