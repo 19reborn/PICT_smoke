@@ -1,4 +1,4 @@
-expname = Car/1127_last_chance
+expname = Car/1128_v6_larger_omega
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -14,7 +14,7 @@ testskip = 20
 net_model = hybrid_neus
 use_viewdirs = False
 density_map_first_omega = 1
-position_map_first_omega = 1
+position_map_first_omega = 10
 
 ### train params - sampling
 N_samples = 64
@@ -58,9 +58,9 @@ multires_neus = 4
 anneal_end = 50000
 
 i_img = 2000
-i_test = 5000
+i_test = 50000
 i_weights = 10000
-i_video = 50000
+i_video = 100000
 N_iter = 400000
 
 cuda_ray = True
@@ -101,11 +101,11 @@ stage4_train_vel_interval = 1
 
 nseW = 1e-3
 vel_regulization_weight = 1e-1
-cross_cycle_loss_weight = 1.0
+cross_cycle_loss_weight = 10.0
 self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 0.001
 velocity_mapping_loss_weight = 0.001
-color_mapping_loss_weight = 5.0
+color_mapping_loss_weight = 1.0
 mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
@@ -113,5 +113,6 @@ mapping_frame_range_fading_last = 20000
 # model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1119_v4_larger_vel_regulization/200000.tar
 # model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1121_v5_cycle_loss_fading/200000.tar
 model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1118_v2_less_car_pe/100000.tar
+# model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1128_v3_no_dudt/220000.tar
 
 # model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v6_much_longer_range/280000.tar

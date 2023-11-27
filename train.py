@@ -232,9 +232,12 @@ def train(args):
             # trainVel = True
             trainVel = global_step % args.stage4_train_vel_interval == 0
             # trainVel = True
-            trainVel_using_rendering_samples = False # todo:: use this
+            # trainVel_using_rendering_samples = True # todo:: use this
+            # trainVel_using_rendering_samples = False # todo:: use this
             # trainVel_using_rendering_samples = True # todo:: use this
             # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
+            trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % args.train_vel_uniform_sample == 0)# todo:: use this
+            # trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % 2 == 0)# todo:: use this
 
         model.iter_step = global_step
         model.update_model(training_stage, global_step) # progressive training for siren smoke

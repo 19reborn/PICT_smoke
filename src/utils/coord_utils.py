@@ -487,18 +487,31 @@ class Voxel_Tool(object):
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
-        pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
-
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
         # random sample points             
-        pts_num = sample_pts
-        import random
-        sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
-        pts_sampled = pts_flat[sample_id].reshape(-1,3)
+        # pts_num = sample_pts
+        # import random
+        # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        # pts_sampled = pts_flat[sample_id].reshape(-1,3)
+
+        
+        # sort the density
+        pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+        pts_sampled = pts_flat[:sample_pts]
+
 
         all_xyz = []
         
         feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*float(time_0)).detach()
+        # fusion_interval = 50
         base_mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(time_0))
+        
+        # fusion_interval = change_feature_interval
+        # fusion_time = frame_list[min(fusion_interval, len(frame_list)-1)]
+        # fusion_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(fusion_time)) - base_mapped_xyz + pts_sampled
+        # fusion_feature = dynamic_model_lagrangian.velocity_model.forward_feature(fusion_xyz,  torch.ones([fusion_xyz.shape[0], 1])*float(fusion_time)).detach()
+        # feature_sampled = (feature_sampled + fusion_feature) / 2.0
+
 
         mapped_xyz = pts_sampled
         base_world_xyz = pts_sampled
@@ -514,6 +527,11 @@ class Voxel_Tool(object):
                 feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(mapped_xyz,  torch.ones([mapped_xyz.shape[0], 1])*float(cur_t)).detach()
                 base_mapped_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(cur_t))
                 base_world_xyz = mapped_xyz
+
+                # fusion_time = frame_list[min(fusion_interval + idx, len(frame_list)-1)]
+                # fusion_xyz = dynamic_model_lagrangian.velocity_model.mapping_forward_with_features(feature_sampled, torch.ones([pts_sampled.shape[0], 1])*float(fusion_time)) - base_mapped_xyz + pts_sampled
+                # fusion_feature = dynamic_model_lagrangian.velocity_model.forward_feature(fusion_xyz,  torch.ones([fusion_xyz.shape[0], 1])*float(fusion_time)).detach()
+                # feature_sampled = (feature_sampled + fusion_feature) / 2.0
                 
             all_xyz.append(mapped_xyz.detach().cpu().numpy())
 
@@ -557,20 +575,26 @@ class Voxel_Tool(object):
         # import pdb
         # pdb.set_trace()
 
-        density_mean = density_0.clamp(0.0, 1e5).mean()
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
-        pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
+        # density_mean = density_0.clamp(0.0, 1e5).mean()
+        # # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
+        # # pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
+        # # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
+        # # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
             
-        pts_num = sample_pts
+        # pts_num = sample_pts
 
-        import random
-        sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
-        pts_sampled = pts_flat[sample_id].reshape(-1,3)
+        # import random
+        # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        # pts_sampled = pts_flat[sample_id].reshape(-1,3)
+
+        pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+        pts_sampled = pts_flat[:sample_pts]
+
+
+
+
         pts_N = pts_sampled.shape[0]
-
         all_xyz = []
 
         delta_T = t_list[frame_list[1]] - t_list[frame_list[0]]

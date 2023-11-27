@@ -1,4 +1,5 @@
-expname = Car/1127_last_chance
+# expname = Car/1128_v1_less_train_nse
+expname = Car/1128_v5_10cycle_loss
 # expname = Car/1124_v3_smaller_mapping_frame
 # expname = Car/1124_v2_larger_nse_smaller_regulization
 # expname = Car/1105_v4_l1_loss
@@ -123,3 +124,5 @@ color_mapping_loss_weight = 5.0
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1124_v3_smaller_mapping_frame/240000.tar
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1124_v4_no_velocity_mapping/220000.tar
+
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1128_v1_less_train_nse/130000.tar
