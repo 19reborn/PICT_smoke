@@ -109,7 +109,7 @@ def config_parser():
                         default=0.00, help='weight for the Boardary constrain loss')
     parser.add_argument("--flow_debug", action='store_true')
     parser.add_argument("--train_vel_within_rendering", action='store_true')
-    parser.add_argument("--train_vel_uniform_sample", type=int, default = 1)
+    parser.add_argument("--train_vel_uniform_sample", type=int, default = 2)
     parser.add_argument("--inside_sdf", type=float, default = 0.0)
     parser.add_argument("--vel_regulization_weight", type=float,
                         default=1, help='weight for the Boardary constrain loss')

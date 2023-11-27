@@ -317,7 +317,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
     vel_loss = 0.0
 
     # if local_step % args.stage4_train_vel_interval == 0:
-    if local_step % 4 == 0:
+    if local_step % 10 == 0:
         
         training_samples = training_samples.requires_grad_(True)
         
@@ -423,7 +423,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 0]
                 # split_nse_wei = [10.0, 1.0, 1e-2, args.vel_regulization_weight, 0]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 10]
-                split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
+                # split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 0]
+                split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-3]
                 
                 # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
@@ -620,8 +621,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             density_in_xyz = _den
 
             predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
-            density_in_mapped_xyz = den_model.density(predict_xyzt_cross.detach()) ## todo:: whether detach this
-            # density_in_mapped_xyz = den_model.density(predict_xyzt_cross) ## todo:: whether detach this
+            # density_in_mapped_xyz = den_model.density(predict_xyzt_cross.detach()) ## todo:: whether detach this
+            density_in_mapped_xyz = den_model.density(predict_xyzt_cross) ## todo:: whether detach this
             # density_in_mapped_xyz = den_model(predict_xyzt_cross) ## todo:: whether detach this
             # density_in_mapped_xyz = den_model.forward_with_features(cross_features.detach(), cross_training_t) ## todo:: whether detach this
             
@@ -636,8 +637,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 10000, 10000) # 
 
             color_in_xyz = den_model.color(training_samples.detach())
-            color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
-            # color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
+            # color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
+            color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
             # color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
             color_mapping_loss = L1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
             vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading
