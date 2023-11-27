@@ -51,3 +51,8 @@ kernprof -l -o 7.2.lprof run_pinf.py  --config configs/hybrid_neus_cuda/game_7.7
 
 - test speed
 python -m line_profiler run_pinf.py.lprof > test_speed.txt
+
+
+## Install problem
+- Ninja is required to load C++ extensions
+pip install Ninja

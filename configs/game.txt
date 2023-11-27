@@ -1,4 +1,4 @@
-expname = game/1117_v1_train_vel_interval1
+expname = game/1127_v1_train_vel_interval1
 basedir = ./log
 
 ### data info
@@ -105,7 +105,7 @@ color_mapping_loss_weight = 1.0
 
 # nseW = 1e-4
 
-model_path = /root/data/wym/workspace/pinf_clean/log/game/1101_v2_full_loss/200000.tar
+# model_path = /root/data/wym/workspace/pinf_clean/log/game/1101_v2_full_loss/200000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1031_v2_use_progressive_pe/100000.tar
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/game/1015_v2_small_warmup/100000.tar

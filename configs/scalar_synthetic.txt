@@ -1,4 +1,4 @@
-expname = scalarSyn/1028_v1_larger_divergence
+expname = scalarSyn/1127_v1_test
 basedir = ./log
 
 ### data info
