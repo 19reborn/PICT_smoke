@@ -1,11 +1,6 @@
-# expname = Car/1128_v1_less_train_nse
-expname = Car/1128_v5_10cycle_loss
-# expname = Car/1124_v3_smaller_mapping_frame
-# expname = Car/1124_v2_larger_nse_smaller_regulization
-# expname = Car/1105_v4_l1_loss
-# expname = Car/1121_v6_previous_best_mapping
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = Car/1129_v2_larger_transport_and_divergence
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Car
@@ -18,8 +13,8 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 1
-position_map_first_omega = 1
+density_map_first_omega = 10
+position_map_first_omega = 10
 
 ### train params - sampling
 N_samples = 64

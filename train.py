@@ -375,7 +375,7 @@ def train(args):
             if trainVel_using_rendering_samples:
 
     
-                smoke_samples_xyz = extras['samples_xyz_dynamic']
+                smoke_samples_xyz = extras['samples_xyz_dynamic'] # has bugs for uniform sample
 
                 if model.single_scene:
                     samples_xyz = smoke_samples_xyz
@@ -398,6 +398,7 @@ def train(args):
                 training_t = torch.ones([training_samples.shape[0], 1])*time_locate
                 training_samples = torch.cat([training_samples,training_t], dim=-1)
 
+            print("training_samples.shape: ", training_samples.shape)
             vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage, local_step = global_step // args.stage4_train_vel_interval, global_step = global_step)
 
             loss += vel_loss
