@@ -318,6 +318,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
     # if local_step % args.stage4_train_vel_interval == 0:
     if local_step % 10 == 0:
+    # if True:
         
         training_samples = training_samples.requires_grad_(True)
         
@@ -398,33 +399,33 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                 _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
                 _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
                 _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
-                # _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
+                _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
                 
-                _vel_only_decoder = velocity_model.forward_with_feature(training_samples, vel_middle_output['mapped_features'].detach())
+                # _vel_only_decoder = velocity_model.forward_with_feature(training_samples, vel_middle_output['mapped_features'].detach())
 
-                # split_nse = PDE_stage3(
-                #     _f_t, _f_x, _f_y, _f_z,
-                #     _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                #     _vel, _u_x, _u_y, _u_z, 
-                #     Du_Dt)
                 split_nse = PDE_stage3(
                     _f_t, _f_x, _f_y, _f_z,
                     _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                    _vel_only_decoder, _u_x, _u_y, _u_z, 
+                    _vel, _u_x, _u_y, _u_z, 
                     Du_Dt)
+                # split_nse = PDE_stage3(
+                #     _f_t, _f_x, _f_y, _f_z,
+                #     _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                #     _vel_only_decoder, _u_x, _u_y, _u_z, 
+                #     Du_Dt)
                 # split_nse = PDE_stage4(
-                    # _f_t, _f_x, _f_y, _f_z,
-                    # _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                    # _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
-                    # _vel, _u_x, _u_y, _u_z, 
-                    # Du_Dt)
+                #     _f_t, _f_x, _f_y, _f_z,
+                #     _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                #     _d_t_lagrangian.detach(), _d_x_lagrangian.detach(), _d_y_lagrangian.detach(), _d_z_lagrangian.detach(),
+                #     _vel, _u_x, _u_y, _u_z, 
+                #     Du_Dt)
                 # split_nse_wei = [1.0, 10.0, 1e-1, args.vel_regulization_weight, 1e-1]
                 # split_nse_wei = [1.0, 10.0, 1e-1, args.vel_regulization_weight, 0]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 0]
                 # split_nse_wei = [10.0, 1.0, 1e-2, args.vel_regulization_weight, 0]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 10]
                 # split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 0]
-                split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-3]
+                split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-2]
                 
                 # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
@@ -504,7 +505,9 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             # boundary_sdf = 0.05
             # boundary_sdf = 0.02 * args.scene_scale
             # boundary_sdf = 0.00 * args.scene_scale
-            boundary_sdf = args.inside_sdf
+            # boundary_sdf = args.inside_sdf
+            
+            boundary_sdf = 0.005
             boundary_mask = torch.abs(_sdf) < boundary_sdf
             boundary_vel = _vel * boundary_mask
             
@@ -515,10 +518,10 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             boundary_loss = torch.sum(boundary_vel_project2normal ** 2) / (boundary_mask.sum() + 1e-6)
             # boundary_loss = mean_squared_error(boundary_vel_project2normal, torch.zeros_like(boundary_vel_project2normal))
 
-            inside_sdf = args.inside_sdf
+            inside_sdf = 0.005
             inside_mask = _sdf < -inside_sdf
             inside_vel = _vel * inside_mask
-            inside_loss = torch.sum(inside_vel ** 2) / (boundary_mask.sum() + 1e-6)
+            inside_loss = torch.sum(inside_vel ** 2) / (inside_mask.sum() + 1e-6)
 
             vel_loss += (boundary_loss + inside_loss) * args.boundaryW
 

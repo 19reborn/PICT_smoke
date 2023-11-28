@@ -20,6 +20,8 @@ from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D
 from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
 from src.utils.visualize_utils import den_scalar2rgb, vel2hsv, vel_uv2hsv
 
+from test import visualize_all
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.backends.cudnn.enabled = False
 torch.backends.cudnn.benchmark = False
@@ -233,10 +235,10 @@ def train(args):
             trainVel = global_step % args.stage4_train_vel_interval == 0
             # trainVel = True
             # trainVel_using_rendering_samples = True # todo:: use this
-            # trainVel_using_rendering_samples = False # todo:: use this
+            trainVel_using_rendering_samples = False # todo:: use this
             # trainVel_using_rendering_samples = True # todo:: use this
             # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
-            trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % args.train_vel_uniform_sample == 0)# todo:: use this
+            # trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % args.train_vel_uniform_sample == 0)# todo:: use this
             # trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % 2 == 0)# todo:: use this
 
         model.iter_step = global_step
@@ -366,7 +368,7 @@ def train(args):
                 _den_siren = model.dynamic_model_siren.density(training_samples)
 
                 loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
-                loss += F.smooth_l1_loss(features, torch.zeros_like(features)) * 0.0001 # feature regulization
+                loss += F.smooth_l1_loss(features, torch.zeros_like(features)) * 0.005 # feature regulization
 
 
         if trainVel:
@@ -644,6 +646,14 @@ def train(args):
                 moviebase = os.path.join(basedir, expname, 'volume_{:06d}_'.format(global_step))
                 imageio.mimwrite(moviebase + 'velrgb.mp4', np.stack(vel_rgbs,axis=0).astype(np.uint8), fps=30, quality=8)
             model.train()
+
+        if global_step % args.i_visualize==0:
+            resX = args.vol_output_W
+            resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
+            resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
+            
+            voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
+            visualize_all(args, model, voxel_writer, t_info, global_step)
 
         # if global_step % args.i_testset==0 and global_step > 0 and trainImg:
         if global_step % args.i_testset==0 and global_step > 0:
