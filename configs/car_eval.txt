@@ -1,3 +1,11 @@
+# expname = Car/1128_v1_less_train_nse
+expname = Car/1128_v6_larger_omega
+# expname = Car/1124_v3_smaller_mapping_frame
+# expname = Car/1124_v2_larger_nse_smaller_regulization
+# expname = Car/1105_v4_l1_loss
+# expname = Car/1121_v6_previous_best_mapping
+# basedir = ./log
+basedir = /mnt/sda/workspace/PINF_Project/our_output/
 expname = Car/1129_v2_larger_transport_and_divergence
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/

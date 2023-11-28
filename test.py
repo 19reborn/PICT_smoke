@@ -54,17 +54,18 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     # change_feature_interval = 50
     # sample_pts = 32
     # change_feature_interval = 1000
-    change_feature_interval = 1000
+    # change_feature_interval = 500
+    change_feature_interval = 50
     # change_feature_interval = 40
     # change_feature_interval = 100
     # sample_pts = 2
     # sample_pts = 32
     # sample_pts = 64
-    sample_pts = 32
+    sample_pts = 128
     # sample_pts = 10
     
     mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
-       
+
     
     draw_mapping_3d_animation(os.path.join(testsavedir, f'vis_map_3d_animation_interval{change_feature_interval}.gif'), mapping_xyz.permute(1,0,2).cpu().numpy())
     
@@ -106,7 +107,7 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
 
 
 
-    exit(0)
+    # exit(0)
 
 def visualize_feature(args, model, testsavedir, voxel_writer, t_info):
 
@@ -187,8 +188,27 @@ def visualize_feature(args, model, testsavedir, voxel_writer, t_info):
         
     print('Done output', testsavedir)
     
-    exit(0)
+    # exit(0)
 
+def visualize_all(args, model, voxel_writer, t_info, global_step):
+    print('visualize_all')
+    basedir = args.basedir
+    expname = args.expname
+    testsavedir = os.path.join(basedir, expname, 'vis_summary_{:06d}'.format(global_step+1), 'vis_mapping')
+    os.makedirs(testsavedir, exist_ok=True)
+    visualize_mapping(args, model, testsavedir, voxel_writer, t_info)
+    
+    testsavedir = os.path.join(basedir, expname, 'vis_summary_{:06d}'.format(global_step+1), 'vis_feature')
+    os.makedirs(testsavedir, exist_ok=True)
+    visualize_feature(args, model, testsavedir, voxel_writer, t_info)
+    
+    testsavedir = os.path.join(basedir, expname, 'vis_summary_{:06d}'.format(global_step+1), 'vis_velocity/')
+    os.makedirs(testsavedir, exist_ok=True)
+    output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = True)
+    
+    testsavedir = os.path.join(basedir, expname, 'vis_summary_{:06d}'.format(global_step+1), 'eval_mapping')
+    os.makedirs(testsavedir, exist_ok=True)
+    evaluate_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
 
 def render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, cuda_ray, gt_images):
     model.eval()
@@ -262,7 +282,7 @@ def output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = F
         
     print('Done output', testsavedir)
 
-    return
+    # return
 
 def test(args):
     # Create log dir and copy the config file
