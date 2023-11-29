@@ -488,17 +488,17 @@ class Voxel_Tool(object):
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
         # random sample points             
-        pts_num = sample_pts
-        import random
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= 12.0]
-        pts_flat = pts_flat[density_0.squeeze(-1) >= 4.0]
-        sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
-        pts_sampled = pts_flat[sample_id].reshape(-1,3)
+        # pts_num = sample_pts
+        # import random
+        # # pts_flat = pts_flat[density_0.squeeze(-1) >= 12.0]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 4.0]
+        # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        # pts_sampled = pts_flat[sample_id].reshape(-1,3)
 
         
         # sort the density
-        # pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
-        # pts_sampled = pts_flat[:sample_pts]
+        pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+        pts_sampled = pts_flat[:sample_pts]
 
         all_xyz = []
         
@@ -706,17 +706,19 @@ class Voxel_Tool(object):
         density_0 = torch.cat(density_0, dim = 0)
 
 
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= 0.50]
-        pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= 0.05]
+        # # pts_flat = pts_flat[density_0.squeeze(-1) >= 0.50]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
+        # # pts_flat = pts_flat[density_0.squeeze(-1) >= 0.05]
             
-        pts_num = sample_pts
+        # pts_num = sample_pts
 
-        import random
-        sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
-        pts_sampled = pts_flat[sample_id].reshape(-1,3)
+        # import random
+        # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        # pts_sampled = pts_flat[sample_id].reshape(-1,3)
 
-
+        pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+        pts_sampled = pts_flat[:sample_pts]
+        
         gt_all_xyz = []
         
         feature_sampled = dynamic_model_lagrangian.velocity_model.forward_feature(pts_sampled,  torch.ones([pts_sampled.shape[0], 1])*float(time_0)).detach()

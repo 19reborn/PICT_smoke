@@ -11,6 +11,7 @@ import raymarching
 
 from src.utils.training_utils import batchify, batchify_func
 from src.utils.loss_utils import to8b
+from src.utils.visualize_utils import vel_uv2hsv, vel2hsv
 
 
 def get_rays(H, W, K, c2w):
@@ -298,7 +299,9 @@ def render(H, W, K, model, N_samples = 64, chunk=1024*32, rays=None, c2w=None, n
     # tsne = TSNE(n_components=3)
     # feature =  all_ret['feature_map'].detach().cpu().numpy()
     # rgb = tsne.fit_transform(feature.reshape(H*W, -1)).reshape(H, W, 3)
-
+    # print('feature_map', all_ret['feature_map'].shape)
+    # print('vel_map', all_ret['velocity_map'].shape)
+    # exit(1)
     # import pdb
     # pdb.set_trace()
     # cv2.imwrite('test_feature.png', all_ret['feature_map'][...,:3].detach().cpu().numpy()*255)
@@ -760,7 +763,15 @@ def render_rays_cuda(ray_batch,
         weighted_features = dynamic_weights.unsqueeze(-1) * features
         feature_map = torch.zeros((N_rays, features.shape[-1])).cuda()
         feature_map.scatter_add_(0, rays_dynamic_id.long(), weighted_features)
-        ret['feature_map'] = feature_map
+        ret['feature_map'] = feature_map[..., :3] # only visualize the first 3 channels
+        
+        vel_map = torch.zeros((N_rays, 3)).cuda()
+        if pts_dynamic.shape[0] > 0:
+            vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
+            weighted_vel = dynamic_weights.unsqueeze(-1) * vel
+            vel_map.scatter_add_(0, rays_dynamic_id.long(), weighted_vel)
+        
+        ret['velocity_map'] = vel_map
 
     # todo: make name more clear
     rgbh2_map = dynamic_image # dynamic
@@ -1205,10 +1216,16 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
     gt_dir = os.path.join(savedir, 'gt')
     other_dir = os.path.join(savedir, 'others')
     decomposed_dir = os.path.join(savedir, 'decomposed')
+    velocity_dir = os.path.join(savedir, 'velocity')
     os.makedirs(pred_dir, exist_ok=True)
     os.makedirs(gt_dir, exist_ok=True)
     os.makedirs(other_dir, exist_ok=True)
     os.makedirs(decomposed_dir, exist_ok=True)
+    os.makedirs(velocity_dir, exist_ok=True)
+    dynamic_rgbs = []
+    velocity_rgbs = []
+    feature_rgbs = []
+    
     
     for i, c2w in enumerate(tqdm(render_poses)):
         print(i, time.time() - t)
@@ -1265,11 +1282,40 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             rgb_static = extras['rgbh1']
             imageio.imwrite(filename, to8b(rgb_static.squeeze(-1).detach().cpu().numpy()))
             
+            
             filename = os.path.join(savedir, 'decomposed', 'dynamic_{:03d}.png'.format(i))
-            rgb_static = extras['rgbh2']
-            imageio.imwrite(filename, to8b(rgb_static.squeeze(-1).detach().cpu().numpy()))
+            rgb_dynamic = to8b(extras['rgbh2'].squeeze(-1).detach().cpu().numpy())
+            imageio.imwrite(filename, rgb_dynamic)
+            dynamic_rgbs.append(rgb_dynamic)
+            
+            filename = os.path.join(velocity_dir, 'velocity_{:03d}.png'.format(i))
+            rgb = extras['velocity_map']
+            # visualize_direction
+            rgb = vel_uv2hsv(rgb.cpu(), scale=300, is3D=False, logv=False)[::-1] # flip Y in vel_uv2hsv
+            # rgb = vel2hsv(rgb.cpu(), scale=50, is3D=False, logv=False) # flip Y in vel_uv2hsv
+            # imageio.imwrite(filename, to8b(rgb.squeeze(-1).detach().cpu().numpy()))
+            imageio.imwrite(filename, rgb)
+            velocity_rgbs.append(rgb)
+            
+            
+            filename = os.path.join(velocity_dir, 'feature_{:03d}.png'.format(i))
+            rgb = extras['feature_map']
+            if i == 0:
+                feautre_max = rgb.reshape(-1, 3).max(0)[0]
+                feautre_min = rgb.reshape(-1, 3).min(0)[0]
+            rgb = (rgb.reshape(-1, 3) - feautre_min) / (feautre_max - feautre_min + 1e-6)
+            rgb = rgb.reshape(H, W, 3)
+            rgb = to8b(rgb.squeeze(-1).detach().cpu().numpy())
+            imageio.imwrite(filename, rgb)         
+            feature_rgbs.append(rgb)
+            
 
     rgbs = np.stack(rgbs, 0)
     disps = np.stack(disps, 0)
+    
+    imageio.mimwrite(os.path.join(savedir, 'pred_rgb.mp4'), to8b(rgbs), fps=30, quality=16)
+    imageio.mimwrite(os.path.join(savedir, 'smoke_rgb.mp4'), dynamic_rgbs, fps=30, quality=16)
+    imageio.mimwrite(os.path.join(savedir, 'velocity_rgb.mp4'), velocity_rgbs, fps=30, quality=16)
+    imageio.mimwrite(os.path.join(savedir, 'feature_rgb.mp4'), feature_rgbs, fps=30, quality=16)
 
     return rgbs, disps

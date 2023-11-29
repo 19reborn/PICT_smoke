@@ -1,4 +1,4 @@
-expname = Car/1129_v2_larger_transport_and_divergence
+expname = Car/1129_v5_larger_fine_density
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -13,8 +13,8 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 10
-position_map_first_omega = 10
+density_map_first_omega = 30
+position_map_first_omega = 30
 
 ### train params - sampling
 N_samples = 64
@@ -96,16 +96,17 @@ neus_progressive_pe = True
 neus_progressive_pe_start = 20000
 
 use_scene_scale_before_pe = True
-max_mapping_frame_range = 50
 stage4_train_vel_interval = 1
 
-nseW = 1e-3
-vel_regulization_weight = 1e-2
+nseW = 1e-2
+vel_regulization_weight = 1e-1
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 0.005
-velocity_mapping_loss_weight = 0.005
+velocity_mapping_loss_weight = 0.01
 color_mapping_loss_weight = 5.0
+
+max_mapping_frame_range = 50
 mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
@@ -117,3 +118,6 @@ model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1128_v6_lar
 # model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1128_v3_no_dudt/220000.tar
 
 # model_path= /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v6_much_longer_range/280000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1128_v6_larger_omega/100000.tar
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1129_v3_larger_omega/200000.tar
+

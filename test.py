@@ -191,6 +191,7 @@ def visualize_feature(args, model, testsavedir, voxel_writer, t_info):
     # exit(0)
 
 def visualize_all(args, model, voxel_writer, t_info, global_step):
+    args.full_vol_output = True
     print('visualize_all')
     basedir = args.basedir
     expname = args.expname

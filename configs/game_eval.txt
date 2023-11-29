@@ -1,4 +1,4 @@
-expname = game/1101_v2_full_loss
+expname = game/1127_v1_train_vel_interval1
 basedir = ./log
 
 ### data info

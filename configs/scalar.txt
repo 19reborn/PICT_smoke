@@ -1,6 +1,6 @@
 expname = scalar/1118_v2_larger_cycle_loss
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/ScalarReal
@@ -79,12 +79,19 @@ stage4_train_vel_interval = 3
 density_mapping_loss_weight = 0.005
 velocity_mapping_loss_weight = 0.05
 color_mapping_loss_weight = 0.01
-nseW = 1e-1
-vel_regulization_weight = 0.05
-max_mapping_frame_range = 100
-cross_cycle_loss_weight = 100.0
-self_cycle_loss_weight = 10.0
-SmokeInsideSDFW = 0.01
-boundaryW = 0.01
+
+stage4_train_vel_interval = 1
+
+nseW = 1e-2
+vel_regulization_weight = 0.1
+cross_cycle_loss_weight = 1.0
+self_cycle_loss_weight = 1.0
+density_mapping_loss_weight = 1e-2
+velocity_mapping_loss_weight = 1e-2
+color_mapping_loss_weight = 1.0
+
+max_mapping_frame_range = 50
+mapping_frame_range_fading_start = 0
+mapping_frame_range_fading_last = 20000
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/scalar/1118_v1/200000.tar

@@ -1,6 +1,6 @@
-expname = cyl/1128_v5
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = cyl/1129_v1
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Cyl
@@ -96,7 +96,7 @@ neus_progressive_pe = True
 
 stage4_train_vel_interval = 1
 density_mapping_loss_weight = 0.01
-velocity_mapping_loss_weight = 0.00
+velocity_mapping_loss_weight = 0.01
 color_mapping_loss_weight = 0.01
 ColorDivergenceW = 0.00
 
@@ -104,7 +104,7 @@ nseW = 1e-2
 vel_regulization_weight = 0.1
 max_mapping_frame_range = 50
 cross_cycle_loss_weight = 1.0
-self_cycle_loss_weight = 0.1
+self_cycle_loss_weight = 1.0
 SmokeInsideSDFW = 0.05
 boundaryW = 0.5
 inside_sdf = 0.0
@@ -112,4 +112,4 @@ inside_sdf = 0.0
 # color_mapping_loss_weight = 0.5
 # fix_seed = 66
 
-model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1118_v1_interval_5/050000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1118_v1_interval_5/050000.tar

@@ -330,10 +330,14 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
             _d_x_lagrangian, _d_y_lagrangian, _d_z_lagrangian, _d_t_lagrangian = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
         
-            _d_x = _d_x_lagrangian.detach() + 0.01 * _d_x_siren.detach()
-            _d_y = _d_y_lagrangian.detach() + 0.01 * _d_y_siren.detach()
-            _d_z = _d_z_lagrangian.detach() + 0.01 * _d_z_siren.detach()
-            _d_t = _d_t_lagrangian.detach() + 0.01 * _d_t_siren.detach()
+            # _d_x = _d_x_lagrangian.detach() + 0.01 * _d_x_siren.detach()
+            # _d_y = _d_y_lagrangian.detach() + 0.01 * _d_y_siren.detach()
+            # _d_z = _d_z_lagrangian.detach() + 0.01 * _d_z_siren.detach()
+            # _d_t = _d_t_lagrangian.detach() + 0.01 * _d_t_siren.detach()
+            _d_x = _d_x_lagrangian.detach() + 0.5 * _d_x_siren.detach()
+            _d_y = _d_y_lagrangian.detach() + 0.5 * _d_y_siren.detach()
+            _d_z = _d_z_lagrangian.detach() + 0.5 * _d_z_siren.detach()
+            _d_t = _d_t_lagrangian.detach() + 0.5 * _d_t_siren.detach()
         else:
             _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
             _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
@@ -425,7 +429,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                 # split_nse_wei = [10.0, 1.0, 1e-2, args.vel_regulization_weight, 0]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 10]
                 # split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 0]
-                split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-3]
+                split_nse_wei = [100.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-2]
                 
                 # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]

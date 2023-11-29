@@ -92,7 +92,6 @@ use_two_level_density = True
 use_scene_scale_before_pe = True
 neus_progressive_pe = True
 
-max_mapping_frame_range = 100
 stage4_train_vel_interval = 1
 
 nseW = 1e-2
@@ -102,6 +101,10 @@ self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 1e-2
 velocity_mapping_loss_weight = 1e-2
 color_mapping_loss_weight = 1.0
+
+max_mapping_frame_range = 50
+mapping_frame_range_fading_start = 0
+mapping_frame_range_fading_last = 20000
 
 # nseW = 1e-4
 
@@ -124,3 +127,5 @@ color_mapping_loss_weight = 1.0
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v3_stage1_recon/010000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v4_stage2_3/015000.tar
 # model_path =/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v5_stage3/020000.tar
+
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1127_v1_train_vel_interval1/100000.tar
