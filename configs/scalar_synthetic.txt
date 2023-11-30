@@ -1,5 +1,6 @@
-expname = scalarSyn/1128_v4
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = scalarSyn/1129_v5_omega_1
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
+basedir = ./log
 
 ### data info
 datadir = ./data/ScalarSyn
@@ -22,11 +23,11 @@ density_map_first_omega = 1
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 512
+N_rand = 1024
 i_embed = -1
 train_warp = True
 vol_output_W = 128
-train_vel_grid_size = 24
+train_vel_grid_size = 32
 
 ### train params - iterations
 precrop_iters = 1000
@@ -56,8 +57,8 @@ i_img = 1000
 i_video = 50000
 
 
-stage1_finish_recon = 0
-uniform_sample_step = 5000000
+stage1_finish_recon = 10000
+uniform_sample_step = 5000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
 
@@ -65,8 +66,19 @@ stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 stage4_train_vel_interval = 5
 
-max_mapping_frame_range = 3
-# nseW = 0.01
+max_mapping_frame_range = 50
+stage4_train_vel_interval = 1
+
+use_two_level_density = True
+nseW = 1.0
+vel_regulization_weight = 1000.0
+cross_cycle_loss_weight = 1.0
+self_cycle_loss_weight = 1.0
+density_mapping_loss_weight = 0.01
+velocity_mapping_loss_weight = 0.1
+color_mapping_loss_weight = 0.01
+mapping_frame_range_fading_start = 0
+mapping_frame_range_fading_last = 20000
 
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v23/080000.tar

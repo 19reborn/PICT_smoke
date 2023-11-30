@@ -429,7 +429,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                 # split_nse_wei = [10.0, 1.0, 1e-2, args.vel_regulization_weight, 0]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 10]
                 # split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 0]
-                split_nse_wei = [100.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-2]
+                split_nse_wei = [1.0, 1.0, 1.0, args.vel_regulization_weight, 1e-2]
                 
                 # split_nse_wei = [1.0, 0.1, 1e-2, args.vel_regulization_weight, 1e-2]
                 # split_nse_wei = [1.0, 1.0, 1e-2, args.vel_regulization_weight, 1e-2]
@@ -766,8 +766,8 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
     # eqs += [feature]
-    # eqs += [mean_squared_error(feature,0.0)]
-    eqs += [L1_loss(feature,torch.zeros_like(feature))]
+    eqs += [mean_squared_error(feature,0.0)]
+    # eqs += [L1_loss(feature,torch.zeros_like(feature))]
     # eqs += [smooth_l1_loss(feature,torch.zeros_like(feature))]
 
     # eqs += [ U_x[:,0] + U_y[:,1] + U_z[:,2] ] # velocity divergence constrain
@@ -787,11 +787,13 @@ def PDE_stage3(f_t, f_x, f_y, f_z,
         density_mask = (density_mask < 1e-1).float()
         eqs += [mean_squared_error(U * density_mask, 0.0) + mean_squared_error(U * (1.0 - density_mask), 0.0) * 0.1]
     else:
-        eqs += [mean_squared_error(U, 0.0)]
+        # eqs += [mean_squared_error(U, 0.0)]
+        eqs += [L1_loss(U, torch.zeros_like(U))]
         # eqs += [smooth_l1_loss(U, torch.zeros_like(U))]
 
     # eqs += [Du_Dt]
-    eqs += [mean_squared_error(Du_Dt,0.0)]
+    # eqs += [mean_squared_error(Du_Dt,0.0)]
+    eqs += [L1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
     # eqs += [smooth_l1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
     
     # feature norm regulization
