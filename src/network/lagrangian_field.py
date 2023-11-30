@@ -372,12 +372,13 @@ class VelocityNetwork(nn.Module):
         # directly provide features instead of xyzt
         mapped_xyz = self.position_map(features, t1)
         
-        if self.bbox_model is not None:
+        if self.bbox_model is not None and xyz is not None:
             bbox_mask = self.bbox_model.insideMask(xyz) == False
         else:
-            bbox_mask = torch.zeros_like(xyz[..., 0], dtype=torch.bool, device=xyz.device)
-            
-        mapped_xyz[bbox_mask] = xyz[bbox_mask]
+            bbox_mask = torch.zeros_like(mapped_xyz[..., 0], dtype=torch.bool, device=mapped_xyz.device)
+        
+        if xyz is not None:
+            mapped_xyz[bbox_mask] = xyz[bbox_mask]
 
         return mapped_xyz
 
@@ -477,7 +478,18 @@ class DensityNetwork(nn.Module):
         xyzt.requires_grad_(True)
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
-        density, features = self.forward(xyzt)
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+        else:
+            bbox_mask = torch.zeros_like(xyz[..., 0], dtype=torch.bool, device=xyz.device)
+            
+        features = self.feature_map(xyz, t)
+        # features *= bbox_mask
+        features[bbox_mask] = 0.0
+
+        density = self.density_map(features)
+        # density *= bbox_mask
+        density[bbox_mask] = 0.0
 
         ddensity_dxyz = _get_minibatch_jacobian(density, xyz)
         ddensity_dt = _get_minibatch_jacobian(density, t)
