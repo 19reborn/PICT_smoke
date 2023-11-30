@@ -523,7 +523,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             # boundary_loss = mean_squared_error(boundary_vel_project2normal, torch.zeros_like(boundary_vel_project2normal))
 
             inside_sdf = 0.005
-            inside_mask = _sdf < -inside_sdf
+            inside_mask = _sdf < 0
             inside_vel = _vel * inside_mask
             inside_loss = torch.sum(inside_vel ** 2) / (inside_mask.sum() + 1e-6)
 

@@ -70,7 +70,8 @@ class SineLayer(nn.Module):
                                              np.sqrt(6 / self.in_features) / self.omega_0)
         
     def forward(self, input):
-        return torch.sin(self.omega_0 * self.linear(input))
+        intermediate = self.omega_0 * self.linear(input)
+        return torch.sin(intermediate)
     
     def forward_with_intermediate(self, input): 
         # For visualization of activation distributions
@@ -289,9 +290,10 @@ class SIREN_NeRFt(nn.Module):
                 if w > 1e-8:
                     h = w*y + h
 
-        outputs = self.alpha_linear(h)
+        outputs_ = self.alpha_linear(h)
 
-        outputs = self.density_activation(outputs)
+        outputs = self.density_activation(outputs_)
+        # outputs = F.relu(outputs_)
 
         if self.bbox_model is not None:
             bbox_mask = self.bbox_model.insideMask(input_pts[...,:3])
@@ -365,11 +367,15 @@ class SIREN_NeRFt(nn.Module):
         h = scaled_input_pts
         h_layers = []
         for i, l in enumerate(self.pts_linears):
-            h = self.pts_linears[i](h)
+            h_next_ = self.pts_linears[i](h)
 
-            h_layers += [h]
+            h_layers += [h_next_]
             if i in self.skips:
-                h = torch.cat([scaled_input_pts, h], -1)
+                h_next = torch.cat([scaled_input_pts, h_next_], -1)
+            else:
+                h_next = h_next_
+                
+            h = h_next
         
         # a sliding window (fading_wei_list) to enable deeper layers progressively
         if self.fading_fin_step > self.fading_step: 
@@ -377,11 +383,12 @@ class SIREN_NeRFt(nn.Module):
             h = 0
             for w,y in zip(fading_wei_list, h_layers):
                 if w > 1e-8:
-                    h = w*y + h
+                    h += w*y
 
-        alpha = self.alpha_linear(h)
+        alpha_ = self.alpha_linear(h)
 
-        alpha = self.density_activation(alpha)
+        alpha = self.density_activation(alpha_)
+        # alpha = F.relu(alpha_)
 
         if self.use_viewdirs:            
             input_pts_feature = self.feature_linear(h)
@@ -396,8 +403,8 @@ class SIREN_NeRFt(nn.Module):
         outputs = torch.cat([rgb, alpha], -1)
 
         if self.bbox_model is not None:
-            bbox_mask = self.bbox_model.insideMask(input_pts[...,:3]).unsqueeze(-1)
-            outputs = bbox_mask * outputs
+            bbox_mask = self.bbox_model.insideMask(input_pts[...,:3])
+            outputs[bbox_mask == 0] = 0
 
         return outputs
 

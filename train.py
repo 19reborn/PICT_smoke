@@ -2,6 +2,7 @@ import os, sys
 import imageio
 import numpy as np
 import torch
+torch.autograd.set_detect_anomaly(True)
 import torch.nn.functional as F
 
 from tqdm import trange
@@ -364,7 +365,7 @@ def train(args):
                     training_samples = torch.cat([training_samples,training_t], dim=-1).detach()
 
                 # _den_lagrangian = model.dynamic_model_lagrangian.density(training_samples)
-                _den_lagrangian, features = model.dynamic_model_lagrangian.density_with_feature(training_samples)
+                _den_lagrangian, features = model.dynamic_model_lagrangian.density_with_feature_output(training_samples)
                 _den_siren = model.dynamic_model_siren.density(training_samples)
 
                 loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
@@ -406,9 +407,9 @@ def train(args):
 
             loss += vel_loss
 
-        loss = loss * total_loss_fading         
-
-        loss.backward()
+        # loss = loss * total_loss_fading         
+        with torch.autograd.detect_anomaly():
+            loss.backward()
         ## grad clip
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
         optimizer.step()

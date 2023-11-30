@@ -74,9 +74,10 @@ class FeatureMapping(nn.Module):
 
         for i, layer in enumerate(self.linears):
             if i in self.skips:
-                feature = torch.cat([input_feature, layer(feature)], dim=-1)
+                feature_next = torch.cat([input_feature, layer(feature)], dim=-1)
             else:
-                feature = layer(feature)
+                feature_next = layer(feature)
+            feature = feature_next
         
         return feature
 
@@ -169,18 +170,21 @@ class DensityMapping(nn.Module):
         # x: (features, t)
 
         # input_xyz = torch.cat([feature, t], dim=-1)
-        input_xyz = torch.cat([feature], dim=-1)
+        # input_xyz = torch.cat([feature], dim=-1)
+        input_xyz = feature
 
         xyz = input_xyz
 
 
         for i, layer in enumerate(self.linears):
             if i in self.skips:
-                xyz = torch.cat([input_xyz, layer(xyz)], dim=-1)
+                xyz_next = torch.cat([input_xyz, layer(xyz)], dim=-1)
             else:
-                xyz = layer(xyz)
+                xyz_next = layer(xyz)
+            xyz = xyz_next
         
         density = self.activation(xyz)
+        # density = F.relu(xyz)
 
 
         return density
@@ -466,7 +470,7 @@ class DensityNetwork(nn.Module):
         return density
     
 
-    def density_with_features(self, features):
+    def density_using_features(self, features):
         # directly provide features instead of xyzt
         density = self.density_map(features)
         
@@ -565,7 +569,7 @@ class Lagrangian_NeRF(nn.Module):
 
         return density
     
-    def density_with_feature(self, x):
+    def density_with_feature_output(self, x):
 
         density, features = self.density_model(x)
 
