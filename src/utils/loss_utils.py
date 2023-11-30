@@ -329,7 +329,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             _den_siren, _d_x_siren, _d_y_siren, _d_z_siren, _d_t_siren = den_model_siren.density_with_jacobian(training_samples)
             _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
             _d_x_lagrangian, _d_y_lagrangian, _d_z_lagrangian, _d_t_lagrangian = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
-        
+            
             # _d_x = _d_x_lagrangian.detach() + 0.01 * _d_x_siren.detach()
             # _d_y = _d_y_lagrangian.detach() + 0.01 * _d_y_siren.detach()
             # _d_z = _d_z_lagrangian.detach() + 0.01 * _d_z_siren.detach()
@@ -403,20 +403,20 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                 _u_x, _u_y, _u_z, Du_Dt = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,3)
                 _f_x, _f_y, _f_z = [torch.squeeze(_, -1) for _ in vel_middle_output['dfeature_dxyz'].split(1, dim=-1)] # (N,1)
                 _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
-                _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
+                # _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
                 
-                # _vel_only_decoder = velocity_model.forward_with_feature(training_samples, vel_middle_output['mapped_features'].detach())
+                _vel_only_decoder = velocity_model.forward_with_feature(training_samples, vel_middle_output['mapped_features'].detach())
 
-                split_nse = PDE_stage3(
-                    _f_t, _f_x, _f_y, _f_z,
-                    _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                    _vel, _u_x, _u_y, _u_z, 
-                    Du_Dt)
                 # split_nse = PDE_stage3(
                 #     _f_t, _f_x, _f_y, _f_z,
                 #     _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
-                #     _vel_only_decoder, _u_x, _u_y, _u_z, 
+                #     _vel, _u_x, _u_y, _u_z, 
                 #     Du_Dt)
+                split_nse = PDE_stage3(
+                    _f_t, _f_x, _f_y, _f_z,
+                    _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),
+                    _vel_only_decoder, _u_x, _u_y, _u_z, 
+                    Du_Dt)
                 # split_nse = PDE_stage4(
                 #     _f_t, _f_x, _f_y, _f_z,
                 #     _d_t.detach(), _d_x.detach(), _d_y.detach(), _d_z.detach(),

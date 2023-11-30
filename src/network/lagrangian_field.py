@@ -337,6 +337,7 @@ class VelocityNetwork(nn.Module):
         
         if self.bbox_model is not None:
             bbox_mask = self.bbox_model.insideMask(xyz) == 0
+            mapped_xyz[bbox_mask] = xyz[bbox_mask]
             features[bbox_mask] = 0.0
             velocity[bbox_mask] = 0.0
             
@@ -400,7 +401,7 @@ class VelocityNetwork(nn.Module):
         
         if self.bbox_model is not None:
             bbox_mask = self.bbox_model.insideMask(x) == 0
-            mapped_velocity[bbox_mask] = 0.0
+            mapped_velocity[bbox_mask] = velocity[bbox_mask]
             
         return mapped_velocity
         
@@ -440,6 +441,7 @@ class DensityNetwork(nn.Module):
         if self.bbox_model is not None:
    
             bbox_mask = self.bbox_model.insideMask(xyz)
+            features[bbox_mask==0] = 0
             density[bbox_mask==0] = 0
             
             
@@ -467,7 +469,7 @@ class DensityNetwork(nn.Module):
     def density_with_features(self, features):
         # directly provide features instead of xyzt
         density = self.density_map(features)
-
+        
         return density
 
     def density_with_jacobian(self, xyzt):
@@ -479,7 +481,11 @@ class DensityNetwork(nn.Module):
         features = self.feature_map(xyz, t)
         density = self.density_map(features)
 
-
+        
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz)
+            features[bbox_mask==0] = 0
+            density[bbox_mask==0] = 0
   
         ddensity_dxyz = _get_minibatch_jacobian(density, xyz)
         ddensity_dt = _get_minibatch_jacobian(density, t)

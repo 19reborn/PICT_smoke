@@ -540,7 +540,6 @@ def test(args):
         else:
             # Default is smoother render_poses path
             images = None
-
         render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, global_step >= args.uniform_sample_step, gt_images=images)
     else:
         AssertionError("test mode not defined.")
