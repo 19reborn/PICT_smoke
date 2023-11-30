@@ -1,4 +1,4 @@
-expname = scalarSyn/1128_v4
+expname = scalarSyn/1130_v1
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
@@ -15,6 +15,8 @@ use_viewdirs = False
 # feature_map_first_omega = 10
 # density_activation = exp
 # lagrangian_density_activation = exp
+# density_activation = relu
+# lagrangian_density_activation = relu
 position_map_first_omega = 1
 # lagrangian_feature_dim = 32
 density_map_first_omega = 1
@@ -56,8 +58,8 @@ i_img = 1000
 i_video = 50000
 
 
-stage1_finish_recon = 0
-uniform_sample_step = 5000000
+stage1_finish_recon = 10000
+uniform_sample_step = 5000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
 
@@ -65,10 +67,22 @@ stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 stage4_train_vel_interval = 5
 
-max_mapping_frame_range = 3
-# nseW = 0.01
+max_mapping_frame_range = 50
+stage4_train_vel_interval = 1
+
+use_two_level_density = True
+nseW = 1.0
+vel_regulization_weight = 10000.0
+cross_cycle_loss_weight = 1.0
+self_cycle_loss_weight = 1.0
+density_mapping_loss_weight = 0.01
+velocity_mapping_loss_weight = 0.1
+color_mapping_loss_weight = 0.01
+mapping_frame_range_fading_start = 0
+mapping_frame_range_fading_last = 20000
 
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v23/080000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalarSyn/1025_v1_from_start/010000.tar
 
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/scalarSyn/1129_v2_only_train_decoder/500000.tar
