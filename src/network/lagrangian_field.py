@@ -77,6 +77,7 @@ class FeatureMapping(nn.Module):
                 feature_next = torch.cat([input_feature, layer(feature)], dim=-1)
             else:
                 feature_next = layer(feature)
+                
             feature = feature_next
         
         return feature
@@ -181,10 +182,10 @@ class DensityMapping(nn.Module):
                 xyz_next = torch.cat([input_xyz, layer(xyz)], dim=-1)
             else:
                 xyz_next = layer(xyz)
+                
             xyz = xyz_next
-        
+            
         density = self.activation(xyz)
-        # density = F.relu(xyz)
 
 
         return density
@@ -240,27 +241,28 @@ class VelocityNetwork(nn.Module):
         return features
 
     def forward_with_middle_output(self, xyzt, need_vorticity = False):
+        xyzt.requires_grad_(True)
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
-        # xyz.requires_grad_(True) ## allow for futhre order derivative
-        # t.requires_grad_(True) ## todo:: check whether put it after feature_map
         t1 = t.clone().detach()
         t1.requires_grad_(True)
-
-        features = self.feature_map(xyz, t)
-
-
-        mapped_xyz = self.position_map(features, t1)
-
-
-        velocity = self.gradients(mapped_xyz, t1)
         
         if self.bbox_model is not None:
             bbox_mask = self.bbox_model.insideMask(xyz) == False
-            features[bbox_mask] = 0.0
+        else:
+            bbox_mask = torch.zeros_like(xyz[..., 0], dtype=torch.bool, device=xyz.device)
             
-            mapped_xyz[bbox_mask] = xyz[bbox_mask]
-            velocity[bbox_mask] = 0.0
+
+        features = self.feature_map(xyz, t)
+        features[bbox_mask] = 0.0
+
+        mapped_xyz = self.position_map(features, t1)
+        mapped_xyz[bbox_mask] = xyz[bbox_mask]
+
+
+        velocity = self.gradients(mapped_xyz, t1)
+        velocity[bbox_mask] = 0.0
+
 
         middle_output = {}
         middle_output['mapped_features'] = features
@@ -280,6 +282,7 @@ class VelocityNetwork(nn.Module):
         return velocity, middle_output
 
     def forward_with_feature_save_middle_output(self, xyzt, features, need_vorticity = False):
+        AssertionError(False, "Not implemented!")
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
         t1 = t.clone().detach()
@@ -303,47 +306,45 @@ class VelocityNetwork(nn.Module):
 
         return velocity, jaco_t1
 
-    def forward_with_feature(self, xyzt, features):
+    def forward_using_feature(self, xyzt, features):
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
         t1 = t.clone().detach()
         t1.requires_grad_(True)
 
-
-        mapped_xyz = self.position_map(features, t1)
-
-        velocity = self.gradients(mapped_xyz, t1)
-        
         if self.bbox_model is not None:
             bbox_mask = self.bbox_model.insideMask(xyz) == False
+        else:
+            bbox_mask = torch.zeros_like(xyz[..., 0], dtype=torch.bool, device=xyz.device)
             
-            mapped_xyz[bbox_mask] = xyz[bbox_mask]
-            velocity[bbox_mask] = 0.0
 
+        mapped_xyz = self.position_map(features, t1)
+        mapped_xyz[bbox_mask] = xyz[bbox_mask]
 
-
+        velocity = self.gradients(mapped_xyz, t1)
+        velocity[bbox_mask] = 0.0
+        
 
         return velocity
 
     def forward(self, xyzt):
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
-        xyz.requires_grad_(True) ## allow for futhre order derivative
-
         features = self.feature_map(xyz, t)
         t1 = t.clone().detach()
         t1.requires_grad_(True)
-
-
-        mapped_xyz = self.position_map(features, t1)
-
-        velocity = self.gradients(mapped_xyz, t1)
         
         if self.bbox_model is not None:
-            bbox_mask = self.bbox_model.insideMask(xyz) == 0
-            mapped_xyz[bbox_mask] = xyz[bbox_mask]
-            features[bbox_mask] = 0.0
-            velocity[bbox_mask] = 0.0
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+        else:
+            bbox_mask = torch.zeros_like(xyz[..., 0], dtype=torch.bool, device=xyz.device)
+            
+        mapped_xyz = self.position_map(features, t1)
+        mapped_xyz[bbox_mask] = xyz[bbox_mask]
+
+
+        velocity = self.gradients(mapped_xyz, t1)
+        velocity[bbox_mask] = 0.0
             
         return velocity
 
@@ -354,31 +355,35 @@ class VelocityNetwork(nn.Module):
         else:
             xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
- 
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+        else:
+            bbox_mask = torch.zeros_like(xyz[..., 0], dtype=torch.bool, device=xyz.device)
+            
         features = self.feature_map(xyz, t)
 
         mapped_xyz = self.position_map(features, t1)
-        
-        if self.bbox_model is not None:
-            bbox_mask = self.bbox_model.insideMask(xyz) == 0
-            mapped_xyz[bbox_mask] = xyz[bbox_mask]
+        mapped_xyz[bbox_mask] = xyz[bbox_mask]
             
         return mapped_xyz
 
-    def mapping_forward_with_features(self, features, t1, xyz = None):
+    def mapping_forward_using_features(self, features, t1, xyz = None):
         # directly provide features instead of xyzt
         mapped_xyz = self.position_map(features, t1)
         
-        if self.bbox_model is not None and xyz is not None:
-            bbox_mask = self.bbox_model.insideMask(xyz) == 0
-            mapped_xyz[bbox_mask] = xyz[bbox_mask]
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+        else:
+            bbox_mask = torch.zeros_like(xyz[..., 0], dtype=torch.bool, device=xyz.device)
+            
+        mapped_xyz[bbox_mask] = xyz[bbox_mask]
 
         return mapped_xyz
 
     def velocity_mapping_loss(self, x, t, mapped_t):
  
         xyz = x.clone().detach().requires_grad_(True)
- 
+        
         features = self.feature_map(xyz, t)
 
         cross_mapped_xyz = self.position_map(features, mapped_t)
@@ -404,7 +409,7 @@ class VelocityNetwork(nn.Module):
         # mapped_velocity = jacobian.T @ velocity
         
         if self.bbox_model is not None:
-            bbox_mask = self.bbox_model.insideMask(x) == 0
+            bbox_mask = self.bbox_model.insideMask(x) == False
             mapped_velocity[bbox_mask] = velocity[bbox_mask]
             
         return mapped_velocity
@@ -437,66 +442,47 @@ class DensityNetwork(nn.Module):
 
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
  
-        features = self.feature_map(xyz, t)
-
-        
-        density = self.density_map(features)
-        
         if self.bbox_model is not None:
-   
-            bbox_mask = self.bbox_model.insideMask(xyz)
-            features[bbox_mask==0] = 0
-            density[bbox_mask==0] = 0
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+        else:
+            bbox_mask = torch.zeros_like(xyz[..., 0], dtype=torch.bool, device=xyz.device)
             
+        features = self.feature_map(xyz, t)
+        # features *= bbox_mask
+        features[bbox_mask] = 0.0
+
+        density = self.density_map(features)
+        # density *= bbox_mask
+        density[bbox_mask] = 0.0
             
         return density, features
     
 
     def density(self, xyzt):
-
-        xyz, t = torch.split(xyzt, (3, 1), dim=-1)
- 
-        features = self.feature_map(xyz, t)
-
         
-        density = self.density_map(features)
-        
-        if self.bbox_model is not None:
-   
-            bbox_mask = self.bbox_model.insideMask(xyz)
-            density[bbox_mask==0] = 0
-            
+        density, features = self.forward(xyzt)
             
         return density
     
 
     def density_using_features(self, features):
+        AssertionError(False, "Not implemented!")
         # directly provide features instead of xyzt
         density = self.density_map(features)
         
         return density
 
     def density_with_jacobian(self, xyzt):
+        xyzt.requires_grad_(True)
         xyz, t = torch.split(xyzt, (3, 1), dim=-1)
 
-        # xyz.requires_grad_(True) ## allow for futhre order derivative
-        # t.requires_grad_(True) ## todo:: check whether put it after feature_map
+        density, features = self.forward(xyzt)
 
-        features = self.feature_map(xyz, t)
-        density = self.density_map(features)
-
-        
-        if self.bbox_model is not None:
-            bbox_mask = self.bbox_model.insideMask(xyz)
-            features[bbox_mask==0] = 0
-            density[bbox_mask==0] = 0
-  
         ddensity_dxyz = _get_minibatch_jacobian(density, xyz)
         ddensity_dt = _get_minibatch_jacobian(density, t)
         
         jacobian = torch.cat([ddensity_dxyz, ddensity_dt], dim = -1) # [N, 3, 4]
            
-
         return density, features, jacobian
 
 class ColorNetwork(nn.Module):

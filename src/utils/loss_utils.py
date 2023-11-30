@@ -405,7 +405,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                 _f_t = vel_middle_output['dfeature_dt'].squeeze(-1)
                 # _vel, Du_Dt = velocity_model.forward_with_feature_save_middle_output(training_samples, features.detach(), need_vorticity=True)
                 
-                _vel_only_decoder = velocity_model.forward_with_feature(training_samples, vel_middle_output['mapped_features'].detach())
+                _vel_only_decoder = velocity_model.forward_using_feature(training_samples, vel_middle_output['mapped_features'].detach())
 
                 # split_nse = PDE_stage3(
                 #     _f_t, _f_x, _f_y, _f_z,
@@ -565,8 +565,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             cross_training_t = torch.clamp(cross_training_t, 0.0, 1.0) # clamp to (0,1)
 
 
-            # predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
-            predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
+            # predict_xyz_cross = velocity_model.mapping_forward_using_features(mapped_features, cross_training_t)
+            predict_xyz_cross = velocity_model.mapping_forward_using_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
             cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
             # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
@@ -582,16 +582,16 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             # advection_loss = None
             # mapped_xyz_velocity_advect = training_samples[..., :3].detach() + _vel.detach() * 1.0 / args.time_size
             # advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
-            # # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
-            # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) - predict_xyz + training_samples[..., :3]
+            # # mapped_xyz_direct = velocity_model.mapping_forward_using_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
+            # mapped_xyz_direct = velocity_model.mapping_forward_using_features(mapped_features.detach(), advect_t.detach()) - predict_xyz + training_samples[..., :3]
             # advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect.detach(), mapped_xyz_direct)
             # advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect, mapped_xyz_direct)
             
             # advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
             
             # if advect_t <= 1.0:
-            # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
-            # # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features, advect_t.detach()) # todo: whether detach features
+            # mapped_xyz_direct = velocity_model.mapping_forward_using_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
+            # # mapped_xyz_direct = velocity_model.mapping_forward_using_features(mapped_features, advect_t.detach()) # todo: whether detach features
             # mapeed_vel = (mapped_xyz_direct - training_samples[..., :3]) * args.time_size
             
             # mask = (_vel.sum(-1) == 0)
@@ -697,8 +697,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         cross_training_t = torch.clamp(cross_training_t, 0.0, 1.0) # clamp to (0,1)
 
 
-        # predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t)
-        predict_xyz_cross = velocity_model.mapping_forward_with_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
+        # predict_xyz_cross = velocity_model.mapping_forward_using_features(mapped_features, cross_training_t)
+        predict_xyz_cross = velocity_model.mapping_forward_using_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
         cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
         # mask = (_vel.sum(-1) == 0)
@@ -722,8 +722,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         # advection_loss = None
         # mapped_xyz_velocity_advect = training_samples[..., :3].detach() + _vel.detach() * 1.0 / args.time_size
         # advect_t = training_samples[..., 3:4] + 1.0 / args.time_size
-        # # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
-        # mapped_xyz_direct = velocity_model.mapping_forward_with_features(mapped_features.detach(), advect_t.detach()) - predict_xyz + training_samples[..., :3]
+        # # mapped_xyz_direct = velocity_model.mapping_forward_using_features(mapped_features.detach(), advect_t.detach()) # todo: whether detach features
+        # mapped_xyz_direct = velocity_model.mapping_forward_using_features(mapped_features.detach(), advect_t.detach()) - predict_xyz + training_samples[..., :3]
         # advection_loss = smooth_l1_loss(mapped_xyz_velocity_advect.detach(), mapped_xyz_direct)
         
         # vel_loss_dict['advection_loss'] = advection_loss
