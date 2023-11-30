@@ -185,7 +185,8 @@ class DensityMapping(nn.Module):
                 
             xyz = xyz_next
             
-        density = self.activation(xyz)
+        # density = self.activation(xyz)
+        density = F.softplus(xyz - 1.)
 
 
         return density

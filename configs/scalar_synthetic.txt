@@ -1,6 +1,6 @@
-expname = scalarSyn/1130_v2_exp_activation
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
-# basedir = ./log
+expname = scalarSyn/1130_v3_softplus
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
+basedir = ./log
 
 ### data info
 datadir = ./data/ScalarSyn
@@ -14,12 +14,13 @@ testskip = 60
 net_model = siren
 use_viewdirs = False
 # feature_map_first_omega = 10
-density_activation = exp
-lagrangian_density_activation = exp
+# density_activation = exp
+# lagrangian_density_activation = exp
 # density_activation = relu
 # lagrangian_density_activation = relu
-position_map_first_omega = 1
 # lagrangian_feature_dim = 32
+
+position_map_first_omega = 1
 density_map_first_omega = 1
 
 ### train params - sampling

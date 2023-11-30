@@ -292,7 +292,8 @@ class SIREN_NeRFt(nn.Module):
 
         outputs_ = self.alpha_linear(h)
 
-        outputs = self.density_activation(outputs_)
+        # outputs = self.density_activation(outputs_)
+        outputs = F.softplus(outputs_ - 1.)
         # outputs = F.relu(outputs_)
 
         if self.bbox_model is not None:
@@ -387,7 +388,8 @@ class SIREN_NeRFt(nn.Module):
 
         alpha_ = self.alpha_linear(h)
 
-        alpha = self.density_activation(alpha_)
+        # alpha = self.density_activation(alpha_)
+        alpha = F.softplus(alpha_ - 1.)
         # alpha = F.relu(alpha_)
 
         if self.use_viewdirs:            
