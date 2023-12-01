@@ -297,19 +297,20 @@ class SIREN_NeRFt(nn.Module):
         # outputs = self.density_activation(outputs_) 
         # outputs = F.softplus(outputs_ - 1.)
         # outputs = F.relu(outputs_)
+        
+        outputs = self.density_activation(outputs) 
 
         if self.bbox_model is not None:
             bbox_mask = self.bbox_model.insideMask(input_pts[...,:3])
             outputs[bbox_mask==0] = 0
 
-        outputs = self.density_activation(outputs) 
 
         return outputs
 
     def density_with_jacobian(self, x):
         density = self.density(x)
         # relu
-        # density = F.relu(density)
+        density = F.relu(density)
         jac = _get_minibatch_jacobian(density, x)
         _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jac.split(1, dim=-1)] # (N,1)
         return density, _d_x, _d_y, _d_z, _d_t

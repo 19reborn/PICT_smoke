@@ -316,7 +316,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
     vel_loss_dict = {}
     vel_loss = 0.0
 
-    if local_step % 10 == 0:
+    if local_step % args.nse_loss_interval == 0:
         
         training_samples = training_samples.requires_grad_(True)
 
