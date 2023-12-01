@@ -8,6 +8,7 @@ from tqdm import tqdm
 import imageio
 
 import raymarching
+import cv2
 
 from src.utils.training_utils import batchify, batchify_func
 from src.utils.loss_utils import to8b
@@ -787,6 +788,7 @@ def render_rays_cuda(ray_batch,
         # render feature map
         feature_map = torch.zeros((N_rays, model.args.lagrangian_feature_dim)).cuda()
         vel_map = torch.zeros((N_rays, 3)).cuda()
+        vorticity_map = torch.zeros((N_rays, 3)).cuda()
         if pts_dynamic.shape[0] > 0:
             features = model.dynamic_model_lagrangian.velocity_model.forward_feature(pts_dynamic[...,:3], pts_dynamic[...,-1:]).detach()
             weighted_features = dynamic_weights.unsqueeze(-1) * features
@@ -794,12 +796,22 @@ def render_rays_cuda(ray_batch,
             # feature_map.scatter_add_(0, rays_dynamic_id.long(), weighted_features)
             feature_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,features.shape[-1]), weighted_features.reshape(-1,features.shape[-1]))
             
-            vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
-            weighted_vel = dynamic_weights.unsqueeze(-1) * vel
-            # vel_map.scatter_add_(0, rays_dynamic_id.long(), weighted_vel)
+            # vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
+            # weighted_vel = dynamic_weights.unsqueeze(-1) * vel
+            # # vel_map.scatter_add_(0, rays_dynamic_id.long(), weighted_vel)
+            # vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
+            
+            vel, vorticity = model.dynamic_model_lagrangian.velocity_model.forward_vorticity(torch.cat((pts_dynamic[...,:3], pts_dynamic[...,-1:]), dim=-1))
+            weighted_vel = dynamic_weights.unsqueeze(-1) * vel.detach()
             vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
+            weighted_vorticity = dynamic_weights.unsqueeze(-1) * vorticity.detach()
+            vorticity_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vorticity.reshape(-1,3))
+            del vel
+            del vorticity
+            torch.cuda.empty_cache()
         
         ret['velocity_map'] = vel_map
+        ret['voriticity_map'] = vorticity_map
         ret['feature_map'] = feature_map[..., :3] # only visualize the first 3 channels
         
         
@@ -1099,19 +1111,22 @@ def render_rays_cuda_single_scene(ray_batch,
 
     if model.training is False:
         # render feature map
-        features = model.dynamic_model_lagrangian.velocity_model.forward_feature(pts_dynamic[...,:3], pts_dynamic[...,-1:]).detach()
-        weighted_features = weights.unsqueeze(-1) * features
-        feature_map = torch.zeros((N_rays, features.shape[-1])).cuda()
-        feature_map.scatter_add_(0, rays_dynamic_id.long(), weighted_features)
-        ret['feature_map'] = feature_map[..., :3] # only visualize the first 3 channels
-        
+        feature_map = torch.zeros((N_rays, model.args.lagrangian_feature_dim)).cuda()
         vel_map = torch.zeros((N_rays, 3)).cuda()
         if pts_dynamic.shape[0] > 0:
+            features = model.dynamic_model_lagrangian.velocity_model.forward_feature(pts_dynamic[...,:3], pts_dynamic[...,-1:]).detach()
+            weighted_features = weights.unsqueeze(-1) * features
+            
+            # feature_map.scatter_add_(0, rays_dynamic_id.long(), weighted_features)
+            feature_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,features.shape[-1]), weighted_features.reshape(-1,features.shape[-1]))
+            
             vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
             weighted_vel = weights.unsqueeze(-1) * vel
-            vel_map.scatter_add_(0, rays_dynamic_id.long(), weighted_vel)
+            # vel_map.scatter_add_(0, rays_dynamic_id.long(), weighted_vel)
+            vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
         
         ret['velocity_map'] = vel_map
+        ret['feature_map'] = feature_map[..., :3] # only visualize the first 3 channels
 
 
     ret['raw'] = C_smokeRaw
@@ -1312,17 +1327,22 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
     gt_dir = os.path.join(savedir, 'gt')
     other_dir = os.path.join(savedir, 'others')
     decomposed_dir = os.path.join(savedir, 'decomposed')
+    feature_dir = os.path.join(savedir, 'feature')
     velocity_dir = os.path.join(savedir, 'velocity')
+    vorticity_dir = os.path.join(savedir, 'vorticity')
     trajectory_dir = os.path.join(savedir, 'trajectory')
     os.makedirs(pred_dir, exist_ok=True)
     os.makedirs(gt_dir, exist_ok=True)
     os.makedirs(other_dir, exist_ok=True)
     os.makedirs(decomposed_dir, exist_ok=True)
     os.makedirs(velocity_dir, exist_ok=True)
+    os.makedirs(vorticity_dir, exist_ok=True)
+    os.makedirs(feature_dir, exist_ok=True)
     os.makedirs(trajectory_dir, exist_ok=True)
     dynamic_rgbs = []
     static_rgbs = []
     velocity_rgbs = []
+    vorticity_rgbs = []
     feature_rgbs = []
     trajectory_rgbs = []
     
@@ -1393,7 +1413,11 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             rgb = extras['velocity_map']
             # visualize_direction
             # rgb = vel_uv2hsv(rgb.cpu(), scale=300, is3D=False, logv=False)[::-1] # flip Y in vel_uv2hsv
-            rgb = vel_uv2hsv(rgb.cpu(), scale=None, is3D=False, logv=False)[::-1] # flip Y in vel_uv2hsv
+            # rgb = vel_uv2hsv(rgb.cpu(), scale=1500, is3D=True, logv=False)[::-1] # flip Y in vel_uv2hsv
+            _hsv = vel2hsv(rgb.cpu(), scale=300, is3D=True, logv=False)
+            rgb = cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR)
+            # imageio.imwrite(filename, bgr) # flip Y in vel_uv2hsv
+            # rgb = vel2hsv(rgb.cpu(), scale=300, is3D=True, logv=False) # flip Y in vel_uv2hsv
             # rgb = vel_uv2hsv((rgb / (acc+1e-5)).cpu(), scale=300, is3D=False, logv=False)[::-1] # flip Y in vel_uv2hsv
             # imageio.imwrite('test_vel.png', vel_uv2hsv((rgb / (acc+1e-5)).cpu(), scale=300, is3D=False, logv=False)[::-1])
             # imageio.imwrite('test_vel.png', vel_uv2hsv((rgb).cpu(), scale=None, is3D=False, logv=False)[::-1])
@@ -1402,8 +1426,22 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             imageio.imwrite(filename, rgb)
             velocity_rgbs.append(rgb)
             
+            filename = os.path.join(vorticity_dir, 'vorticity_{:03d}.png'.format(i))
+            # rgb = extras['voriticity_map'] * 1 / 255
+            rgb = extras['voriticity_map']
+            # import pdb
+            # pdb.set_trace()
+            # _hsv = vel2hsv(rgb.cpu(), scale=1500, is3D=True, logv=False)
+            _hsv = vel2hsv(rgb.cpu(), scale=20, is3D=True, logv=False)
+            rgb = cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR)
+            # imageio.imwrite(filename, cv2.cvtColor(vel2hsv(rgb.cpu(), scale=20, is3D=True, logv=False), cv2.COLOR_HSV2BGR))
+            imageio.imwrite(filename, rgb)
+            vorticity_rgbs.append(rgb)
             
-            filename = os.path.join(velocity_dir, 'feature_{:03d}.png'.format(i))
+            
+            
+            
+            filename = os.path.join(feature_dir, 'feature_{:03d}.png'.format(i))
             rgb = extras['feature_map']
             if i == 0:
                 feautre_max = rgb.reshape(-1, 3).max(0)[0]
@@ -1475,6 +1513,7 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
     imageio.mimwrite(os.path.join(savedir, 'static_rgb.mp4'), static_rgbs, fps=30, quality=10)
     imageio.mimwrite(os.path.join(savedir, 'smoke_rgb.mp4'), dynamic_rgbs, fps=30, quality=10)
     imageio.mimwrite(os.path.join(savedir, 'velocity_rgb.mp4'), velocity_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'vorticity_rgb.mp4'), vorticity_rgbs, fps=30, quality=10)
     imageio.mimwrite(os.path.join(savedir, 'feature_rgb.mp4'), feature_rgbs, fps=30, quality=10)
     imageio.mimwrite(os.path.join(savedir, 'trajectory_rgb.mp4'), trajectory_rgbs, fps=30, quality=10)
 

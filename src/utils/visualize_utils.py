@@ -410,7 +410,7 @@ def draw_points(uv, image, output_dir=None):
     
     point_size = 1
 
-    point_col   or = (0, 255, 255)
+    point_color = (0, 255, 255)
     
     thickness = 2 #  0 、4、8
     for i, coor in enumerate(uv.cpu().numpy()):

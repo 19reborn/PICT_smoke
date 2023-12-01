@@ -1,4 +1,4 @@
-expname = cyl/1201_v2_from_start
+expname = cyl/1201_v5_smaller_smoke_reg
 # basedir = ./log
 basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -16,8 +16,8 @@ use_viewdirs = False
 density_map_first_omega = 1
 position_map_first_omega = 1
 
-lagrangian_density_activation = softplus
-density_activation = relu
+# lagrangian_density_activation = softplus
+# density_activation = relu
 
 
 ### train params - sampling
