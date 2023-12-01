@@ -44,6 +44,7 @@ def config_parser():
     ## Stage 3
     parser.add_argument("--stage3_finish_init_feature", type=int, default=0, help="stage 2 total training steps" )
     parser.add_argument("--stage4_train_vel_interval", type=int, default=1, help="stage 2 total training steps" )
+    parser.add_argument("--nse_loss_interval", type=int, default=10, help="stage 2 total training steps" )
     parser.add_argument('--neus_early_terminated', action = 'store_true')
     parser.add_argument('--neus_larger_lr_decay', action = 'store_true')
     parser.add_argument("--mapping_loss_fading", type=int, default=50000, help="frame_range" )
@@ -57,14 +58,14 @@ def config_parser():
     
     parser.add_argument("--feature_map_first_omega", type=int, default=30, 
                         help='Lagrangian feature dimension')   
-    parser.add_argument("--position_map_first_omega", type=int, default=30, 
+    parser.add_argument("--position_map_first_omega", type=int, default=1, 
                         help='Lagrangian feature dimension')   
-    parser.add_argument("--density_map_first_omega", type=int, default=30, 
+    parser.add_argument("--density_map_first_omega", type=int, default=1, 
                         help='Lagrangian feature dimension')   
     parser.add_argument("--density_activation", type=str,
                         default='identity', help='activation function for density')
     parser.add_argument("--lagrangian_density_activation", type=str,
-                        default='exp', help='activation function for density')
+                        default='softplus', help='activation function for density')
     
     ## siren nerf    
     parser.add_argument("--siren_nerf_netdepth", type=int, default=8, 
@@ -75,6 +76,7 @@ def config_parser():
     ## neus
     parser.add_argument('--use_scene_scale_before_pe', action = 'store_true')
     parser.add_argument('--neus_progressive_pe', action = 'store_true')
+    parser.add_argument('--neus_progressive_pe_min_mask', type=float, default=0.5)
     parser.add_argument('--neus_progressive_pe_start', type=int, default=20000)
     parser.add_argument('--neus_progressive_pe_duration', type=int, default=10000)
 
