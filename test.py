@@ -409,26 +409,13 @@ def test(args):
 
     # Prepare Voxel Sampling Tools for Image Summary (voxel_writer), Physical Priors (training_voxel), Data Priors Represented by D2V (den_p_all)
     # voxel_writer: to sample low resolution data for for image summary 
-    resX = 64 # complexity O(N^3)
-    resY = int(resX*float(voxel_scale[1])/voxel_scale[0]+0.5)
-    resZ = int(resX*float(voxel_scale[2])/voxel_scale[0]+0.5)
+    resX = args.vol_output_W
+    resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
+    resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
     voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
 
-    # training_voxel: to sample data for for velocity NSE training
-    # training_voxel should have a larger resolution than voxel_writer
-    # note that training voxel is also used for visualization in testing
-    min_ratio = float(64+4*2)/min(voxel_scale[0],voxel_scale[1],voxel_scale[2])
-    minX = int(min_ratio*voxel_scale[0]+0.5)
-    trainX = max(args.vol_output_W,minX) # a minimal resolution of 64^3
-    trainY = int(trainX*float(voxel_scale[1])/voxel_scale[0]+0.5)
-    trainZ = int(trainX*float(voxel_scale[2])/voxel_scale[0]+0.5)
-    training_voxel = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,trainZ,trainY,trainX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
-    training_pts = torch.reshape(training_voxel.pts, (-1,3)) 
+    model.voxel_writer = voxel_writer
 
-    ## spatial alignment from wolrd coord to simulation coord
-    train_reso_scale = torch.Tensor([256*t_info[-1],256*t_info[-1],256*t_info[-1]])
-
-  
 
     testimgdir = os.path.join(basedir, expname, "imgs_"+logdir)
     os.makedirs(testimgdir, exist_ok=True)
@@ -491,39 +478,18 @@ def test(args):
 
     
     elif args.output_voxel:
-
-        resX = args.vol_output_W
-        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
-        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
-        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
-
         testsavedir = os.path.join(basedir, expname, 'volumeout_{:06d}'.format(start+1))
         output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = args.voxel_video)
     elif args.visualize_feature:
-        resX = args.vol_output_W
-        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
-        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
-        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
-
         testsavedir = os.path.join(basedir, expname, 'vis_feature_{:06d}'.format(start+1))
         os.makedirs(testsavedir, exist_ok=True)
         visualize_feature(args, model, testsavedir, voxel_writer, t_info)
         
     elif args.visualize_mapping:
-        resX = args.vol_output_W
-        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
-        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
-        
         testsavedir = os.path.join(basedir, expname, 'vis_mapping_{:06d}'.format(start+1))
-        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
         visualize_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
     elif args.evaluate_mapping:
-        resX = args.vol_output_W
-        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
-        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
-        
         testsavedir = os.path.join(basedir, expname, 'eval_mapping_{:06d}'.format(start+1))
-        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
         evaluate_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
     elif args.render_only:
         testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('test' if args.render_test else 'path', start+1))

@@ -41,6 +41,11 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         self.iter_step = -1
         self.anneal_end = args.anneal_end
         
+        # visulization
+        self.voxel_writer = None
+        self.trajectory_points = None
+        
+        
     
 
     def forward(self, x):

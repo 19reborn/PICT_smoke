@@ -23,8 +23,8 @@ density_activation = relu
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 1024
-train_vel_grid_size = 32
+N_rand = 512
+train_vel_grid_size = 24
 i_embed = -1
 train_warp = True
 vol_output_W = 256
@@ -60,7 +60,7 @@ anneal_end = 30000
 
 i_img = 1000
 i_test = 50000
-i_weights = 20000
+i_weights = 10000
 i_video = 200000
 N_iter = 200000
 

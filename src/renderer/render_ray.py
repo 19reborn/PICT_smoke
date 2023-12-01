@@ -11,7 +11,7 @@ import raymarching
 
 from src.utils.training_utils import batchify, batchify_func
 from src.utils.loss_utils import to8b
-from src.utils.visualize_utils import vel_uv2hsv, vel2hsv
+from src.utils.visualize_utils import vel_uv2hsv, vel2hsv, draw_points
 
 
 def get_rays(H, W, K, c2w):
@@ -24,6 +24,32 @@ def get_rays(H, W, K, c2w):
     # Translate camera frame's origin to the world frame. It is the origin of all rays.
     rays_o = c2w[:3,-1].expand(rays_d.shape)
     return rays_o, rays_d
+
+def project_points(points, K, c2w):
+    # points: [N, 3]
+    # K: [3, 3]
+    # c2w: [3, 4]
+    # points = torch.cat([points, torch.ones_like(points[..., :1])], dim=-1)
+    # points = torch.matmul(points, c2w.T)
+    # points = torch.matmul(points, K.T)
+    # points = points[..., :2] / points[..., 2:]
+    
+    cam_xyzs = points - c2w[:3, 3].unsqueeze(0)
+    cam_xyzs = cam_xyzs @ c2w[:3, :3] # [S, N, 3]
+    # cam_xyzs = cam_xyzs @ this_poses[:, :3, :3].permute(0,2,1)# [S, N, 3]
+        
+    ## cam_xyzs coordinates:
+
+    uv = cam_xyzs[:, :2] / -cam_xyzs[:, 2:] # [S, N, 2]
+    
+    fx, fy, cx, cy = K[0,0], K[1,1], K[0,2], K[1,2]
+    
+    uv *= torch.stack([fx, -fy], dim=-1).unsqueeze(0) # [S, N, 2]
+    uv += torch.stack([cx, cy], dim=-1).unsqueeze(0) # [S, N, 2]
+
+    return uv
+
+
 
 def prepare_rays(args, H, W, K, pose, target, trainVGG, i, start, N_rand, target_mask = None, cam_info_others = None):
 
@@ -271,7 +297,7 @@ def render(H, W, K, model, N_samples = 64, chunk=1024*32, rays=None, c2w=None, n
     for k in all_ret:
        
         # todo:: fix this code..
-        if k in ['num_points', 'num_points_static', 'num_points_dynamic', 'raw', 'raw_static', 'raw_dynamic', 'gradients', 'hessians', 'samples_xyz_static', 'samples_xyz_dynamic', 'smoke_vel', 'smoke_weights', 'rays_id']:
+        if k in ['num_points', 'num_points_static', 'num_points_dynamic', 'raw', 'raw_static', 'raw_dynamic', 'gradients', 'hessians', 'samples_xyz_static', 'samples_xyz_dynamic', 'smoke_vel', 'smoke_weights', 'rays_id', 'trajectory_points']:
             num_rays = rays_d.reshape(-1,1).shape[0]
             continue
         try:
@@ -775,6 +801,58 @@ def render_rays_cuda(ray_batch,
         
         ret['velocity_map'] = vel_map
         ret['feature_map'] = feature_map[..., :3] # only visualize the first 3 channels
+        
+        
+        # render trajectory map
+        # import pdb
+        # pdb.set_trace()
+        # if model.trajectory_points is None:
+        #     # sample points
+        #     assert(model.voxel_writer is not None)
+        #     pts_flat = model.voxel_writer.pts.view(-1, 3)
+            
+        #     def get_density_time(pts_flat, time):
+        #         # only choose density points
+        #         pts_N = pts_flat.shape[0]
+        #         density = []
+        #         for i in range(0, pts_N, chunk):
+        #             input_i = pts_flat[i:i+chunk]
+        #             density_temp = model.dynamic_model.density(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(time)], dim = -1)).detach()
+        #             density.append(density_temp)
+
+        #         density = torch.cat(density, dim = 0)
+                
+        #         return density
+            
+        #     time_0 = rays_t[0].reshape(1).item()
+        #     density_0 = get_density_time(pts_flat, time_0)
+        #     # import pdb
+        #     # pdb.set_trace()
+
+        #     density_mean = density_0.clamp(0.0, 1e5).mean()
+        #     density_max=  density_0.clamp(0.0, 1e5).max()
+        #     density_thresh = (density_max + density_mean) * 0.5
+            
+        #     pts_num = 128
+        #     # pts_flat = pts_flat[density_0.squeeze(-1) >= density_thresh]
+        #     # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        #     # pts_sampled = pts_flat[sample_id].reshape(-1,3)
+            
+        #     pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+        #     pts_sampled = pts_flat[:pts_num]
+            
+        #     model.trajectory_points = pts_sampled
+        
+        # ret['trajectory_points'] = model.trajectory_points.clone().detach()
+        
+        # time = rays_t[0].reshape(1).item()
+        # pts_sampled = model.trajectory_points
+        # vel_pts = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_sampled, float(time)*torch.ones([pts_sampled.shape[0], 1])], dim = -1)).detach()
+        # pts_sampled += vel_pts / model.args.time_size
+        # model.trajectory_points = pts_sampled
+        
+        
+            
 
     # todo: make name more clear
     rgbh2_map = dynamic_image # dynamic
@@ -1235,15 +1313,18 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
     other_dir = os.path.join(savedir, 'others')
     decomposed_dir = os.path.join(savedir, 'decomposed')
     velocity_dir = os.path.join(savedir, 'velocity')
+    trajectory_dir = os.path.join(savedir, 'trajectory')
     os.makedirs(pred_dir, exist_ok=True)
     os.makedirs(gt_dir, exist_ok=True)
     os.makedirs(other_dir, exist_ok=True)
     os.makedirs(decomposed_dir, exist_ok=True)
     os.makedirs(velocity_dir, exist_ok=True)
+    os.makedirs(trajectory_dir, exist_ok=True)
     dynamic_rgbs = []
     static_rgbs = []
     velocity_rgbs = []
     feature_rgbs = []
+    trajectory_rgbs = []
     
     
     for i, c2w in enumerate(tqdm(render_poses)):
@@ -1333,6 +1414,59 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             imageio.imwrite(filename, rgb)         
             feature_rgbs.append(rgb)
             
+            # render trajectory map
+            if model.trajectory_points is None and i == 0:
+                # sample points
+                assert(model.voxel_writer is not None)
+                pts_flat = model.voxel_writer.pts.view(-1, 3)
+                
+                def get_density_time(pts_flat, time):
+                    # only choose density points
+                    pts_N = pts_flat.shape[0]
+                    density = []
+                    for i in range(0, pts_N, chunk):
+                        input_i = pts_flat[i:i+chunk]
+                        density_temp = model.dynamic_model.density(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(time)], dim = -1)).detach()
+                        density.append(density_temp)
+
+                    density = torch.cat(density, dim = 0)
+                    
+                    return density
+                
+                time_0 = cur_timestep
+                density_0 = get_density_time(pts_flat, time_0)
+                # import pdb
+                # pdb.set_trace()
+
+                density_mean = density_0.clamp(0.0, 1e5).mean()
+                density_max=  density_0.clamp(0.0, 1e5).max()
+                density_thresh = (density_max + density_mean) * 0.5
+                
+                pts_num = 128
+                # pts_flat = pts_flat[density_0.squeeze(-1) >= density_thresh]
+                # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+                # pts_sampled = pts_flat[sample_id].reshape(-1,3)
+                
+                pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+                pts_sampled = pts_flat[:pts_num]
+                
+                model.trajectory_points = pts_sampled
+            
+            pts3d= model.trajectory_points.clone().detach()
+            
+            pts2d = project_points(pts3d, torch.tensor(K, dtype=torch.float32).cuda(), c2w=c2w[:3,:4])
+            filename = os.path.join(trajectory_dir, 'trajectory_{:03d}.png'.format(i))
+            trajectory_rgb = draw_points(pts2d, rgb_dynamic, filename)
+            trajectory_rgbs.append(trajectory_rgb)
+            
+            pts_sampled = model.trajectory_points
+            vel_pts = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_sampled, float(cur_timestep)*torch.ones([pts_sampled.shape[0], 1])], dim = -1)).detach()
+            pts_sampled += vel_pts / model.args.time_size
+            model.trajectory_points = pts_sampled
+            # project points to 2d
+            
+            
+            
 
     rgbs = np.stack(rgbs, 0)
     disps = np.stack(disps, 0)
@@ -1342,5 +1476,6 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
     imageio.mimwrite(os.path.join(savedir, 'smoke_rgb.mp4'), dynamic_rgbs, fps=30, quality=10)
     imageio.mimwrite(os.path.join(savedir, 'velocity_rgb.mp4'), velocity_rgbs, fps=30, quality=10)
     imageio.mimwrite(os.path.join(savedir, 'feature_rgb.mp4'), feature_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'trajectory_rgb.mp4'), trajectory_rgbs, fps=30, quality=10)
 
     return rgbs, disps

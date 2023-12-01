@@ -404,3 +404,22 @@ def read_ply(file):
     face_array = np.array(face_df.iloc[:, 1:4])
     
     return vertex_array, face_array
+
+
+def draw_points(uv, image, output_dir=None):
+    
+    point_size = 1
+
+    point_col   or = (0, 255, 255)
+    
+    thickness = 2 #  0 、4、8
+    for i, coor in enumerate(uv.cpu().numpy()):
+        try:
+            cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, thickness)
+        except:
+            continue
+    if output_dir is not None:
+        cv.imwrite(output_dir,image)
+        
+    return image
+
