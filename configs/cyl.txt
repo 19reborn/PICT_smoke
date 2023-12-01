@@ -1,4 +1,4 @@
-expname = cyl/1129_v1
+expname = cyl/1201_v2_from_start
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -19,11 +19,11 @@ position_map_first_omega = 1
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 512
+N_rand = 1024
+train_vel_grid_size = 32
 i_embed = -1
 train_warp = True
 vol_output_W = 256
-train_vel_grid_size = 24
 
 ### train params - iterations
 precrop_iters = 500
@@ -65,11 +65,9 @@ cuda_ray = True
 scene_scale = 0.33
 density_thresh = 2.0
 density_thresh_static = 5
-# density_activation = relu
-# lagrangian_density_activation = relu
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.2
+SmokeAlphaReguW = 0.05
 train_vel_within_rendering = False
 train_vel_uniform_sample = 2
 inside_sdf = 0.02
@@ -86,30 +84,25 @@ sdf_loss_delay = 2000
 stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 
-# train_vel_grid_size = 24
 
 use_two_level_density = True
 use_scene_scale_before_pe = False
 neus_early_terminated = True
-# neus_early_terminated = False
 neus_progressive_pe = True
 
 stage4_train_vel_interval = 1
-density_mapping_loss_weight = 0.01
+density_mapping_loss_weight = 0.05
 velocity_mapping_loss_weight = 0.01
-color_mapping_loss_weight = 0.01
+color_mapping_loss_weight = 0.1
 ColorDivergenceW = 0.00
 
-nseW = 1e-2
+nseW = 1e-3
 vel_regulization_weight = 0.1
 max_mapping_frame_range = 50
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-SmokeInsideSDFW = 0.05
+SmokeInsideSDFW = 0.1
 boundaryW = 0.5
 inside_sdf = 0.0
 
-# color_mapping_loss_weight = 0.5
-# fix_seed = 66
-
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/cyl/1118_v1_interval_5/050000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1129_v1/060000.tar

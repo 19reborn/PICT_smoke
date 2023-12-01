@@ -35,16 +35,17 @@ def config_parser():
     parser.add_argument("--density_distillation_delay", type=int, default=2000, help="stage 2 total training steps" )
 
     ## Stage 2
-    parser.add_argument("--stage2_finish_init_lagrangian", type=int, default=20000, help="stage 2 total training steps" )
+    parser.add_argument("--stage2_finish_init_lagrangian", type=int, default=0, help="stage 2 total training steps" )
     parser.add_argument("--mapping_frame_range_fading_start", type=int, default=20000, help="frame_range" )
     parser.add_argument("--mapping_frame_range_fading_last", type=int, default=50000, help="frame_range" )
     parser.add_argument("--max_mapping_frame_range", type=int, default=30, help="frame_range" )
     
     ## Stage 3
-    parser.add_argument("--stage3_finish_init_feature", type=int, default=20000, help="stage 2 total training steps" )
-    parser.add_argument("--stage4_train_vel_interval", type=int, default=10, help="stage 2 total training steps" )
+    parser.add_argument("--stage3_finish_init_feature", type=int, default=0, help="stage 2 total training steps" )
+    parser.add_argument("--stage4_train_vel_interval", type=int, default=1, help="stage 2 total training steps" )
     parser.add_argument('--neus_early_terminated', action = 'store_true')
     parser.add_argument('--neus_larger_lr_decay', action = 'store_true')
+    parser.add_argument("--mapping_loss_fading", type=int, default=50000, help="frame_range" )
 
 
     # network model

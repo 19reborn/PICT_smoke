@@ -487,7 +487,7 @@ class DensityNetwork(nn.Module):
         # features *= bbox_mask
         features[bbox_mask] = 0.0
 
-        density = self.density_map(features)
+        density = self.density_map(features.clone()) # todo: clone?
         # density *= bbox_mask
         density[bbox_mask] = 0.0
 

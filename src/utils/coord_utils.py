@@ -460,7 +460,7 @@ class Voxel_Tool(object):
     def vis_mapping_voxel(self, frame_list, t_list, model, sample_pts = 128, change_feature_interval = 1, chunk = 1024*32):
 
         dynamic_model_lagrangian = model.dynamic_model_lagrangian
-        dynamic_model = model.dynamic_model_siren
+        dynamic_model = model.dynamic_model
 
 
         pts_flat = self.pts.view(-1, 3)
@@ -486,19 +486,20 @@ class Voxel_Tool(object):
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 6.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 3.0]
-        # pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
         # random sample points             
-        # pts_num = sample_pts
-        # import random
-        # # pts_flat = pts_flat[density_0.squeeze(-1) >= 12.0]
+        
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 12.0]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 4.0]
-        # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
-        # pts_sampled = pts_flat[sample_id].reshape(-1,3)
+        
+        pts_num = sample_pts
+        pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
+        sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        pts_sampled = pts_flat[sample_id].reshape(-1,3)
 
         
         # sort the density
-        pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
-        pts_sampled = pts_flat[:sample_pts]
+        # pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+        # pts_sampled = pts_flat[:sample_pts]
 
         all_xyz = []
         
@@ -705,19 +706,20 @@ class Voxel_Tool(object):
 
         density_0 = torch.cat(density_0, dim = 0)
 
-
+        density_mean = density_0.clamp(0.0, 1e5).mean()
         # # pts_flat = pts_flat[density_0.squeeze(-1) >= 0.50]
         # pts_flat = pts_flat[density_0.squeeze(-1) >= 8.0]
         # # pts_flat = pts_flat[density_0.squeeze(-1) >= 0.05]
+        # pts_flat = pts_flat[density_0.squeeze(-1) >= 0.05]
+        pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
             
-        # pts_num = sample_pts
+        pts_num = sample_pts
 
-        # import random
-        # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
-        # pts_sampled = pts_flat[sample_id].reshape(-1,3)
+        sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        pts_sampled = pts_flat[sample_id].reshape(-1,3)
 
-        pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
-        pts_sampled = pts_flat[:sample_pts]
+        # pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+        # pts_sampled = pts_flat[:sample_pts]
         
         gt_all_xyz = []
         

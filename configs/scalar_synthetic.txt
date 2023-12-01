@@ -1,4 +1,4 @@
-expname = scalarSyn/1130_v3_softplus
+expname = scalarSyn/1130_v9_single_layer
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 basedir = ./log
 
@@ -20,8 +20,8 @@ use_viewdirs = False
 # lagrangian_density_activation = relu
 # lagrangian_feature_dim = 32
 
-position_map_first_omega = 1
-density_map_first_omega = 1
+position_map_first_omega = 30
+density_map_first_omega = 30
 
 ### train params - sampling
 N_samples = 64
@@ -73,14 +73,14 @@ stage4_train_vel_interval = 5
 max_mapping_frame_range = 50
 stage4_train_vel_interval = 1
 
-use_two_level_density = True
-nseW = 1.0
-vel_regulization_weight = 1000.0
+use_two_level_density = False
+nseW = 1e-2
+vel_regulization_weight = 100.0
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 0.01
-velocity_mapping_loss_weight = 0.1
-color_mapping_loss_weight = 0.01
+density_mapping_loss_weight = 0.00
+velocity_mapping_loss_weight = 0.0
+color_mapping_loss_weight = 0.00
 mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
@@ -89,3 +89,5 @@ mapping_frame_range_fading_last = 20000
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalarSyn/1025_v1_from_start/010000.tar
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/scalarSyn/1129_v2_only_train_decoder/500000.tar
+
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalarSyn/1130_v9_single_layer/010000.tar

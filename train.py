@@ -2,7 +2,7 @@ import os, sys
 import imageio
 import numpy as np
 import torch
-torch.autograd.set_detect_anomaly(True)
+# torch.autograd.set_detect_anomaly(True)
 import torch.nn.functional as F
 
 from tqdm import trange
@@ -229,17 +229,17 @@ def train(args):
             #     # first convert to stage 4
             #     update_static_occ_grid(args, model, 10)
 
-            total_loss_fading = 1.0
+            total_loss_fading = 1.0 
             training_stage = 4
             trainImg = True
             # trainVel = True
             trainVel = global_step % args.stage4_train_vel_interval == 0
             # trainVel = True
             # trainVel_using_rendering_samples = True # todo:: use this
-            trainVel_using_rendering_samples = False # todo:: use this
+            # trainVel_using_rendering_samples = False # todo:: use this
             # trainVel_using_rendering_samples = True # todo:: use this
             # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
-            # trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % args.train_vel_uniform_sample == 0)# todo:: use this
+            trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % args.train_vel_uniform_sample == 0)# todo:: use this
             # trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % 2 == 0)# todo:: use this
 
         model.iter_step = global_step
@@ -371,7 +371,7 @@ def train(args):
                 # loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
                 loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
                 # loss += F.smooth_l1_loss(features, torch.zeros_like(features)) * 0.005 # feature regulization
-                loss += F.l1_loss(features, torch.zeros_like(features)) * 0.1 # feature regulization
+                loss += F.l1_loss(features, torch.zeros_like(features)) * 1.0 # feature regulization
 
 
         if trainVel:
@@ -403,14 +403,13 @@ def train(args):
                 training_t = torch.ones([training_samples.shape[0], 1])*time_locate
                 training_samples = torch.cat([training_samples,training_t], dim=-1)
 
-            print("training_samples.shape: ", training_samples.shape)
             vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage, local_step = global_step // args.stage4_train_vel_interval, global_step = global_step)
 
             loss += vel_loss
 
         # loss = loss * total_loss_fading         
-        with torch.autograd.detect_anomaly():
-            loss.backward()
+        # with torch.autograd.detect_anomaly():
+        loss.backward()
         ## grad clip
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
         optimizer.step()
