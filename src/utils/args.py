@@ -33,6 +33,7 @@ def config_parser():
     parser.add_argument("--fading_layers", type=int, default=-1,
                         help='for siren and hybrid models, the step to finish fading model layers one by one during training.')
     parser.add_argument("--density_distillation_delay", type=int, default=2000, help="stage 2 total training steps" )
+    parser.add_argument("--feature_regulization_weight", type=float, default=1e-1)
 
     ## Stage 2
     parser.add_argument("--stage2_finish_init_lagrangian", type=int, default=0, help="stage 2 total training steps" )

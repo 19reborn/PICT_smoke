@@ -191,6 +191,8 @@ def get_activation(activation):
         return nn.Identity()
     elif activation == 'exp':
         return trunc_exp
+    elif activation == 'softplus':
+        return nn.Softplus()
     else:
         raise NotImplementedError
 
@@ -290,15 +292,17 @@ class SIREN_NeRFt(nn.Module):
                 if w > 1e-8:
                     h = w*y + h
 
-        outputs_ = self.alpha_linear(h)
+        outputs = self.alpha_linear(h)
 
-        # outputs = self.density_activation(outputs_)
-        outputs = F.softplus(outputs_ - 1.)
+        # outputs = self.density_activation(outputs_) 
+        # outputs = F.softplus(outputs_ - 1.)
         # outputs = F.relu(outputs_)
 
         if self.bbox_model is not None:
             bbox_mask = self.bbox_model.insideMask(input_pts[...,:3])
             outputs[bbox_mask==0] = 0
+
+        outputs = self.density_activation(outputs) 
 
         return outputs
 
@@ -388,8 +392,8 @@ class SIREN_NeRFt(nn.Module):
 
         alpha_ = self.alpha_linear(h)
 
-        # alpha = self.density_activation(alpha_)
-        alpha = F.softplus(alpha_ - 1.)
+        alpha = self.density_activation(alpha_)
+        # alpha = F.softplus(alpha_ - 1.)
         # alpha = F.relu(alpha_)
 
         if self.use_viewdirs:            

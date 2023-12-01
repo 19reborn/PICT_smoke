@@ -240,6 +240,7 @@ def train(args):
             # trainVel_using_rendering_samples = True # todo:: use this
             # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
             trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % args.train_vel_uniform_sample == 0)# todo:: use this
+            # trainVel_using_rendering_samples = False # todo:: use this
             # trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % 2 == 0)# todo:: use this
 
         model.iter_step = global_step
@@ -371,7 +372,7 @@ def train(args):
                 # loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
                 loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
                 # loss += F.smooth_l1_loss(features, torch.zeros_like(features)) * 0.005 # feature regulization
-                loss += F.l1_loss(features, torch.zeros_like(features)) * 1.0 # feature regulization
+                loss += F.l1_loss(features, torch.zeros_like(features)) * args.feature_regulization_weight # feature regulization
 
 
         if trainVel:

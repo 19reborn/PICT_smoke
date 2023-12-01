@@ -693,7 +693,7 @@ def render_rays_cuda(ray_batch,
     smoke_color = C_smokeRaw[..., :3]
     smoke_color = torch.sigmoid(smoke_color)
     smoke_density = C_smokeRaw[..., 3:] 
-    smoke_density = torch.relu(smoke_density)
+    # smoke_density = torch.relu(smoke_density)
     
 
     raw2alpha = lambda raw, dists, act_fn=F.relu: 1.-torch.exp(-act_fn(raw)*dists)
@@ -996,7 +996,7 @@ def render_rays_cuda_single_scene(ray_batch,
     smoke_color = C_smokeRaw[..., :3]
     smoke_color = torch.sigmoid(smoke_color)
     smoke_density = C_smokeRaw[..., 3:] 
-    smoke_density = torch.relu(smoke_density)
+    # smoke_density = torch.relu(smoke_density)
     
 
     raw2alpha = lambda raw, dists, act_fn=F.relu: 1.-torch.exp(-act_fn(raw)*dists)
