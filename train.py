@@ -256,7 +256,7 @@ def train(args):
         if trainImg and global_step > args.uniform_sample_step and args.cuda_ray:
             if first_update_occ_grid:
  
-                for i in range(2):
+                for i in range(8):
                     update_occ_grid(args, model, global_step, update_interval = 1, update_interval_static = 1, neus_early_terminated = False)
                 if not model.single_scene:
                     update_static_occ_grid(args, model, times=10)

@@ -1,4 +1,4 @@
-expname = Car/1201_v6_512_rand
+expname = Car/1202_v6_middle_color_mapping_loss
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -58,7 +58,7 @@ multires_neus = 4
 anneal_end = 50000
 
 i_img = 2000
-i_test = 50000
+i_test = 10000
 i_weights = 10000
 i_video = 100000
 N_iter = 400000
@@ -70,6 +70,7 @@ density_thresh_static = 30
 
 SmokeInsideSDFW = 0.5
 SmokeAlphaReguW = 0.02
+SmokeAlphaReguW_warmup = 0.02
 train_vel_within_rendering = False
 boundaryW = 0.5
 train_vel_uniform_sample = 2
@@ -99,16 +100,19 @@ nseW = 1e-2
 vel_regulization_weight = 0.1
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 0.005
-velocity_mapping_loss_weight = 0.01
-color_mapping_loss_weight = 5.0
+density_mapping_loss_weight = 0.001
+velocity_mapping_loss_weight = 0.001
+color_mapping_loss_weight = 0.5
 
 max_mapping_frame_range = 50
 mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
-mapping_loss_fading = 50000
+# mapping_loss_fading = 50000
+mapping_loss_fading = 10000
 
 boundaryW = 1.0
 train_vel_uniform_sample = 2
 inside_sdf = 0.00
+
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1202_v3_no_mapping_loss/160000.tar

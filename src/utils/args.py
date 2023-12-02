@@ -107,6 +107,8 @@ def config_parser():
                         default=0.0, help='weight for the Boardary constrain loss')
     parser.add_argument("--SmokeAlphaReguW", type=float,
                         default=0.05, help='weight for the Boardary constrain loss')
+    parser.add_argument("--SmokeAlphaReguW_warmup", type=float,
+                        default=0.05, help='weight for the Boardary constrain loss')
     parser.add_argument("--CurvatureW", type=float,
                         default=0.00, help='weight for the Boardary constrain loss')
     parser.add_argument("--FlowW", type=float,

@@ -192,7 +192,7 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
     psnr = mse2psnr(img_loss)
     
     if ('rgbh1' in extras) and (smoke_recon_fading < (1.0-1e-8)): # rgbh1: static
-        img_loss = img_loss * smoke_recon_fading + img2mse((extras['rgbh1'] - gt_rgb) * (1-extras['acch2']).reshape(-1, 1), 0) * (1.0-smoke_recon_fading) + extras['acch2'].mean() * args.SmokeAlphaReguW
+        img_loss = img_loss * smoke_recon_fading + img2mse((extras['rgbh1'] - gt_rgb) * (1-extras['acch2']).reshape(-1, 1), 0) * (1.0-smoke_recon_fading) + extras['acch2'].mean() * args.SmokeAlphaReguW_warmup
 
     else:
         # todo::tricky now
@@ -432,7 +432,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         cross_training_t = torch.clamp(cross_training_t, 0.0, 1.0) # clamp to (0,1)
 
 
-        predict_xyz_cross = velocity_model.mapping_forward_using_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
+        predict_xyz_cross = velocity_model.mapping_forward_using_features(mapped_features, cross_training_t) - predict_xyz.detach() + training_samples[..., :3]
         cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
         # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
@@ -462,6 +462,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         density_in_mapped_xyz = den_model.density(predict_xyzt_cross) ## todo:: whether detach this
         
 
+        # density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) # todo:: detach one 
         density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) # todo:: detach one 
         
         # vel_loss += 0.05 * density_mapping_loss * density_mapping_fading
@@ -473,8 +474,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_loss_fading, 10000) # 
 
         color_in_xyz = den_model.color(training_samples.detach())
-        # color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
-        color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
+        color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
+        # color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
         color_mapping_loss = L1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
         vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading
         vel_loss_dict['color_mapping_loss'] = color_mapping_loss
@@ -551,13 +552,17 @@ def PDE_constraint(f_t, f_x, f_y, f_z,
     
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
-    eqs += [mean_squared_error(feature,0.0)]
+    # eqs += [mean_squared_error(feature,0.0)]
+    eqs += [L1_loss(feature,torch.zeros_like(feature))]
 
     eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
     
-    eqs += [L1_loss(U, torch.zeros_like(U))]
+    # eqs += [L1_loss(U, torch.zeros_like(U))]
 
-    eqs += [L1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
+    # eqs += [L1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
+    eqs += [mean_squared_error(U, 0.0)]
+
+    eqs += [mean_squared_error(Du_Dt,0.0)]
     
     
     return eqs
@@ -581,6 +586,7 @@ def PDE_constraint_two_layer_density(f_t, f_x, f_y, f_z,
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
     eqs += [mean_squared_error(feature,0.0)]
+    # eqs += [L1_loss(feature,torch.zeros_like(feature))]
 
     eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
     
@@ -588,4 +594,7 @@ def PDE_constraint_two_layer_density(f_t, f_x, f_y, f_z,
 
     eqs += [L1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
     
+    # eqs += [mean_squared_error(U, 0.0)]
+
+    # eqs += [mean_squared_error(Du_Dt,0.0)]
     return eqs

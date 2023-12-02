@@ -1,6 +1,6 @@
-expname = cyl/1201_v2_from_start
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = cyl/1202_v3_smaller_mapping_loss
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Cyl
@@ -14,16 +14,16 @@ testskip = 20
 net_model = hybrid_neus
 use_viewdirs = False
 density_map_first_omega = 1
-position_map_first_omega = 1
+position_map_first_omega = 10
 
 lagrangian_density_activation = softplus
-density_activation = relu
+# density_activation = relu
 
 
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 1024
+N_rand = 512
 train_vel_grid_size = 32
 i_embed = -1
 train_warp = True
@@ -71,7 +71,8 @@ density_thresh = 2.0
 density_thresh_static = 5
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.05
+SmokeAlphaReguW = 0.5
+SmokeAlphaReguW_warmup = 0.05
 
 
 # boundary_delay = 10000
@@ -93,9 +94,9 @@ neus_early_terminated = True
 neus_progressive_pe = True
 
 stage4_train_vel_interval = 1
-density_mapping_loss_weight = 0.01
-velocity_mapping_loss_weight = 0.01
-color_mapping_loss_weight = 0.01
+density_mapping_loss_weight = 0.001
+velocity_mapping_loss_weight = 0.001
+color_mapping_loss_weight = 0.001
 ColorDivergenceW = 0.00
 
 nseW = 1e-2
@@ -107,4 +108,4 @@ SmokeInsideSDFW = 0.1
 boundaryW = 1.0
 inside_sdf = 0.0
 
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1129_v1/060000.tar
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/060000.tar
