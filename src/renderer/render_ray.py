@@ -12,7 +12,7 @@ import cv2
 
 from src.utils.training_utils import batchify, batchify_func
 from src.utils.loss_utils import to8b
-from src.utils.visualize_utils import vel_uv2hsv, vel2hsv, draw_points
+from src.utils.visualize_utils import vel_uv2hsv, vel2hsv, draw_points, draw_trajectory
 
 
 def get_rays(H, W, K, c2w):
@@ -1330,7 +1330,8 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
     feature_dir = os.path.join(savedir, 'feature')
     velocity_dir = os.path.join(savedir, 'velocity')
     vorticity_dir = os.path.join(savedir, 'vorticity')
-    trajectory_dir = os.path.join(savedir, 'trajectory')
+    vel_trajectory_dir = os.path.join(savedir, 'vel_trajectory')
+    map_trajectory_dir = os.path.join(savedir, 'map_trajectory')
     os.makedirs(pred_dir, exist_ok=True)
     os.makedirs(gt_dir, exist_ok=True)
     os.makedirs(other_dir, exist_ok=True)
@@ -1338,14 +1339,17 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
     os.makedirs(velocity_dir, exist_ok=True)
     os.makedirs(vorticity_dir, exist_ok=True)
     os.makedirs(feature_dir, exist_ok=True)
-    os.makedirs(trajectory_dir, exist_ok=True)
+    os.makedirs(vel_trajectory_dir, exist_ok=True)
+    os.makedirs(map_trajectory_dir, exist_ok=True)
     dynamic_rgbs = []
     static_rgbs = []
     velocity_rgbs = []
     vorticity_rgbs = []
     feature_rgbs = []
-    trajectory_rgbs = []
-    
+    vel_trajectory_rgbs = []
+    map_trajectory_rgbs = []
+    all_vel_pts2d = []
+    all_map_pts2d = []
     
     for i, c2w in enumerate(tqdm(render_poses)):
         print(i, time.time() - t)
@@ -1481,26 +1485,47 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                 density_thresh = (density_max + density_mean) * 0.5
                 
                 pts_num = 128
-                # pts_flat = pts_flat[density_0.squeeze(-1) >= density_thresh]
-                # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
-                # pts_sampled = pts_flat[sample_id].reshape(-1,3)
+                pts_flat = pts_flat[density_0.squeeze(-1) >= density_thresh]
+                sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+                pts_sampled = pts_flat[sample_id].reshape(-1,3)
                 
-                pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
-                pts_sampled = pts_flat[:pts_num]
+                # pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+                # pts_sampled = pts_flat[:pts_num]
                 
                 model.trajectory_points = pts_sampled
+                
+                vel_pts3d = model.trajectory_points.clone().detach()
+                map_pts3d = model.trajectory_points.clone().detach()
+                mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(time_0)).detach()
+                mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([pts_sampled.shape[0], 1])*float(time_0)).detach()
+                pts3d_base = map_pts3d.clone().detach()
+            # pts3d = model.trajectory_points.clone().detach()
             
-            pts3d= model.trajectory_points.clone().detach()
+            vel_pts2d = project_points(vel_pts3d.detach(), torch.tensor(K, dtype=torch.float32).cuda(), c2w=c2w[:3,:4])
+            map_pts2d = project_points(map_pts3d.detach(), torch.tensor(K, dtype=torch.float32).cuda(), c2w=c2w[:3,:4])
+
+            all_vel_pts2d.append(vel_pts2d)
+            all_map_pts2d.append(map_pts2d)
+            filename = os.path.join(vel_trajectory_dir, 'vel_trajectory_{:03d}.png'.format(i))
+            # trajectory_rgb = draw_points(pts2d, rgb_dynamic, filename)
+            vel_trajectory_rgb = draw_trajectory(all_vel_pts2d, rgb_dynamic.copy(), filename)
+            vel_trajectory_rgbs.append(vel_trajectory_rgb)
             
-            pts2d = project_points(pts3d, torch.tensor(K, dtype=torch.float32).cuda(), c2w=c2w[:3,:4])
-            filename = os.path.join(trajectory_dir, 'trajectory_{:03d}.png'.format(i))
-            trajectory_rgb = draw_points(pts2d, rgb_dynamic, filename)
-            trajectory_rgbs.append(trajectory_rgb)
+            filename = os.path.join(map_trajectory_dir, 'map_trajectory_{:03d}.png'.format(i))
+            map_trajectory_rgb = draw_trajectory(all_map_pts2d, rgb_dynamic.copy(), filename)
+            map_trajectory_rgbs.append(map_trajectory_rgb)        
             
-            pts_sampled = model.trajectory_points
-            vel_pts = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_sampled, float(cur_timestep)*torch.ones([pts_sampled.shape[0], 1])], dim = -1)).detach()
-            pts_sampled += vel_pts / model.args.time_size
-            model.trajectory_points = pts_sampled
+            vel_pts = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([vel_pts3d, float(cur_timestep)*torch.ones([vel_pts3d.shape[0], 1])], dim = -1)).detach()
+            vel_pts3d += vel_pts / model.args.time_size
+            
+            map_pts3d = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([pts_sampled.shape[0], 1])*float(cur_timestep)).detach() - mapping_base + pts3d_base
+            
+            if i % 50 == 0:
+                mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
+                mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([pts_sampled.shape[0], 1])*float(cur_timestep)).detach()
+                pts3d_base = map_pts3d
+                
+            torch.cuda.empty_cache()
             # project points to 2d
             
             
@@ -1515,6 +1540,7 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
     imageio.mimwrite(os.path.join(savedir, 'velocity_rgb.mp4'), velocity_rgbs, fps=30, quality=10)
     imageio.mimwrite(os.path.join(savedir, 'vorticity_rgb.mp4'), vorticity_rgbs, fps=30, quality=10)
     imageio.mimwrite(os.path.join(savedir, 'feature_rgb.mp4'), feature_rgbs, fps=30, quality=10)
-    imageio.mimwrite(os.path.join(savedir, 'trajectory_rgb.mp4'), trajectory_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'vel_trajectory_rgb.mp4'), vel_trajectory_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'map_trajectory_rgb.mp4'), map_trajectory_rgbs, fps=30, quality=10)
 
     return rgbs, disps
