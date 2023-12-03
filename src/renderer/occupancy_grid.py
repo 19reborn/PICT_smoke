@@ -908,7 +908,8 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, update
                 
                 return batchify(model.density_dynamic, chunk)(x_t)
 
-            for i in range(2):
+            # for i in range(2):
+            for i in range(8):
                 model.occupancy_grid_dynamic.update_grid(get_density_dynamic, S = 64)
       
             def get_density_static(x):

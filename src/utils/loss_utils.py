@@ -342,7 +342,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                 Du_Dt)
         
             # coasre density transport, fine density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt
-            split_nse_wei = [1.0, 0.1, 1.0, 0.1, args.vel_regulization_weight, 1e-1]
+            split_nse_wei = [args.coarse_transport_weight, args.fine_transport_weight, 1.0, 0.1, args.vel_regulization_weight, 1e-1]
         else:
             _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
             _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)
@@ -354,7 +354,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                 Du_Dt)
             
             #  density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt
-            split_nse_wei = [1.0, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
+            split_nse_wei = [args.coarse_transport_weight, 1.0, 1e-1, args.vel_regulization_weight, 1e-1]
 
                 
 
@@ -476,7 +476,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         color_in_xyz = den_model.color(training_samples.detach())
         color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
         # color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
-        color_mapping_loss = L1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
+        # color_mapping_loss = L1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
+        color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
         vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading
         vel_loss_dict['color_mapping_loss'] = color_mapping_loss
 

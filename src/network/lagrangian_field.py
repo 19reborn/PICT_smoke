@@ -349,6 +349,36 @@ class VelocityNetwork(nn.Module):
             
         return velocity
 
+    def forward_vorticity(self, xyzt):
+        xyzt.requires_grad_(True)
+        xyz, t = torch.split(xyzt, (3, 1), dim=-1)
+
+        features = self.feature_map(xyz, t)
+        t1 = t.clone().detach()
+        t1.requires_grad_(True)
+        
+        if self.bbox_model is not None:
+            bbox_mask = self.bbox_model.insideMask(xyz) == False
+        else:
+            bbox_mask = torch.zeros_like(xyz[..., 0], dtype=torch.bool, device=xyz.device)
+            
+        mapped_xyz = self.position_map(features, t1)
+        mapped_xyz[bbox_mask] = xyz[bbox_mask]
+
+
+        velocity = self.gradients(mapped_xyz, t1)
+        velocity[bbox_mask] = 0.0
+        jaco_xyz = _get_minibatch_jacobian(velocity, xyz)
+
+        curl_1 = jaco_xyz[:, 2, 1] - jaco_xyz[:, 1, 2]
+        curl_2 = jaco_xyz[:, 0, 2] - jaco_xyz[:, 2, 0]
+        curl_3 = jaco_xyz[:, 1, 0] - jaco_xyz[:, 0, 1]
+        
+        curl = torch.stack([curl_1, curl_2, curl_3], dim = -1)
+        
+        return velocity, curl        
+        
+
     def mapping_forward(self, xyzt, t1 = None):
 
         if t1 is None:

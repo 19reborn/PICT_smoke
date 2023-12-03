@@ -60,7 +60,7 @@ anneal_end = 30000
 
 i_img = 1000
 i_test = 50000
-i_weights = 20000
+i_weights = 10000
 i_video = 200000
 N_iter = 200000
 

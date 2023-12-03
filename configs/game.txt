@@ -55,7 +55,7 @@ anneal_end = 5000
 i_img = 1000
 i_test = 5000
 i_weights = 5000
-i_video = 10000
+i_video = 200000
 N_iter = 400000
 
 cuda_ray = True

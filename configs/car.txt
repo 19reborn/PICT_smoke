@@ -1,4 +1,4 @@
-expname = Car/1202_v6_middle_color_mapping_loss
+expname = Car/1203_v2_larger_color_density_mapping
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -100,9 +100,9 @@ nseW = 1e-2
 vel_regulization_weight = 0.1
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 0.001
+density_mapping_loss_weight = 0.01
 velocity_mapping_loss_weight = 0.001
-color_mapping_loss_weight = 0.5
+color_mapping_loss_weight = 5.0
 
 max_mapping_frame_range = 50
 mapping_frame_range_fading_start = 0
@@ -114,5 +114,8 @@ mapping_loss_fading = 10000
 boundaryW = 1.0
 train_vel_uniform_sample = 2
 inside_sdf = 0.00
+
+coarse_transport_weight = 100
+fine_transport_weight = 100
 
 model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1202_v3_no_mapping_loss/160000.tar

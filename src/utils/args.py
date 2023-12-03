@@ -119,6 +119,10 @@ def config_parser():
     parser.add_argument("--inside_sdf", type=float, default = 0.0)
     parser.add_argument("--vel_regulization_weight", type=float,
                         default=1, help='weight for the Boardary constrain loss')
+    parser.add_argument("--coarse_transport_weight", type=float,
+                        default=1, help='weight for the Boardary constrain loss')
+    parser.add_argument("--fine_transport_weight", type=float,
+                        default=0.1, help='weight for the Boardary constrain loss')
     ## Lagrangian Feature loss
     parser.add_argument("--self_cycle_loss_weight", type=float, default = 1.0)
     parser.add_argument("--cross_cycle_loss_weight", type=float, default = 0.1)
@@ -222,6 +226,8 @@ def config_parser():
     parser.add_argument("--render_eval", action='store_true', 
                         help='render the test set instead of render_poses path')
     parser.add_argument("--render_train", action='store_true', 
+                        help='render the training set instead of render_poses path')
+    parser.add_argument("--render_vis", action='store_true', 
                         help='render the training set instead of render_poses path')
     
     parser.add_argument("--extract_occ_grid", action='store_true', 

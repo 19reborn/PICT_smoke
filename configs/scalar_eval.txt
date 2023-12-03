@@ -1,6 +1,6 @@
-expname = scalar/1118_v2_larger_cycle_loss
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = scalar/1202_v2_less_all_mapping_loss
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/ScalarReal
@@ -8,31 +8,21 @@ dataset_type = pinf_data
 no_batching = True
 half_res = half
 white_bkgd = True
-testskip = 10
+testskip = 1
 
 ### network arch
 net_model = siren
 use_viewdirs = False
-# feature_map_first_omega = 10
-# density_activation = exp
-# lagrangian_density_activation = exp
-# density_activation = relu
-# lagrangian_density_activation = relu
-# density_activation = leakyrelu
-# lagrangian_density_activation = leakyrelu
-# density_map_first_omega = 10
-# position_map_first_omega = 10
 density_map_first_omega = 1
-position_map_first_omega = 1
-density_activation = exp
+position_map_first_omega = 30
 
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 1024
+N_rand = 512
 i_embed = -1
 train_warp = True
-vol_output_W = 128
+vol_output_W = 256
 
 ### train params - iterations
 precrop_iters = 1000
@@ -64,25 +54,30 @@ i_video = 50000
 
 stage1_finish_recon = 10000
 uniform_sample_step = 5000
-smoke_recon_delay_start = 0
-smoke_recon_delay_last = 0
 
 stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
-stage4_train_vel_interval = 10
 
 use_two_level_density = True
-vel_regulization_weight = 0.1
 use_scene_scale_before_pe = True
 
-stage4_train_vel_interval = 10
-density_mapping_loss_weight = 0.001
-velocity_mapping_loss_weight = 0.01
-color_mapping_loss_weight = 0.01
-nseW = 1e-1
-vel_regulization_weight = 0.01
-max_mapping_frame_range = 100
-cross_cycle_loss_weight = 10.0
-self_cycle_loss_weight = 10.0
-SmokeInsideSDFW = 0.01
-boundaryW = 0.01
+stage4_train_vel_interval = 1
+nse_loss_interval = 10
+
+nseW = 1e-2
+vel_regulization_weight = 50.0
+cross_cycle_loss_weight = 1.0
+self_cycle_loss_weight = 1.0
+density_mapping_loss_weight = 1e-3
+velocity_mapping_loss_weight = 1e-3
+color_mapping_loss_weight = 0.0
+
+max_mapping_frame_range = 50
+mapping_frame_range_fading_start = 0
+mapping_frame_range_fading_last = 20000
+
+# model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/scalar/1118_v1/200000.tar
+
+# mapping_loss_fading = 100000
+density_activation = exp
+lagrangian_density_activation = exp

@@ -1,4 +1,4 @@
-expname = scalar/1202_v3_50_vel_reg
+expname = scalar/1202_v4_larger_ghost_loss
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -35,7 +35,8 @@ N_iter = 600000
 
 ### train params - loss weights
 vggW = 0.00 # [0.001 - 0.01] larger values are good for high-frequency info
-ghostW = 0.07 # scalar needs a larger ghostW due to density-color ambiguity
+# ghostW = 0.07 # scalar needs a larger ghostW due to density-color ambiguity
+ghostW = 0.20 # scalar needs a larger ghostW due to density-color ambiguity
 d2vW = 0.0 # [0.0 - 4.0, larger values are good for buoyancy driven smoke]
 
 ### scene params
@@ -82,4 +83,4 @@ mapping_frame_range_fading_last = 20000
 density_activation = exp
 lagrangian_density_activation = exp
 
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1201_v10_10_vel_reg/050000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1201_v10_10_vel_reg/050000.tar
