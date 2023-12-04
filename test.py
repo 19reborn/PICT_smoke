@@ -354,8 +354,9 @@ def test(args):
         render_timesteps = np.array(time_steps[i_train])
         
     if args.render_vis: # chose one training view to render physics attributes
-        render_poses = np.array(poses[i_train[5]])
-        render_timesteps = np.array(time_steps[i_train[5]])
+        vis_split = i_train[args.vis_view * args.time_size : (args.vis_view+1) * args.time_size]
+        render_poses = np.array(poses[vis_split])
+        render_timesteps = np.array(time_steps[vis_split])
         
     # Create Bbox model from smoke perspective
     bbox_model = None
@@ -508,10 +509,11 @@ def test(args):
         # with torch.no_grad():
             
         if args.render_vis: # chose one training view to render physics attributes
-            images = images[i_train[5]]
-            hwf = hwfs[i_train[5]]
+
+            images = images[vis_split]
+            hwf = hwfs[vis_split[0]]
             hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
-            K = Ks[i_train[5]]
+            K = Ks[vis_split[0]]
         elif args.render_test or args.render_eval:
             # render_test switches to test poses
             images = images[i_test]

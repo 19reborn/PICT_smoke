@@ -1435,6 +1435,8 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             _hsv = vel2hsv(rgb.cpu(), scale=300, is3D=False, logv=False) # scalar
             # velLegendHSV(_hsv, True, lw=max(1,min(6,int(0.025*3))), constV=255)
             rgb = cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR)
+            # imageio.imwrite(filename, cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR))
+            # imageio.imwrite(filename, cv2.cvtColor(vel2hsv(rgb.cpu(), scale=None, is3D=False, logv=False), cv2.COLOR_HSV2BGR))
             imageio.imwrite(filename, rgb)
             velocity_rgbs.append(rgb)
             
@@ -1443,7 +1445,7 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             rgb = extras['voriticity_map']
             # import pdb
             # _hsv = vel2hsv(rgb.cpu(), scale=20, is3D=True, logv=False) # cyl
-            _hsv = vel2hsv(rgb.cpu(), scale=30, is3D=True, logv=False) # scalar
+            _hsv = vel2hsv(rgb.cpu(), scale=30, is3D=False, logv=False)
             rgb = cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR)
             # imageio.imwrite(filename, cv2.cvtColor(vel2hsv(rgb.cpu(), scale=20, is3D=True, logv=False), cv2.COLOR_HSV2BGR))
             imageio.imwrite(filename, rgb)
