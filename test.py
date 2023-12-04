@@ -352,7 +352,11 @@ def test(args):
     if args.render_train:
         render_poses = np.array(poses[i_train])
         render_timesteps = np.array(time_steps[i_train])
-
+        
+    if args.render_vis: # chose one training view to render physics attributes
+        render_poses = np.array(poses[i_train[5]])
+        render_timesteps = np.array(time_steps[i_train[5]])
+        
     # Create Bbox model from smoke perspective
     bbox_model = None
 
@@ -502,7 +506,13 @@ def test(args):
         K = Ks[0]
             
         # with torch.no_grad():
-        if args.render_test or args.render_eval:
+            
+        if args.render_vis: # chose one training view to render physics attributes
+            images = images[i_train[5]]
+            hwf = hwfs[i_train[5]]
+            hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
+            K = Ks[i_train[5]]
+        elif args.render_test or args.render_eval:
             # render_test switches to test poses
             images = images[i_test]
             hwf = hwfs[i_test[0]]
@@ -518,11 +528,7 @@ def test(args):
         else:
             # Default is smoother render_poses path
             images = None
-            
-        if args.render_vis: # chose one training view to render physics attributes
-            images = images[i_train[5]]
-            render_poses = np.array(poses[i_train[5]])
-            render_timesteps = np.array(time_steps[i_train[5]])
+
             
         render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, global_step >= args.uniform_sample_step, gt_images=images)
     else:

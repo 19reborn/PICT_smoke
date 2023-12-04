@@ -198,6 +198,8 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
         # todo::tricky now
         if not model.single_scene:
             img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
+        else:
+            img_loss += (acc * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
 
     if args.use_mask:
     # if args.use_mask and global_step <= 20000:
@@ -474,8 +476,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_loss_fading, 10000) # 
 
         color_in_xyz = den_model.color(training_samples.detach())
-        color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
-        # color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
+        # color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
+        color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
         # color_mapping_loss = L1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
         color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
         vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading

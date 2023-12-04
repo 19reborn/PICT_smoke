@@ -1,4 +1,4 @@
-expname = Car/1203_v2_larger_color_density_mapping
+expname = Car/1204_v2_from_start
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -69,7 +69,7 @@ density_thresh = 1
 density_thresh_static = 30
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.02
+SmokeAlphaReguW = 0.1
 SmokeAlphaReguW_warmup = 0.02
 train_vel_within_rendering = False
 boundaryW = 0.5
@@ -100,8 +100,8 @@ nseW = 1e-2
 vel_regulization_weight = 0.1
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 0.01
-velocity_mapping_loss_weight = 0.001
+density_mapping_loss_weight = 0.5
+velocity_mapping_loss_weight = 0.01
 color_mapping_loss_weight = 5.0
 
 max_mapping_frame_range = 50
@@ -118,4 +118,4 @@ inside_sdf = 0.00
 coarse_transport_weight = 100
 fine_transport_weight = 100
 
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1202_v3_no_mapping_loss/160000.tar
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1202_v3_no_mapping_loss/110000.tar
