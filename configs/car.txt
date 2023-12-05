@@ -1,4 +1,4 @@
-expname = Car/1204_v2_from_start
+expname = Car/1205_v1_100_color_mapping
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -23,7 +23,7 @@ N_rand = 512
 i_embed = -1
 train_warp = True
 vol_output_W = 256
-train_vel_grid_size = 32
+train_vel_grid_size = 24
 
 ### train params - iterations
 precrop_iters = 500
@@ -96,13 +96,14 @@ neus_progressive_pe_start = 20000
 use_scene_scale_before_pe = True
 stage4_train_vel_interval = 1
 
+
 nseW = 1e-2
 vel_regulization_weight = 0.1
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 0.5
 velocity_mapping_loss_weight = 0.01
-color_mapping_loss_weight = 5.0
+color_mapping_loss_weight = 100.0
 
 max_mapping_frame_range = 50
 mapping_frame_range_fading_start = 0
@@ -112,10 +113,10 @@ mapping_frame_range_fading_last = 20000
 mapping_loss_fading = 10000
 
 boundaryW = 1.0
-train_vel_uniform_sample = 2
+train_vel_uniform_sample = 1
 inside_sdf = 0.00
 
 coarse_transport_weight = 100
 fine_transport_weight = 100
 
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1202_v3_no_mapping_loss/110000.tar
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1201_v6_512_rand/110000.tar

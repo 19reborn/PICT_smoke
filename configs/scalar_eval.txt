@@ -1,4 +1,4 @@
-expname = scalar/1202_v2_less_all_mapping_loss
+expname = scalar/1204_v1_smoke_reg
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 

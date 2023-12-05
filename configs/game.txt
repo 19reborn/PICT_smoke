@@ -1,4 +1,4 @@
-expname = game/1201_v5_check_occ_grid
+expname = game/1204_v2_all_smoke_reg
 basedir = ./log
 
 ### data info
@@ -69,7 +69,7 @@ SmokeAlphaReguW = 0.08
 SmokeAlphaReguW_warmup = 0.08
 train_vel_within_rendering = False
 
-inside_sdf = 0.02
+inside_sdf = 0.00
 
 
 
@@ -106,6 +106,6 @@ mapping_frame_range_fading_last = 20000
 boundaryW = 1.0
 train_vel_uniform_sample = 2
 
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v4_identity_activation_512_ray_batch/035000.tar
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/300000.tar
 
 
