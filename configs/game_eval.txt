@@ -1,4 +1,4 @@
-expname = game/1201_v5_check_occ_grid
+expname = game/1204_v2_all_smoke_reg
 basedir = ./log
 
 ### data info

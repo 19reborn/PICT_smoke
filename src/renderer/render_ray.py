@@ -801,7 +801,9 @@ def render_rays_cuda(ray_batch,
             # # vel_map.scatter_add_(0, rays_dynamic_id.long(), weighted_vel)
             # vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
             
-            vel, vorticity = model.dynamic_model_lagrangian.velocity_model.forward_vorticity(torch.cat((pts_dynamic[...,:3], pts_dynamic[...,-1:]), dim=-1))
+            # vel, vorticity = model.dynamic_model_lagrangian.velocity_model.forward_vorticity(torch.cat((pts_dynamic[...,:3], pts_dynamic[...,-1:]), dim=-1))
+            vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
+            vorticity = vel.clone()
             weighted_vel = dynamic_weights.unsqueeze(-1) * vel.detach()
             vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
             weighted_vorticity = dynamic_weights.unsqueeze(-1) * vorticity.detach()
@@ -1466,7 +1468,8 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             feature_rgbs.append(rgb)
             
             # render trajectory map
-            if model.trajectory_points is None and i == 0:
+            # if model.trajectory_points is None and i == 0:
+            if i % 25 == 0 and i < 80:
                 # sample points
                 assert(model.voxel_writer is not None)
                 pts_flat = model.voxel_writer.pts.view(-1, 3)
@@ -1502,7 +1505,8 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                 
                 # stratified sampling
                 strata_num = 8
-                pts_num = 16
+                # pts_num = 16
+                pts_num = 32
                 for strata_id in range(strata_num):
                     strata_min = density_mean + (density_max - density_mean) * strata_id / strata_num
                     strata_max = density_mean + (density_max - density_mean) * (strata_id + 1) / strata_num
@@ -1515,13 +1519,18 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                 
                 # pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
                 # pts_sampled = pts_flat[:pts_num]
-                
-                model.trajectory_points = pts_sampled
-                
-                vel_pts3d = model.trajectory_points.clone().detach()
-                map_pts3d = model.trajectory_points.clone().detach()
+                if model.trajectory_points is None:
+                    model.trajectory_points = pts_sampled
+                    
+                    vel_pts3d = model.trajectory_points.clone().detach()
+                    map_pts3d = model.trajectory_points.clone().detach()
+                else:
+                    model.trajectory_points = torch.cat([model.trajectory_points, pts_sampled], dim = 0)
+                    vel_pts3d = torch.cat([vel_pts3d, pts_sampled], dim = 0)
+                    map_pts3d = torch.cat([map_pts3d, pts_sampled], dim = 0)
+                    
                 mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(time_0)).detach()
-                mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([pts_sampled.shape[0], 1])*float(time_0)).detach()
+                mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(time_0)).detach()
                 pts3d_base = map_pts3d.clone().detach()
             # pts3d = model.trajectory_points.clone().detach()
             
@@ -1546,7 +1555,7 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             
             if i % 50 == 0:
                 mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
-                mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([pts_sampled.shape[0], 1])*float(cur_timestep)).detach()
+                mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
                 pts3d_base = map_pts3d
                 
             torch.cuda.empty_cache()
