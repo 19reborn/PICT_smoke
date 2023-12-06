@@ -1,6 +1,6 @@
-expname = scalar/1125_v1_from_start
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = scalar/1205_v2_100_vel_reg_continue_train
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/ScalarReal
@@ -8,23 +8,13 @@ dataset_type = pinf_data
 no_batching = True
 half_res = half
 white_bkgd = True
-testskip = 10
+testskip = 60
 
 ### network arch
 net_model = siren
 use_viewdirs = False
-# feature_map_first_omega = 10
-# density_activation = exp
-# lagrangian_density_activation = exp
-# density_activation = relu
-# lagrangian_density_activation = relu
-# density_activation = leakyrelu
-# lagrangian_density_activation = leakyrelu
-# density_map_first_omega = 10
-# position_map_first_omega = 10
 density_map_first_omega = 1
-position_map_first_omega = 1
-density_activation = exp
+position_map_first_omega = 30
 
 ### train params - sampling
 N_samples = 64
@@ -32,7 +22,7 @@ N_importance = 0
 N_rand = 512
 i_embed = -1
 train_warp = True
-vol_output_W = 128
+vol_output_W = 256
 
 ### train params - iterations
 precrop_iters = 1000
@@ -45,8 +35,11 @@ N_iter = 600000
 
 ### train params - loss weights
 vggW = 0.00 # [0.001 - 0.01] larger values are good for high-frequency info
-ghostW = 0.07 # scalar needs a larger ghostW due to density-color ambiguity
+# ghostW = 0.07 # scalar needs a larger ghostW due to density-color ambiguity
+ghostW = 1.00 # scalar needs a larger ghostW due to density-color ambiguity
 d2vW = 0.0 # [0.0 - 4.0, larger values are good for buoyancy driven smoke]
+
+SmokeAlphaReguW = 0.000
 
 ### scene params
 bbox_min = 0.05
@@ -59,42 +52,41 @@ density_thresh = 0.5
 i_testset = 10000
 i_weights = 5000
 i_img = 1000
-i_video = 50000
+i_video = 600000
 
 
 stage1_finish_recon = 10000
 uniform_sample_step = 5000
-smoke_recon_delay_start = 0
-smoke_recon_delay_last = 0
 
 stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
-stage4_train_vel_interval = 10
 
 use_two_level_density = True
-vel_regulization_weight = 0.1
 use_scene_scale_before_pe = True
 
-stage4_train_vel_interval = 3
-density_mapping_loss_weight = 0.005
-velocity_mapping_loss_weight = 0.05
-color_mapping_loss_weight = 0.01
-nseW = 1e-1
-vel_regulization_weight = 0.05
-max_mapping_frame_range = 100
-cross_cycle_loss_weight = 100.0
-self_cycle_loss_weight = 10.0
-SmokeInsideSDFW = 0.01
-boundaryW = 0.01
+stage4_train_vel_interval = 1
+nse_loss_interval = 10
+
+nseW = 1e-2
+vel_regulization_weight = 100.0
+cross_cycle_loss_weight = 1.0
+self_cycle_loss_weight = 1.0
+density_mapping_loss_weight = 1e-3
+velocity_mapping_loss_weight = 1e-3
+color_mapping_loss_weight = 0.0
+
+max_mapping_frame_range = 50
+mapping_frame_range_fading_start = 0
+mapping_frame_range_fading_last = 20000
 
 # model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/scalar/1118_v1/200000.tar
 
-max_mapping_frame_range = 50
-stage4_train_vel_interval = 2
+# mapping_loss_fading = 100000
+density_activation = exp
+lagrangian_density_activation = exp
 
-nseW = 1e-2
-vel_regulization_weight = 1e-1
-cross_cycle_loss_weight = 1.0
-self_cycle_loss_weight = 0.1
-density_mapping_loss_weight = 0.001
-velocity_mapping_loss_weight = 0.001
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/200000.tar
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/300000.tar
+
+coarse_transport_weight = 100
+fine_transport_weight = 100

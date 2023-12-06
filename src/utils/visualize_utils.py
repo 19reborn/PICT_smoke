@@ -404,3 +404,60 @@ def read_ply(file):
     face_array = np.array(face_df.iloc[:, 1:4])
     
     return vertex_array, face_array
+
+
+def draw_points(uv, image, output_dir=None):
+    
+    point_size = 1
+
+    point_color = (0, 255, 255)
+    
+    thickness = 2 #  0 、4、8
+    for i, coor in enumerate(uv.cpu().numpy()):
+        try:
+            cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, thickness)
+        except:
+            continue
+    if output_dir is not None:
+        cv.imwrite(output_dir,image)
+        
+    return image
+
+
+def draw_trajectory(all_uv, image, output_dir=None):
+
+    frame_num = len(all_uv)
+    print(frame_num)
+    prev_uv = None
+    for frame_i in range(frame_num):
+        uv = all_uv[frame_i]
+        if frame_i == frame_num - 1:
+            point_size = 1
+
+            point_color = (0, 255, 255)
+            thickness = 4 #  0 、4、8
+        else:
+            point_size = 1
+
+            point_color = (0, 0, 255)
+            thickness = 1
+
+        line_color = (0, 0, 255)
+        line_thickness = 1
+
+        for i, coor in enumerate(uv.cpu().numpy()):
+            # try:
+            cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, thickness)
+            if frame_i > 0:
+                if i < prev_uv.shape[0]:
+                    cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+                # cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+            # except:
+                # continue
+        prev_uv = uv
+    if output_dir is not None:
+        cv.imwrite(output_dir,image)
+
+        
+            
+    return image

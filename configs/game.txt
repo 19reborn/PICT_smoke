@@ -1,4 +1,4 @@
-expname = game/1117_v1_train_vel_interval1
+expname = game/1206_v5_fix_bugs
 basedir = ./log
 
 ### data info
@@ -12,8 +12,8 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 10
-position_map_first_omega = 10
+density_map_first_omega = 1
+position_map_first_omega = 30
 
 ### train params - sampling
 N_samples = 64
@@ -55,7 +55,7 @@ anneal_end = 5000
 i_img = 1000
 i_test = 5000
 i_weights = 5000
-i_video = 10000
+i_video = 200000
 N_iter = 400000
 
 cuda_ray = True
@@ -65,14 +65,12 @@ density_thresh_static = 30
 # density_activation = relu
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.08
+SmokeAlphaReguW = 0.2
+SmokeAlphaReguW_warmup = 0.08
 train_vel_within_rendering = False
-boundaryW = 0.5
-train_vel_uniform_sample = 2
-inside_sdf = 0.02
 
+inside_sdf = 0.00
 
-# boundary_delay = 10000
 
 
 stage1_finish_recon = 90000
@@ -84,43 +82,33 @@ smoke_recon_delay_start = 0
 smoke_recon_delay_last = 10000
 sdf_loss_delay = 2000
 
-stage2_finish_init_lagrangian = 1000
+stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 
 use_two_level_density = True
-
 use_scene_scale_before_pe = True
 neus_progressive_pe = True
 
-max_mapping_frame_range = 100
 stage4_train_vel_interval = 1
 
 nseW = 1e-2
-vel_regulization_weight = 0.1
+vel_regulization_weight = 1.0
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 1e-2
+density_mapping_loss_weight = 1.0
 velocity_mapping_loss_weight = 1e-2
 color_mapping_loss_weight = 1.0
 
-# nseW = 1e-4
+max_mapping_frame_range = 50
+mapping_frame_range_fading_start = 0
+mapping_frame_range_fading_last = 20000
 
-model_path = /root/data/wym/workspace/pinf_clean/log/game/1101_v2_full_loss/200000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/game/1031_v2_use_progressive_pe/100000.tar
+boundaryW = 1.0
+train_vel_uniform_sample = 1
 
-# model_path = /root/data/wym/workspace/pinf_clean/log/game/1015_v2_small_warmup/100000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/game/1011_v4_less_pe/100000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/game/1009_v1/140000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0928_zxy_v4_no_density_mapping_loss/080000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0927_zxy_check_recon_v3/100000.tar
-# model_path = /root/data/wym/workspace/pinf_clean/log/cyl/0927_zxy_check_recon_v3/060000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start/010000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/014000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v3_from_start_debug/014000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v7_only_train_vel_in_stage2/016000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0924_4090_v2_stage2_train_feature/060000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/120000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v9_from_start/085000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v3_stage1_recon/010000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v4_stage2_3/015000.tar
-# model_path =/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/0922_v5_stage3/020000.tar
+coarse_transport_weight = 100
+fine_transport_weight = 10
+
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/300000.tar
+
+

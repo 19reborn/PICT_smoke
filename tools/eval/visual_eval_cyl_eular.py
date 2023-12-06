@@ -1,4 +1,4 @@
-# /home/yiming/Documents/workspace/Project_PINF/mantaflow_nogui/build/manta /home/yiming/Documents/workspace/Project_PINF/pinf_clean/tools/eval/visual_eval_scalarSyn4090.py
+# /cluster/project/tang/yiming/project/mantaflow_nogui/build/manta /cluster/project/tang/yiming/project/pinf_clean/tools/eval/visual_eval_cyl_eular.py
 
 import os, sys, inspect
 import numpy as np
@@ -14,33 +14,50 @@ sys.path.insert(0, parentdir)
 from _helpers import vel_uv2hsv, jacobian3D_np,divergence3D_np,jacobian2D_np,vor_rgb
 from _helpers import FFmpegTool
 
-ref_path = "/home/yiming/Documents/workspace/Project_PINF/eval_scalarSyn/gt/"
+ref_path = '/cluster/project/tang/yiming/dataset/pinf_gt/cyl/'
+
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1029_v3_no_neus_early_terminated/volumeout_080001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/v3_1030_new_large_scale_vis/'
+
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v1_no_vel_mapping_loss/volumeout_300001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v1_ablation_no_vel_mapping_loss/'
+
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/volumeout_300001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v2_ablation_with_vel_mapping_loss/'
+
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v3_larger_frame_mapping/volumeout_300001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v3_longer_frame_mapping_300k/'
+
+# our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v4_no_density_mapping/volumeout_300001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1108_v4_no_density_mapping_300k/'
+
+# our_path = '/mnt/sda/workspace/PINF_Project/our_output/cyl/1112_v1_test/volumeout_400001/'
+# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1112_v1_test_larger_nseW/'
+
+our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/volumeout_200001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1204_v1_best_now/'
+out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1204_v1_best_now_full/'
+
+
 glo_path = None
-# pinf_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v23/volumeout_050001/'
-# pinf_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v2_mask_velocity_loss/volumeout_450001'
-# pinf_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v3_larger_vel_regu/volumeout_045001/'
-pinf_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/scalarSyn/1129_v1_100000reg/volumeout_150001/'
-# out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/scalarSyn/v2_120kiters/'
-# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/scalarSyn/v2_1028_masked_vel_reg/'
-# out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/scalarSyn/v3_1028_larger_reg_vel_scale_1/'
-out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/scalarSyn/1129_v1_100000reg/'
-hull_path = ref_path + "hull/hull.npz"
+hull_path = None
 
 os.makedirs(out_path, exist_ok = True)
 # if not os.path.exists(out_path):os.mkdir(out_path)
     
-den_file, vel_file = "density_%06d.npz", "velocity_%06d.npz"
+den_file, vel_file = "density_high_%04d.f16.npz", "velocity_high_%04d.f16.npz"
 
-ref_gs = vec3(100,150,100) # 178
-our_gs = vec3(128,192,128)
+ref_gs = vec3(256,256,256) # 178
+our_gs = vec3(256,256,256)
 
-st = vec3(7,11,27)
-sz = vec3(102,156,87)
+st = vec3(0,0,0)
+sz = vec3(0,0,0)
 pad = our_gs - sz - st
 sz = [int(sz.x), int(sz.y), int(sz.z)]
 st = [int(st.x), int(st.y), int(st.z)]
 pad = [int(pad.x), int(pad.y), int(pad.z)]
-padding = ((0,0),(st[0],pad[0]),(st[1],pad[1]),(st[2],pad[2]),(0,0))
+# padding = ((0,0),(st[0],pad[0]),(st[1],pad[1]),(st[2],pad[2]),(0,0))
+padding = None
 
 def setSolver(gs, name):
     s   = FluidSolver(name=name, gridSize = gs)
@@ -96,6 +113,7 @@ def readData(basedir, den_file=None, vel_file=None, grids=[None,None,None], padd
 
 def saveVel(Vin, path, scale=144):
     imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False))
+    # imageio.imwrite( path, vel_uv2hsv(Vin[:,::-1,...], scale=scale, is3D=True, logv=False)[::-1])
 
 def save_fig(den, vel, image_dir, den_name='den_%04d.ppm', vel_name='vel_%04d.png', t=0, is2D=False, vN=1.0):
     # os.makedirs(image_dir, exist_ok = True) 
@@ -108,11 +126,16 @@ def save_fig(den, vel, image_dir, den_name='den_%04d.ppm', vel_name='vel_%04d.pn
             imageio.imwrite(image_dir+'vor_%04d.png' % (t), vor_rgb(np.squeeze(NETw))[::-1])
     else:
         if den is not None:
-            projectPpmFull( den, image_dir+den_name % (t), 0, 0.3 )
+            # projectPpmFull( den, image_dir+den_name % (t), 0, 0.3 )
+            # projectPpmFull( den, image_dir+den_name % (t), 0, 1.0 )
+            projectPpmFull( den, image_dir+den_name % (t), 0, 1.5 )
         if vel is not None:
-            saveVel(np.squeeze(vel), image_dir+vel_name % (t))
+            # saveVel(np.squeeze(vel), image_dir+vel_name % (t))
+            saveVel(np.squeeze(vel), image_dir+vel_name % (t), scale = 300)
             _, NETw = jacobian3D_np(vel)
-            saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=720*vN)
+            # saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=720*vN)
+            saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=1500)
+            # saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=256)
 
 def np_l2(np_array): return np.sum(np.square(np_array),axis=-1)
 
@@ -136,12 +159,15 @@ if False:
     np.savez_compressed(os.path.join(_data_path, 'hull.npz'),hull_full)
     exit()
 
-all_hulldata = np.load(hull_path)["arr_0"]
+if hull_path is not None:
+    all_hulldata = np.load(hull_path)["arr_0"]
 
 if ref_gs.x != our_gs.x: # same res for evaluation
     newr_vel  = our_s.create(MACGrid)
     newr_den  = our_s.create(RealGrid)
     ref_grids = [our_grids[0], newr_den, newr_vel]
+else:
+    ref_grids = oref_grids
 
 if glo_path is not None:
     glo_vel  = our_s.create(MACGrid)
@@ -149,7 +175,8 @@ if glo_path is not None:
     glo_grids = [our_grids[0], glo_den, glo_vel]
 
 normDen = True
-hullmask = True
+hullmask = False
+# hullmask = True
 denratio = 1.2
 
 def printVelRange(gvel, name=""):
@@ -224,33 +251,35 @@ our_list, glo_list, ref_list =[], [], []
 fr = 0
 
 testWarp = True
-for framei in range(60,118,2): # [100]
+frame_num = 0
+start_frame = 0
+# for framei in range(15,115,10): # [100]
+for framei in range(start_frame,150,1): # [100]
     print(framei)
+    frame_num += 1
     rden, rvel = readData(ref_path, den_file%framei, vel_file%framei, oref_grids)
     rden = np.reshape(rden, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
     rvel = np.reshape(rvel, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
 
     
-    if pinf_path is not None:
-        framei_pinf = int(int(framei-60)/2)
-        oden, ovel = readData(pinf_path, "d_%04d.npz"%framei_pinf, "v_%04d.npz"%framei_pinf, our_grids)
-        # oden, ovel = readData(pinf_path, "denF_%04d.npz"%framei_pinf, "vel_%04d.npz"%framei_pinf, our_grids)
+    if our_path is not None:
+        oden, ovel = readData(our_path, "d_%04d.npz"%framei, "v_%04d.npz"%framei, our_grids)
         oden = np.reshape(oden, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
         ovel = np.reshape(ovel, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
-
-    hull_idx = int(int(framei-60)/2)
-    hull_data = all_hulldata[hull_idx:hull_idx+1,...]
+    if hullmask:
+        hull_data = oden > 0.1 # buggy
+        
     if glo_path is not None:
         gden, gvel = readData(glo_path,"frame_%06d/density.npz"%framei, "frame_%06d/velocity.npz"%framei, glo_grids,padding=padding,flip=True)
         gden = np.reshape(gden, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1]) 
         gvel = np.reshape(gvel, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
         gvel *= 0.5 # scalarflow only, 2 frames
 
-    if framei>60:
+    if framei>start_frame:
         rden_warpMID, rvel_warpMID = warpMidTest(_rvel_warp, _rden_warp, rvel, rden, oref_grids[1], oref_grids[2], oref_grids[0])
         rden_warp, rvel_warp = warpTest(_rvel_warp, _rden_warp, rvel, rden, oref_grids[1], oref_grids[2], oref_grids[0])
         
-        if pinf_path is not None:
+        if our_path is not None:
             oden_warpMID, ovel_warpMID = warpMidTest(_ovel_warp, _oden_warp, ovel, oden, our_grids[1], our_grids[2], our_grids[0])
             oden_warp, ovel_warp = warpTest(_ovel_warp, _oden_warp, ovel, oden, our_grids[1], our_grids[2], our_grids[0])
             
@@ -260,14 +289,14 @@ for framei in range(60,118,2): # [100]
                
         
     if testWarp:
-        if pinf_path is not None:
+        if our_path is not None:
             _oden_warp, _ovel_warp = np.copy(oden), np.copy(ovel)
         if glo_path is not None:
             _gden_warp, _gvel_warp = np.copy(gden), np.copy(gvel)
         _rden_warp, _rvel_warp = np.copy(rden), np.copy(rvel)        
         
-    if (ref_gs.x != our_gs.x) and (pinf_path is not None):
-        if framei>60:
+    if (ref_gs.x != our_gs.x) and (our_path is not None):
+        if framei>start_frame:
             copyArrayToGridReal(target=oref_grids[1], source=rden_warpMID)
             copyArrayToGridMAC(target=oref_grids[2], source=rvel_warpMID)
             interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
@@ -307,12 +336,12 @@ for framei in range(60,118,2): # [100]
             save_fig(None, gvel, out_path+"origlo_", t=fr)
             gden *= hull_data[0]
             gvel *= hull_data[0]
-        if pinf_path is not None:
+        if our_path is not None:
             save_fig(None, ovel, out_path+"oriour_", t=fr, vN=1.0)
             oden *= hull_data[0]
             ovel *= hull_data[0]
-        if framei>60:
-            if pinf_path is not None:
+        if framei>start_frame:
+            if our_path is not None:
                 oden_warp *= hull_data[0]; oden_warpMID *= hull_data[0]
                 ovel_warp *= hull_data[0]; ovel_warpMID *= hull_data[0]
             if (glo_path is not None):
@@ -322,14 +351,14 @@ for framei in range(60,118,2): # [100]
             rvel_warp *= hull_data[0]; rvel_warpMID *= hull_data[0]
     
     # print("den means, ref",rden.mean(),"our", oden.mean(), "glo", gden.mean())
-    if normDen and (pinf_path is not None):
+    if normDen and (our_path is not None):
         odscale = rden.mean()/oden.mean() 
         oden = oden * odscale
-        if framei>60:
+        if framei>start_frame:
             oden_warp = oden_warp * odscale; oden_warpMID = oden_warpMID * odscale
 
-    if framei>60:
-        if pinf_path is not None:
+    if framei>start_frame:
+        if our_path is not None:
             copyArrayToGridReal(target=our_grids[1], source=np.abs(oden_warp)*denratio*5.0)
             if True: save_fig(our_grids[1], ovel_warp, out_path+"warp_our_", t=fr) 
             copyArrayToGridReal(target=our_grids[1], source=np.abs(oden_warpMID)*denratio*5.0)
@@ -345,37 +374,40 @@ for framei in range(60,118,2): # [100]
         if True: save_fig(ref_grids[1], rvel_warpMID, out_path+"warpMID_ref_", t=fr)
 
     printVelRange(rvel, "ref")
-    if pinf_path is not None: printVelRange(ovel, "our")
+    if our_path is not None: printVelRange(ovel, "our")
     if glo_path is not None: printVelRange(gvel, "glo")
     print("ref den range", rden.min(), rden.mean(), rden.max())
-    if pinf_path is not None: print("our den range", oden.min(), oden.mean(), oden.max())
+    if our_path is not None: print("our den range", oden.min(), oden.mean(), oden.max())
     if glo_path is not None: print("glo den range", gden.min(), gden.mean(), gden.max())
 
     copyArrayToGridReal(target=ref_grids[1], source=rden)
-    if pinf_path is not None: copyArrayToGridReal(target=our_grids[1], source=oden)
+    if our_path is not None: copyArrayToGridReal(target=our_grids[1], source=oden)
     if glo_path is not None: copyArrayToGridReal(target=glo_grids[1], source=gden)
     if True: save_fig(ref_grids[1], rvel, out_path+"ref_", t=fr)
-    if pinf_path is not None: save_fig(our_grids[1], ovel, out_path+"our_", t=fr, vN=1.0)
+    if our_path is not None: save_fig(our_grids[1], ovel, out_path+"our_", t=fr, vN=1.0)
     if glo_path is not None: save_fig(glo_grids[1], gvel, out_path+"glo_", t=fr)
 
     # with inflow:
-    uh = hull_data[0] # None 
-    if pinf_path is not None: _our = Vmetrics(ovel, rvel, oden, rden, frameHull=uh, printname="our")[:2]
+    if hullmask:
+        uh = hull_data[0] # None 
+    else:
+        uh = None
+    if our_path is not None: _our = Vmetrics(ovel, rvel, oden, rden, frameHull=uh, printname="our")[:2]
     if glo_path is not None: _glo = Vmetrics(gvel, rvel, gden, rden, frameHull=uh, printname="glo")[:2]
     _ref = Vmetrics(rvel, None, rden, None, frameHull=uh, printname="ref")[:2]
     # w.o. inflow:
-    if framei==60:
+    if framei ==start_frame:
         ovel_warp,gvel_warp,rvel_warp,oden_warp,gden_warp,rden_warp = [None]*6
         ovel_warpMID,gvel_warpMID,rvel_warpMID,oden_warpMID,gden_warpMID,rden_warpMID = [None]*6
-    if pinf_path is not None: _our += Vmetrics(ovel, rvel, oden, rden, ovel_warp, oden_warp, ovel_warpMID, oden_warpMID, frameHull=uh, ignoreInflow=True, printname="our")
+    if our_path is not None: _our += Vmetrics(ovel, rvel, oden, rden, ovel_warp, oden_warp, ovel_warpMID, oden_warpMID, frameHull=uh, ignoreInflow=True, printname="our")
     if glo_path is not None: _glo += Vmetrics(gvel, rvel, gden, rden, gvel_warp, gden_warp, gvel_warpMID, gden_warpMID, frameHull=uh, ignoreInflow=True, printname="glo")
     _ref += Vmetrics(rvel, None, rden, None, rvel_warp, rden_warp, rvel_warpMID, rden_warpMID, frameHull=uh, ignoreInflow=True, printname="ref")
 
-    if pinf_path is not None: our_list += _our
+    if our_path is not None: our_list += _our
     if glo_path is not None: glo_list += _glo
     ref_list += _ref
 
-    if pinf_path is not None:
+    if our_path is not None:
         copyArrayToGridReal(target=our_grids[1], source=np.abs(rden - oden)*denratio)
         if True: save_fig(our_grids[1], ovel - rvel, out_path+"Diff_our_", t=fr)
     if glo_path is not None:
@@ -386,7 +418,7 @@ for framei in range(60,118,2): # [100]
 Vname = Vmetrics(nameonly=True)
 Vname = ["Inflow_" +a for a in Vname[:2]] + Vname
 metricN = len(Vname)
-if pinf_path is not None:
+if our_path is not None:
     our_list = np.reshape(np.float32(our_list), [-1,metricN]) # 30,N
 if glo_path is not None:
     glo_list = np.reshape(np.float32(glo_list), [-1,metricN]) # 30,N
@@ -394,7 +426,7 @@ ref_list = np.reshape(np.float32(ref_list), [-1,metricN]) # 30,N
 
 pd_dict = {}
 for i in range(metricN):
-    if pinf_path is not None: pd_dict["our_%s"%Vname[i]] = pd.Series(our_list[:,i])
+    if our_path is not None: pd_dict["our_%s"%Vname[i]] = pd.Series(our_list[:,i])
     if glo_path is not None: pd_dict["glo_%s"%Vname[i]] = pd.Series(glo_list[:,i])
     if i >= 2:
         pd_dict["ref_%s"%Vname[i]] = pd.Series(ref_list[:,i])
@@ -403,7 +435,7 @@ pd_dict["mean"] = pd.Series(["ref", "our", "glo"])
 for i in range(metricN):
     pd_add = [ref_list[:,i].mean()]
     print("Avg %s means, ref"%Vname[i],ref_list[:,i].mean())
-    if pinf_path is not None: 
+    if our_path is not None: 
         pd_add += [our_list[:,i].mean()]
         print("Avg %s means, our"%Vname[i],our_list[:,i].mean())
     if glo_path is not None: 
@@ -414,11 +446,11 @@ for i in range(metricN):
 pd.DataFrame(pd_dict).to_csv(os.path.join(out_path,"eval_l2.csv"), mode='w')
 
 if True:
-    n = 1 + sum(x is not None for x in [pinf_path, glo_path])
+    n = 1 + sum(x is not None for x in [our_path, glo_path])
     myffmpeg = FFmpegTool(os.path.join(out_path, "eval_den.mp4"), row=n, col=2)
     myffmpeg.add_image(os.path.join(out_path, 'ref_den_%04d.ppm'), stt=0, fps=15)
     myffmpeg.add_image(os.path.join(out_path, 'ref_den_%04d.ppm'), stt=0, fps=15)
-    if pinf_path is not None:
+    if our_path is not None:
         myffmpeg.add_image(os.path.join(out_path, 'our_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'Diff_our_den_%04d.ppm'), stt=0, fps=15)
     if glo_path is not None:
@@ -426,99 +458,142 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_den_%04d.ppm'), stt=0, fps=15)
     myffmpeg.join_cmd()
     
-    text_off = 2
-    myffmpeg.add_label("ref", 2, text_off, 24)
-    if pinf_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 2, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 2, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 2, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 2, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 2, text_off, 24)
     myffmpeg.export(overwrite=True)
 
-    myffmpeg = FFmpegTool(os.path.join(out_path, "eval_vel.mp4"), row=n, col=3)
-    myffmpeg.add_image(os.path.join(out_path, 'oriref_vel_%04d.png'), stt=0, fps=15)
+    myffmpeg = FFmpegTool(os.path.join(out_path, "eval_vel.mp4"), row=n, col=3 if hullmask else 2) # if use hull_data. col should be 3
+    if hullmask:
+        myffmpeg.add_image(os.path.join(out_path, 'oriref_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.add_image(os.path.join(out_path, 'ref_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.add_image(os.path.join(out_path, 'ref_vel_%04d.png'), stt=0, fps=15)
-    if pinf_path is not None:
-        myffmpeg.add_image(os.path.join(out_path, 'oriour_vel_%04d.png'), stt=0, fps=15)
+    if our_path is not None:
+        if hullmask:
+            myffmpeg.add_image(os.path.join(out_path, 'oriour_vel_%04d.png'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'our_vel_%04d.png'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'Diff_our_vel_%04d.png'), stt=0, fps=15)
     if glo_path is not None:
-        myffmpeg.add_image(os.path.join(out_path, 'origlo_vel_%04d.png'), stt=0, fps=15)
+        if hullmask:
+            myffmpeg.add_image(os.path.join(out_path, 'origlo_vel_%04d.png'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'glo_vel_%04d.png'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if pinf_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
-
+    
     myffmpeg = FFmpegTool(os.path.join(out_path, "eval_vor.mp4"), row=n, col=2)
     myffmpeg.add_image(os.path.join(out_path, 'ref_vort_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.add_image(os.path.join(out_path, 'ref_vort_vel_%04d.png'), stt=0, fps=15)
-    if pinf_path is not None:
+    if our_path is not None:
         myffmpeg.add_image(os.path.join(out_path, 'our_vort_vel_%04d.png'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'Diff_our_vort_vel_%04d.png'), stt=0, fps=15)
     if glo_path is not None: 
         myffmpeg.add_image(os.path.join(out_path, 'glo_vort_vel_%04d.png'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_vort_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 2, text_off, 24)
-    if pinf_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 2, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 2, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 2, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 2, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 2, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "warp.mp4"), row=n, col=2)
     myffmpeg.add_image(os.path.join(out_path, 'warp_ref_den_%04d.ppm'), stt=0, fps=15)
     myffmpeg.add_image(os.path.join(out_path, 'warp_ref_vel_%04d.png'), stt=0, fps=15)
-    if pinf_path is not None:
+    if our_path is not None:
         myffmpeg.add_image(os.path.join(out_path, 'warp_our_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warp_our_vel_%04d.png'), stt=0, fps=15)
     if glo_path is not None: 
         myffmpeg.add_image(os.path.join(out_path, 'warp_glo_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warp_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if pinf_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "warpMID.mp4"), row=n, col=2)
     myffmpeg.add_image(os.path.join(out_path, 'warpMID_ref_den_%04d.ppm'), stt=0, fps=15)
     myffmpeg.add_image(os.path.join(out_path, 'warpMID_ref_vel_%04d.png'), stt=0, fps=15)
-    if pinf_path is not None:
+    if our_path is not None:
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_our_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_our_vel_%04d.png'), stt=0, fps=15)
     if glo_path is not None: 
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_glo_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if pinf_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
 
 if True:
+# if False:
     ppm_list = os.listdir(out_path)
+    
+    # save useful images for comparison
+    density_output_dir = os.path.join(out_path, "density")
+    os.makedirs(density_output_dir, exist_ok=True)
+    vel_output_dir = os.path.join(out_path, "velocity")
+    os.makedirs(vel_output_dir, exist_ok=True)
+    vor_output_dir = os.path.join(out_path, "vorticity")
+    os.makedirs(vor_output_dir, exist_ok=True)
+    for frame_id in range(frame_num):
+        ref_den_path = os.path.join(out_path, "ref_den_%04d.ppm"%frame_id)
+        imageio.imwrite(os.path.join(density_output_dir, "ref_den_%04d.png"%frame_id), imageio.imread(ref_den_path))
+        
+        our_den_path = os.path.join(out_path, "our_den_%04d.ppm"%frame_id)
+        imageio.imwrite(os.path.join(density_output_dir, "our_den_%04d.png"%frame_id), imageio.imread(our_den_path))
+        
+        comparison_density = np.concatenate((imageio.imread(ref_den_path), imageio.imread(our_den_path)), axis=0)
+        imageio.imwrite(os.path.join(density_output_dir, "comparison_den_%04d.png"%frame_id), comparison_density)
+        
+        ref_vel_path = os.path.join(out_path, "ref_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vel_output_dir, "ref_vel_%04d.png"%frame_id), imageio.imread(ref_vel_path))
+        
+        our_vel_path = os.path.join(out_path, "our_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vel_output_dir, "our_vel_%04d.png"%frame_id), imageio.imread(our_vel_path))
+        
+        comparison_velocity = np.concatenate((imageio.imread(ref_vel_path), imageio.imread(our_vel_path)), axis=0)
+        imageio.imwrite(os.path.join(vel_output_dir, "comparison_vel_%04d.png"%frame_id), comparison_velocity)
+        
+        
+        ref_vort_path = os.path.join(out_path, "ref_vort_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vor_output_dir, "ref_vort_vel_%04d.png"%frame_id), imageio.imread(ref_vort_path))
+        
+        our_vort_path = os.path.join(out_path, "our_vort_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vor_output_dir, "our_vort_vel_%04d.png"%frame_id), imageio.imread(our_vort_path))
+        
+        comparison_vorticity = np.concatenate((imageio.imread(ref_vort_path), imageio.imread(our_vort_path)), axis=0)
+        imageio.imwrite(os.path.join(vor_output_dir, "comparison_vort_%04d.png"%frame_id), comparison_vorticity)
+        
+        
     ppm_list = [os.remove(os.path.join(out_path, _)) for _ in ppm_list if _.endswith(".ppm") or _.endswith(".png")] 

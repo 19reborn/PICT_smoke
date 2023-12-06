@@ -8,9 +8,11 @@ from tqdm import tqdm
 import imageio
 
 import raymarching
+import cv2
 
 from src.utils.training_utils import batchify, batchify_func
 from src.utils.loss_utils import to8b
+from src.utils.visualize_utils import vel_uv2hsv, vel2hsv, draw_points, draw_trajectory, velLegendHSV
 
 
 def get_rays(H, W, K, c2w):
@@ -23,6 +25,32 @@ def get_rays(H, W, K, c2w):
     # Translate camera frame's origin to the world frame. It is the origin of all rays.
     rays_o = c2w[:3,-1].expand(rays_d.shape)
     return rays_o, rays_d
+
+def project_points(points, K, c2w):
+    # points: [N, 3]
+    # K: [3, 3]
+    # c2w: [3, 4]
+    # points = torch.cat([points, torch.ones_like(points[..., :1])], dim=-1)
+    # points = torch.matmul(points, c2w.T)
+    # points = torch.matmul(points, K.T)
+    # points = points[..., :2] / points[..., 2:]
+    
+    cam_xyzs = points - c2w[:3, 3].unsqueeze(0)
+    cam_xyzs = cam_xyzs @ c2w[:3, :3] # [S, N, 3]
+    # cam_xyzs = cam_xyzs @ this_poses[:, :3, :3].permute(0,2,1)# [S, N, 3]
+        
+    ## cam_xyzs coordinates:
+
+    uv = cam_xyzs[:, :2] / -cam_xyzs[:, 2:] # [S, N, 2]
+    
+    fx, fy, cx, cy = K[0,0], K[1,1], K[0,2], K[1,2]
+    
+    uv *= torch.stack([fx, -fy], dim=-1).unsqueeze(0) # [S, N, 2]
+    uv += torch.stack([cx, cy], dim=-1).unsqueeze(0) # [S, N, 2]
+
+    return uv
+
+
 
 def prepare_rays(args, H, W, K, pose, target, trainVGG, i, start, N_rand, target_mask = None, cam_info_others = None):
 
@@ -270,7 +298,7 @@ def render(H, W, K, model, N_samples = 64, chunk=1024*32, rays=None, c2w=None, n
     for k in all_ret:
        
         # todo:: fix this code..
-        if k in ['num_points', 'num_points_static', 'num_points_dynamic', 'raw', 'raw_static', 'raw_dynamic', 'gradients', 'hessians', 'samples_xyz_static', 'samples_xyz_dynamic', 'smoke_vel', 'smoke_weights', 'rays_id']:
+        if k in ['num_points', 'num_points_static', 'num_points_dynamic', 'raw', 'raw_static', 'raw_dynamic', 'gradients', 'hessians', 'samples_xyz_static', 'samples_xyz_dynamic', 'smoke_vel', 'smoke_weights', 'rays_id', 'trajectory_points']:
             num_rays = rays_d.reshape(-1,1).shape[0]
             continue
         try:
@@ -298,7 +326,9 @@ def render(H, W, K, model, N_samples = 64, chunk=1024*32, rays=None, c2w=None, n
     # tsne = TSNE(n_components=3)
     # feature =  all_ret['feature_map'].detach().cpu().numpy()
     # rgb = tsne.fit_transform(feature.reshape(H*W, -1)).reshape(H, W, 3)
-
+    # print('feature_map', all_ret['feature_map'].shape)
+    # print('vel_map', all_ret['velocity_map'].shape)
+    # exit(1)
     # import pdb
     # pdb.set_trace()
     # cv2.imwrite('test_feature.png', all_ret['feature_map'][...,:3].detach().cpu().numpy()*255)
@@ -690,7 +720,7 @@ def render_rays_cuda(ray_batch,
     smoke_color = C_smokeRaw[..., :3]
     smoke_color = torch.sigmoid(smoke_color)
     smoke_density = C_smokeRaw[..., 3:] 
-    smoke_density = torch.relu(smoke_density)
+    # smoke_density = torch.relu(smoke_density)
     
 
     raw2alpha = lambda raw, dists, act_fn=F.relu: 1.-torch.exp(-act_fn(raw)*dists)
@@ -754,13 +784,92 @@ def render_rays_cuda(ray_batch,
     dynamic_weights, dynamic_weights_sum, dynamic_depth, dynamic_image = raymarching.composite_rays_train(smoke_alpha, smoke_color, ts_dynamic, rays_dynamic, True) # alpha_mode = True
     static_weights, static_weights_sum, static_depth, static_image = raymarching.composite_rays_train_neus(static_alpha, static_color, ts_static, rays_static)
 
+    # depth_mask = (dynamic_depth < static_depth).float()
+    # dynamic_image = dynamic_image * depth_mask.reshape(-1, 1)
+
     if model.training is False:
         # render feature map
-        features = model.dynamic_model_lagrangian.velocity_model.forward_feature(pts_dynamic[...,:3], pts_dynamic[...,-1:]).detach()
-        weighted_features = dynamic_weights.unsqueeze(-1) * features
-        feature_map = torch.zeros((N_rays, features.shape[-1])).cuda()
-        feature_map.scatter_add_(0, rays_dynamic_id.long(), weighted_features)
-        ret['feature_map'] = feature_map
+        feature_map = torch.zeros((N_rays, model.args.lagrangian_feature_dim)).cuda()
+        vel_map = torch.zeros((N_rays, 3)).cuda()
+        vorticity_map = torch.zeros((N_rays, 3)).cuda()
+        if pts_dynamic.shape[0] > 0:
+            features = model.dynamic_model_lagrangian.velocity_model.forward_feature(pts_dynamic[...,:3], pts_dynamic[...,-1:]).detach()
+            weighted_features = dynamic_weights.unsqueeze(-1) * features
+            
+            # feature_map.scatter_add_(0, rays_dynamic_id.long(), weighted_features)
+            feature_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,features.shape[-1]), weighted_features.reshape(-1,features.shape[-1]))
+            
+            # vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
+            # weighted_vel = dynamic_weights.unsqueeze(-1) * vel
+            # # vel_map.scatter_add_(0, rays_dynamic_id.long(), weighted_vel)
+            # vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
+            
+            vel, vorticity = model.dynamic_model_lagrangian.velocity_model.forward_vorticity(torch.cat((pts_dynamic[...,:3], pts_dynamic[...,-1:]), dim=-1))
+            # vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
+            # vorticity = vel.clone()
+            weighted_vel = dynamic_weights.unsqueeze(-1) * vel.detach()
+            vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
+            weighted_vorticity = dynamic_weights.unsqueeze(-1) * vorticity.detach()
+            vorticity_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vorticity.reshape(-1,3))
+            del vel
+            del vorticity
+            torch.cuda.empty_cache()
+        
+        ret['velocity_map'] = vel_map
+        ret['voriticity_map'] = vorticity_map
+        ret['feature_map'] = feature_map[..., :3] # only visualize the first 3 channels
+        
+        
+        # render trajectory map
+        # import pdb
+        # pdb.set_trace()
+        # if model.trajectory_points is None:
+        #     # sample points
+        #     assert(model.voxel_writer is not None)
+        #     pts_flat = model.voxel_writer.pts.view(-1, 3)
+            
+        #     def get_density_time(pts_flat, time):
+        #         # only choose density points
+        #         pts_N = pts_flat.shape[0]
+        #         density = []
+        #         for i in range(0, pts_N, chunk):
+        #             input_i = pts_flat[i:i+chunk]
+        #             density_temp = model.dynamic_model.density(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(time)], dim = -1)).detach()
+        #             density.append(density_temp)
+
+        #         density = torch.cat(density, dim = 0)
+                
+        #         return density
+            
+        #     time_0 = rays_t[0].reshape(1).item()
+        #     density_0 = get_density_time(pts_flat, time_0)
+        #     # import pdb
+        #     # pdb.set_trace()
+
+        #     density_mean = density_0.clamp(0.0, 1e5).mean()
+        #     density_max=  density_0.clamp(0.0, 1e5).max()
+        #     density_thresh = (density_max + density_mean) * 0.5
+            
+        #     pts_num = 128
+        #     # pts_flat = pts_flat[density_0.squeeze(-1) >= density_thresh]
+        #     # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+        #     # pts_sampled = pts_flat[sample_id].reshape(-1,3)
+            
+        #     pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+        #     pts_sampled = pts_flat[:pts_num]
+            
+        #     model.trajectory_points = pts_sampled
+        
+        # ret['trajectory_points'] = model.trajectory_points.clone().detach()
+        
+        # time = rays_t[0].reshape(1).item()
+        # pts_sampled = model.trajectory_points
+        # vel_pts = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_sampled, float(time)*torch.ones([pts_sampled.shape[0], 1])], dim = -1)).detach()
+        # pts_sampled += vel_pts / model.args.time_size
+        # model.trajectory_points = pts_sampled
+        
+        
+            
 
     # todo: make name more clear
     rgbh2_map = dynamic_image # dynamic
@@ -982,7 +1091,7 @@ def render_rays_cuda_single_scene(ray_batch,
     smoke_color = C_smokeRaw[..., :3]
     smoke_color = torch.sigmoid(smoke_color)
     smoke_density = C_smokeRaw[..., 3:] 
-    smoke_density = torch.relu(smoke_density)
+    # smoke_density = torch.relu(smoke_density)
     
 
     raw2alpha = lambda raw, dists, act_fn=F.relu: 1.-torch.exp(-act_fn(raw)*dists)
@@ -1005,7 +1114,36 @@ def render_rays_cuda_single_scene(ray_batch,
     ret = {'rgb_map' : rgb_map.reshape(-1, 3), 'disp_map' : disp_map.reshape(-1,1), 'acc_map' : weights_sum.reshape(-1,1)}
 
 
-
+    if model.training is False:
+        # render feature map
+        feature_map = torch.zeros((N_rays, model.args.lagrangian_feature_dim)).cuda()
+        vel_map = torch.zeros((N_rays, 3)).cuda()
+        vorticity_map = torch.zeros((N_rays, 3)).cuda()
+        if pts_dynamic.shape[0] > 0:
+            features = model.dynamic_model_lagrangian.velocity_model.forward_feature(pts_dynamic[...,:3], pts_dynamic[...,-1:]).detach()
+            weighted_features = weights.unsqueeze(-1) * features
+            
+            # feature_map.scatter_add_(0, rays_dynamic_id.long(), weighted_features)
+            feature_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,features.shape[-1]), weighted_features.reshape(-1,features.shape[-1]))
+            
+            # vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
+            # weighted_vel = dynamic_weights.unsqueeze(-1) * vel
+            # # vel_map.scatter_add_(0, rays_dynamic_id.long(), weighted_vel)
+            # vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
+            
+            vel, vorticity = model.dynamic_model_lagrangian.velocity_model.forward_vorticity(torch.cat((pts_dynamic[...,:3], pts_dynamic[...,-1:]), dim=-1))
+            weighted_vel = weights.unsqueeze(-1) * vel.detach()
+            vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
+            weighted_vorticity = weights.unsqueeze(-1) * vorticity.detach()
+            vorticity_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vorticity.reshape(-1,3))
+            del vel
+            del vorticity
+            torch.cuda.empty_cache()
+        
+        ret['velocity_map'] = vel_map
+        ret['voriticity_map'] = vorticity_map
+        ret['feature_map'] = feature_map[..., :3] # only visualize the first 3 channels
+        
 
     ret['raw'] = C_smokeRaw
     ret['num_points_dynamic'] = num_points_dynamic
@@ -1205,10 +1343,30 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
     gt_dir = os.path.join(savedir, 'gt')
     other_dir = os.path.join(savedir, 'others')
     decomposed_dir = os.path.join(savedir, 'decomposed')
+    feature_dir = os.path.join(savedir, 'feature')
+    velocity_dir = os.path.join(savedir, 'velocity')
+    vorticity_dir = os.path.join(savedir, 'vorticity')
+    vel_trajectory_dir = os.path.join(savedir, 'vel_trajectory')
+    map_trajectory_dir = os.path.join(savedir, 'map_trajectory')
     os.makedirs(pred_dir, exist_ok=True)
     os.makedirs(gt_dir, exist_ok=True)
     os.makedirs(other_dir, exist_ok=True)
     os.makedirs(decomposed_dir, exist_ok=True)
+    os.makedirs(velocity_dir, exist_ok=True)
+    os.makedirs(vorticity_dir, exist_ok=True)
+    os.makedirs(feature_dir, exist_ok=True)
+    os.makedirs(vel_trajectory_dir, exist_ok=True)
+    os.makedirs(map_trajectory_dir, exist_ok=True)
+    gt_rgbs = []
+    dynamic_rgbs = []
+    static_rgbs = []
+    velocity_rgbs = []
+    vorticity_rgbs = []
+    feature_rgbs = []
+    vel_trajectory_rgbs = []
+    map_trajectory_rgbs = []
+    all_vel_pts2d = []
+    all_map_pts2d = []
     
     for i, c2w in enumerate(tqdm(render_poses)):
         print(i, time.time() - t)
@@ -1238,6 +1396,7 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             if gt_imgs is not None:
                 rgb8 = to8b(gt_imgs[i])
                 filename = os.path.join(gt_dir, '{:06d}.png'.format(i))
+                gt_rgbs.append(rgb8)
                 imageio.imwrite(filename, rgb8)
 
             # other_rgbs = []
@@ -1261,15 +1420,177 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
             imageio.imwrite(filename, to8b(acc.squeeze(-1).detach().cpu().numpy()))
             
             ## output decomposed rendering
-            filename = os.path.join(savedir, 'decomposed', 'static_{:03d}.png'.format(i))
-            rgb_static = extras['rgbh1']
-            imageio.imwrite(filename, to8b(rgb_static.squeeze(-1).detach().cpu().numpy()))
+            if 'rgbh1' in extras and 'rgbh2' in extras:
+                filename = os.path.join(savedir, 'decomposed', 'static_{:03d}.png'.format(i))
+                rgb_static = to8b(extras['rgbh1'].squeeze(-1).detach().cpu().numpy())
+                imageio.imwrite(filename, rgb_static)
+                static_rgbs.append(rgb_static)
+                
+                filename = os.path.join(savedir, 'decomposed', 'dynamic_{:03d}.png'.format(i))
+                rgb_dynamic = to8b(extras['rgbh2'].squeeze(-1).detach().cpu().numpy())
+                imageio.imwrite(filename, rgb_dynamic)
+                dynamic_rgbs.append(rgb_dynamic)
+            else:
+                rgb_dynamic = to8b(rgbs[-1])
             
-            filename = os.path.join(savedir, 'decomposed', 'dynamic_{:03d}.png'.format(i))
-            rgb_static = extras['rgbh2']
-            imageio.imwrite(filename, to8b(rgb_static.squeeze(-1).detach().cpu().numpy()))
+            filename = os.path.join(velocity_dir, 'velocity_{:03d}.png'.format(i))
+            rgb = extras['velocity_map']
+            # visualize_direction
+            # _hsv = vel2hsv(rgb.cpu(), scale=300, is3D=True, logv=False) # cyl, game
+            _hsv = vel2hsv(rgb.cpu(), scale=300, is3D=False, logv=False) # scalar
+            # velLegendHSV(_hsv, True, lw=max(1,min(6,int(0.025*3))), constV=255)
+            rgb = cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR)
+            # imageio.imwrite(filename, cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR))
+            # imageio.imwrite(filename, cv2.cvtColor(vel2hsv(rgb.cpu(), scale=None, is3D=False, logv=False), cv2.COLOR_HSV2BGR))
+            imageio.imwrite(filename, rgb)
+            velocity_rgbs.append(rgb)
+            
+            filename = os.path.join(vorticity_dir, 'vorticity_{:03d}.png'.format(i))
+            # rgb = extras['voriticity_map'] * 1 / 255
+            rgb = extras['voriticity_map']
+            # import pdb
+            # _hsv = vel2hsv(rgb.cpu(), scale=20, is3D=True, logv=False) # cyl, game
+            _hsv = vel2hsv(rgb.cpu(), scale=30, is3D=False, logv=False)
+            rgb = cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR)
+            # imageio.imwrite(filename, cv2.cvtColor(vel2hsv(rgb.cpu(), scale=20, is3D=True, logv=False), cv2.COLOR_HSV2BGR))
+            imageio.imwrite(filename, rgb)
+            vorticity_rgbs.append(rgb)
+            
+            
+            
+            
+            filename = os.path.join(feature_dir, 'feature_{:03d}.png'.format(i))
+            rgb = extras['feature_map']
+            if i == 0:
+                feautre_max = rgb.reshape(-1, 3).max(0)[0]
+                feautre_min = rgb.reshape(-1, 3).min(0)[0]
+            rgb = (rgb.reshape(-1, 3) - feautre_min) / (feautre_max - feautre_min + 1e-6)
+            rgb = rgb.reshape(H, W, 3)
+            rgb = to8b(rgb.squeeze(-1).detach().cpu().numpy())
+            imageio.imwrite(filename, rgb)         
+            feature_rgbs.append(rgb)
+            
+            # render trajectory map
+            judge = False
+            if 'game' in model.args.datadir:
+                judge = i % 10 == 0 and i < 80
+            else:
+                judge = model.trajectory_points is None and i == 0
+            if judge:
+                # sample points
+                assert(model.voxel_writer is not None)
+                pts_flat = model.voxel_writer.pts.view(-1, 3)
+                
+                def get_density_time(pts_flat, time):
+                    # only choose density points
+                    pts_N = pts_flat.shape[0]
+                    density = []
+                    for i in range(0, pts_N, chunk):
+                        input_i = pts_flat[i:i+chunk]
+                        density_temp = model.dynamic_model.density(torch.cat([input_i, torch.ones([input_i.shape[0], 1])*float(time)], dim = -1)).detach()
+                        density.append(density_temp)
+
+                    density = torch.cat(density, dim = 0)
+                    
+                    return density
+                
+                time_0 = cur_timestep
+                density_0 = get_density_time(pts_flat, time_0)
+                # import pdb
+                # pdb.set_trace()
+
+                density_mean = density_0.clamp(0.0, 1e5).mean()
+                density_max=  density_0.clamp(0.0, 1e5).max()
+                density_mean = density_mean + (density_max - density_mean) * 0.5 # for game
+                
+                # density_thresh = (density_max + density_mean) * 0.5
+                
+                # pts_num = 128
+                # pts_flat = pts_flat[density_0.squeeze(-1) >= density_thresh]
+                # sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+                # pts_sampled = pts_flat[sample_id].reshape(-1,3)
+                
+                # stratified sampling
+                strata_num = 8
+                # pts_num = 16
+                if 'game' in model.args.datadir:
+                    pts_num = 8
+                else:
+                    pts_num = 16
+                for strata_id in range(strata_num):
+                    strata_min = density_mean + (density_max - density_mean) * strata_id / strata_num
+                    strata_max = density_mean + (density_max - density_mean) * (strata_id + 1) / strata_num
+                    pts_strata = pts_flat[(density_0.squeeze(-1) >= strata_min) & (density_0.squeeze(-1) < strata_max)]
+                    pts_strata_sampled = pts_strata[torch.randperm(pts_strata.shape[0])][:pts_num]
+                    if strata_id == 0:
+                        pts_sampled = pts_strata_sampled
+                    else:
+                        pts_sampled = torch.cat([pts_sampled, pts_strata_sampled], dim = 0)
+                
+                # pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+                # pts_sampled = pts_flat[:pts_num]
+                if model.trajectory_points is None:
+                    model.trajectory_points = pts_sampled
+                    
+                    vel_pts3d = model.trajectory_points.clone().detach()
+                    map_pts3d = model.trajectory_points.clone().detach()
+                else:
+                    model.trajectory_points = torch.cat([model.trajectory_points, pts_sampled], dim = 0)
+                    vel_pts3d = torch.cat([vel_pts3d, pts_sampled], dim = 0)
+                    map_pts3d = torch.cat([map_pts3d, pts_sampled], dim = 0)
+                    
+                mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(time_0)).detach()
+                mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(time_0)).detach()
+                pts3d_base = map_pts3d.clone().detach()
+            # pts3d = model.trajectory_points.clone().detach()
+            
+            vel_pts2d = project_points(vel_pts3d.detach(), torch.tensor(K, dtype=torch.float32).cuda(), c2w=c2w[:3,:4])
+            map_pts2d = project_points(map_pts3d.detach(), torch.tensor(K, dtype=torch.float32).cuda(), c2w=c2w[:3,:4])
+
+            all_vel_pts2d.append(vel_pts2d)
+            all_map_pts2d.append(map_pts2d)
+            filename = os.path.join(vel_trajectory_dir, 'vel_trajectory_{:03d}.png'.format(i))
+            # trajectory_rgb = draw_points(pts2d, rgb_dynamic, filename)
+            vel_trajectory_rgb = draw_trajectory(all_vel_pts2d, rgb_dynamic.copy(), filename)
+            vel_trajectory_rgbs.append(vel_trajectory_rgb)
+            
+            filename = os.path.join(map_trajectory_dir, 'map_trajectory_{:03d}.png'.format(i))
+            map_trajectory_rgb = draw_trajectory(all_map_pts2d, rgb_dynamic.copy(), filename)
+            map_trajectory_rgbs.append(map_trajectory_rgb)        
+            
+            vel_pts = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([vel_pts3d, float(cur_timestep)*torch.ones([vel_pts3d.shape[0], 1])], dim = -1)).detach()
+            vel_pts3d += vel_pts / model.args.time_size
+            
+            map_pts3d = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([vel_pts3d.shape[0], 1])*float(cur_timestep)).detach() - mapping_base + pts3d_base
+            
+            # if i % 50 == 0:
+            if 'car' in model.args.datadir and i % 25 == 0:
+                mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
+                mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
+                pts3d_base = map_pts3d
+            elif i % 50 == 0:
+                mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
+                mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
+                pts3d_base = map_pts3d
+            # if i % 30 == 0:
+                
+            torch.cuda.empty_cache()
+            # project points to 2d
+            
+            
+            
 
     rgbs = np.stack(rgbs, 0)
     disps = np.stack(disps, 0)
+    
+    imageio.mimwrite(os.path.join(savedir, 'gt_rgb.mp4'), gt_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'pred_rgb.mp4'), to8b(rgbs), fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'static_rgb.mp4'), static_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'smoke_rgb.mp4'), dynamic_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'velocity_rgb.mp4'), velocity_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'vorticity_rgb.mp4'), vorticity_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'feature_rgb.mp4'), feature_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'vel_trajectory_rgb.mp4'), vel_trajectory_rgbs, fps=30, quality=10)
+    imageio.mimwrite(os.path.join(savedir, 'map_trajectory_rgb.mp4'), map_trajectory_rgbs, fps=30, quality=10)
 
     return rgbs, disps

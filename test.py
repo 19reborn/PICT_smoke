@@ -41,8 +41,8 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     #     frame_list = range(0,frame_N, 1)
     #     testsavedir += "_full_frame"
     # else:
-    # frame_list = range(0,frame_N, 1)
-    frame_list = range(0,120, 1)
+    frame_list = range(0,frame_N, 1)
+    # frame_list = range(0,120, 1)
     # frame_list = range(0,150, 1)
         
     
@@ -53,17 +53,11 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     
     # change_feature_interval = 50
     # sample_pts = 32
-    # change_feature_interval = 1000
     change_feature_interval = 50
-    # change_feature_interval = 100
-    # sample_pts = 2
-    # sample_pts = 32
-    # sample_pts = 64
     sample_pts = 128
-    # sample_pts = 10
     
     mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
-       
+
     
     draw_mapping_3d_animation(os.path.join(testsavedir, f'vis_map_3d_animation_interval{change_feature_interval}.gif'), mapping_xyz.permute(1,0,2).cpu().numpy())
     
@@ -79,6 +73,26 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     grid_xz = mapping_xyz[..., [0,2]].permute(1,0,2)
     draw_mapping(os.path.join(testsavedir, f'vis_map_xz_interval{change_feature_interval}.png'), grid_xz.cpu().numpy())
 
+
+    change_feature_interval = 1000
+    sample_pts = 128
+    
+    mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
+
+    
+    draw_mapping_3d_animation(os.path.join(testsavedir, f'vis_map_3d_animation_interval{change_feature_interval}.gif'), mapping_xyz.permute(1,0,2).cpu().numpy())
+    
+    draw_mapping_3d(os.path.join(testsavedir, f'vis_map_3d_interval{change_feature_interval}.png'), mapping_xyz.permute(1,0,2).cpu().numpy())
+    
+    # draw grid_xyz on image
+    grid_yz = mapping_xyz[..., [1,2]].permute(1,0,2)
+    draw_mapping(os.path.join(testsavedir, f'vis_map_yz_interval{change_feature_interval}.png'), grid_yz.cpu().numpy())
+    
+    grid_xy = mapping_xyz[..., [0,1]].permute(1,0,2)
+    draw_mapping(os.path.join(testsavedir, f'vis_map_xy_interval{change_feature_interval}.png'), grid_xy.cpu().numpy())
+    
+    grid_xz = mapping_xyz[..., [0,2]].permute(1,0,2)
+    draw_mapping(os.path.join(testsavedir, f'vis_map_xz_interval{change_feature_interval}.png'), grid_xz.cpu().numpy())
 
 
 
@@ -105,7 +119,7 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
 
 
 
-    exit(0)
+    # exit(0)
 
 def visualize_feature(args, model, testsavedir, voxel_writer, t_info):
 
@@ -186,8 +200,28 @@ def visualize_feature(args, model, testsavedir, voxel_writer, t_info):
         
     print('Done output', testsavedir)
     
-    exit(0)
+    # exit(0)
 
+def visualize_all(args, model, voxel_writer, t_info, global_step):
+    args.full_vol_output = True
+    print('visualize_all')
+    basedir = args.basedir
+    expname = args.expname
+    testsavedir = os.path.join(basedir, expname, 'vis_summary_{:06d}'.format(global_step+1), 'vis_mapping')
+    os.makedirs(testsavedir, exist_ok=True)
+    visualize_mapping(args, model, testsavedir, voxel_writer, t_info)
+    
+    testsavedir = os.path.join(basedir, expname, 'vis_summary_{:06d}'.format(global_step+1), 'vis_feature')
+    # os.makedirs(testsavedir, exist_ok=True)
+    visualize_feature(args, model, testsavedir, voxel_writer, t_info)
+    
+    testsavedir = os.path.join(basedir, expname, 'vis_summary_{:06d}'.format(global_step+1), 'vis_velocity/')
+    os.makedirs(testsavedir, exist_ok=True)
+    output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = True)
+    
+    testsavedir = os.path.join(basedir, expname, 'vis_summary_{:06d}'.format(global_step+1), 'eval_mapping')
+    os.makedirs(testsavedir, exist_ok=True)
+    evaluate_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
 
 def render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, cuda_ray, gt_images):
     model.eval()
@@ -261,7 +295,7 @@ def output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = F
         
     print('Done output', testsavedir)
 
-    return
+    # return
 
 def test(args):
     # Create log dir and copy the config file
@@ -318,7 +352,12 @@ def test(args):
     if args.render_train:
         render_poses = np.array(poses[i_train])
         render_timesteps = np.array(time_steps[i_train])
-
+        
+    if args.render_vis: # chose one training view to render physics attributes
+        vis_split = i_train[args.vis_view * args.time_size : (args.vis_view+1) * args.time_size]
+        render_poses = np.array(poses[vis_split])
+        render_timesteps = np.array(time_steps[vis_split])
+        
     # Create Bbox model from smoke perspective
     bbox_model = None
 
@@ -375,26 +414,13 @@ def test(args):
 
     # Prepare Voxel Sampling Tools for Image Summary (voxel_writer), Physical Priors (training_voxel), Data Priors Represented by D2V (den_p_all)
     # voxel_writer: to sample low resolution data for for image summary 
-    resX = 64 # complexity O(N^3)
-    resY = int(resX*float(voxel_scale[1])/voxel_scale[0]+0.5)
-    resZ = int(resX*float(voxel_scale[2])/voxel_scale[0]+0.5)
+    resX = args.vol_output_W
+    resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
+    resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
     voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
 
-    # training_voxel: to sample data for for velocity NSE training
-    # training_voxel should have a larger resolution than voxel_writer
-    # note that training voxel is also used for visualization in testing
-    min_ratio = float(64+4*2)/min(voxel_scale[0],voxel_scale[1],voxel_scale[2])
-    minX = int(min_ratio*voxel_scale[0]+0.5)
-    trainX = max(args.vol_output_W,minX) # a minimal resolution of 64^3
-    trainY = int(trainX*float(voxel_scale[1])/voxel_scale[0]+0.5)
-    trainZ = int(trainX*float(voxel_scale[2])/voxel_scale[0]+0.5)
-    training_voxel = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,trainZ,trainY,trainX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
-    training_pts = torch.reshape(training_voxel.pts, (-1,3)) 
+    model.voxel_writer = voxel_writer
 
-    ## spatial alignment from wolrd coord to simulation coord
-    train_reso_scale = torch.Tensor([256*t_info[-1],256*t_info[-1],256*t_info[-1]])
-
-  
 
     testimgdir = os.path.join(basedir, expname, "imgs_"+logdir)
     os.makedirs(testimgdir, exist_ok=True)
@@ -457,39 +483,18 @@ def test(args):
 
     
     elif args.output_voxel:
-
-        resX = args.vol_output_W
-        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
-        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
-        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
-
         testsavedir = os.path.join(basedir, expname, 'volumeout_{:06d}'.format(start+1))
         output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = args.voxel_video)
     elif args.visualize_feature:
-        resX = args.vol_output_W
-        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
-        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
-        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
-
         testsavedir = os.path.join(basedir, expname, 'vis_feature_{:06d}'.format(start+1))
         os.makedirs(testsavedir, exist_ok=True)
         visualize_feature(args, model, testsavedir, voxel_writer, t_info)
         
     elif args.visualize_mapping:
-        resX = args.vol_output_W
-        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
-        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
-        
         testsavedir = os.path.join(basedir, expname, 'vis_mapping_{:06d}'.format(start+1))
-        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
         visualize_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
     elif args.evaluate_mapping:
-        resX = args.vol_output_W
-        resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
-        resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)
-        
         testsavedir = os.path.join(basedir, expname, 'eval_mapping_{:06d}'.format(start+1))
-        voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
         evaluate_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
     elif args.render_only:
         testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('test' if args.render_test else 'path', start+1))
@@ -502,7 +507,14 @@ def test(args):
         K = Ks[0]
             
         # with torch.no_grad():
-        if args.render_test or args.render_eval:
+            
+        if args.render_vis: # chose one training view to render physics attributes
+
+            images = images[vis_split]
+            hwf = hwfs[vis_split[0]]
+            hwf = [int(hwf[0]), int(hwf[1]), float(hwf[2])]
+            K = Ks[vis_split[0]]
+        elif args.render_test or args.render_eval:
             # render_test switches to test poses
             images = images[i_test]
             hwf = hwfs[i_test[0]]
@@ -519,6 +531,7 @@ def test(args):
             # Default is smoother render_poses path
             images = None
 
+            
         render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, global_step >= args.uniform_sample_step, gt_images=images)
     else:
         AssertionError("test mode not defined.")

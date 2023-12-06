@@ -1,5 +1,5 @@
-expname = scalarSyn/1025_v2_single_density
-basedir = ./log
+expname = scalarSyn/1129_v1_1000reg
+basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/ScalarSyn
@@ -15,16 +15,18 @@ use_viewdirs = False
 # feature_map_first_omega = 10
 # density_activation = exp
 # lagrangian_density_activation = exp
-position_map_first_omega = 30
-density_map_first_omega = 30
+position_map_first_omega = 1
+# lagrangian_feature_dim = 32
+density_map_first_omega = 1
 
 ### train params - sampling
 N_samples = 64
 N_importance = 0
-N_rand = 1024
+N_rand = 512
 i_embed = -1
 train_warp = True
 vol_output_W = 128
+train_vel_grid_size = 24
 
 ### train params - iterations
 precrop_iters = 1000
@@ -54,8 +56,8 @@ i_img = 1000
 i_video = 50000
 
 
-stage1_finish_recon = 5000
-uniform_sample_step = 2000000
+stage1_finish_recon = 10000
+uniform_sample_step = 5000000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 0
 
@@ -63,8 +65,21 @@ stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 stage4_train_vel_interval = 5
 
-max_mapping_frame_range = 3
+max_mapping_frame_range = 50
+stage4_train_vel_interval = 1
+
+use_two_level_density = True
+nseW = 1e-2
+vel_regulization_weight = 1000.0
+cross_cycle_loss_weight = 1.0
+self_cycle_loss_weight = 1.0
+density_mapping_loss_weight = 0.01
+velocity_mapping_loss_weight = 0.1
+color_mapping_loss_weight = 0.01
+mapping_frame_range_fading_start = 0
+mapping_frame_range_fading_last = 20000
 
 
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/scalarSyn/1027_v23/080000.tar
 # model_path = /root/data/wym/workspace/pinf_clean/log/scalarSyn/1025_v1_from_start/010000.tar
 

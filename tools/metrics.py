@@ -181,16 +181,17 @@ def save_error(errors, save_dir):
 
 
 # cyl
-files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/renderonly_eval_300001'
+# files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/renderonly_eval_300001'
+files_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/renderonly_eval_200001'
 
 # game
-files_dir = '/root/data/wym/workspace/pinf_clean/log/game/1101_v2_full_loss/renderonly_eval_400001'
+# files_dir = '/root/data/wym/workspace/pinf_clean/log/game/1101_v2_full_loss/renderonly_eval_400001'
 
 
 
 
 # car
-files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v3_larger_cycle_loss/renderonly_eval_300001'
+# files_dir = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1105_v3_larger_cycle_loss/renderonly_eval_300001'
 
 
 estim_dir = os.path.join(files_dir, "pred")

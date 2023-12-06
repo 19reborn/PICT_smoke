@@ -16,10 +16,10 @@ def evaluate_mapping(args, model, testsavedir, voxel_writer, t_info):
     # frame_list = range(0,frame_N, 1)
     frame_list = range(0,frame_N, 1)
     
-    # sample_pts = 128
+    sample_pts = 1024
     # sample_pts = 32*32*32
     # sample_pts = 32*32*32
-    sample_pts = 32*32*32
+    # sample_pts = 32*32*32
     
     # l2_error, feature_l2_error = voxel_writer.eval_mapping_error(frame_list, t_list, model, sample_pts = sample_pts)
     # ratio, feature_l2_error, feature_relative_error, feature_ratio = voxel_writer.eval_mapping_error(frame_list, t_list, model, sample_pts = sample_pts)

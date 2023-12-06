@@ -33,18 +33,21 @@ def config_parser():
     parser.add_argument("--fading_layers", type=int, default=-1,
                         help='for siren and hybrid models, the step to finish fading model layers one by one during training.')
     parser.add_argument("--density_distillation_delay", type=int, default=2000, help="stage 2 total training steps" )
+    parser.add_argument("--feature_regulization_weight", type=float, default=1e-1)
 
     ## Stage 2
-    parser.add_argument("--stage2_finish_init_lagrangian", type=int, default=20000, help="stage 2 total training steps" )
+    parser.add_argument("--stage2_finish_init_lagrangian", type=int, default=0, help="stage 2 total training steps" )
     parser.add_argument("--mapping_frame_range_fading_start", type=int, default=20000, help="frame_range" )
     parser.add_argument("--mapping_frame_range_fading_last", type=int, default=50000, help="frame_range" )
     parser.add_argument("--max_mapping_frame_range", type=int, default=30, help="frame_range" )
     
     ## Stage 3
-    parser.add_argument("--stage3_finish_init_feature", type=int, default=20000, help="stage 2 total training steps" )
-    parser.add_argument("--stage4_train_vel_interval", type=int, default=10, help="stage 2 total training steps" )
+    parser.add_argument("--stage3_finish_init_feature", type=int, default=0, help="stage 2 total training steps" )
+    parser.add_argument("--stage4_train_vel_interval", type=int, default=1, help="stage 2 total training steps" )
+    parser.add_argument("--nse_loss_interval", type=int, default=10, help="stage 2 total training steps" )
     parser.add_argument('--neus_early_terminated', action = 'store_true')
     parser.add_argument('--neus_larger_lr_decay', action = 'store_true')
+    parser.add_argument("--mapping_loss_fading", type=int, default=50000, help="frame_range" )
 
 
     # network model
@@ -55,14 +58,14 @@ def config_parser():
     
     parser.add_argument("--feature_map_first_omega", type=int, default=30, 
                         help='Lagrangian feature dimension')   
-    parser.add_argument("--position_map_first_omega", type=int, default=30, 
+    parser.add_argument("--position_map_first_omega", type=int, default=1, 
                         help='Lagrangian feature dimension')   
-    parser.add_argument("--density_map_first_omega", type=int, default=30, 
+    parser.add_argument("--density_map_first_omega", type=int, default=1, 
                         help='Lagrangian feature dimension')   
     parser.add_argument("--density_activation", type=str,
                         default='identity', help='activation function for density')
     parser.add_argument("--lagrangian_density_activation", type=str,
-                        default='exp', help='activation function for density')
+                        default='softplus', help='activation function for density')
     
     ## siren nerf    
     parser.add_argument("--siren_nerf_netdepth", type=int, default=8, 
@@ -73,6 +76,7 @@ def config_parser():
     ## neus
     parser.add_argument('--use_scene_scale_before_pe', action = 'store_true')
     parser.add_argument('--neus_progressive_pe', action = 'store_true')
+    parser.add_argument('--neus_progressive_pe_min_mask', type=float, default=0.5)
     parser.add_argument('--neus_progressive_pe_start', type=int, default=20000)
     parser.add_argument('--neus_progressive_pe_duration', type=int, default=10000)
 
@@ -103,16 +107,22 @@ def config_parser():
                         default=0.0, help='weight for the Boardary constrain loss')
     parser.add_argument("--SmokeAlphaReguW", type=float,
                         default=0.05, help='weight for the Boardary constrain loss')
+    parser.add_argument("--SmokeAlphaReguW_warmup", type=float,
+                        default=0.05, help='weight for the Boardary constrain loss')
     parser.add_argument("--CurvatureW", type=float,
                         default=0.00, help='weight for the Boardary constrain loss')
     parser.add_argument("--FlowW", type=float,
                         default=0.00, help='weight for the Boardary constrain loss')
     parser.add_argument("--flow_debug", action='store_true')
     parser.add_argument("--train_vel_within_rendering", action='store_true')
-    parser.add_argument("--train_vel_uniform_sample", type=int, default = 1)
+    parser.add_argument("--train_vel_uniform_sample", type=int, default = 2)
     parser.add_argument("--inside_sdf", type=float, default = 0.0)
     parser.add_argument("--vel_regulization_weight", type=float,
                         default=1, help='weight for the Boardary constrain loss')
+    parser.add_argument("--coarse_transport_weight", type=float,
+                        default=1, help='weight for the Boardary constrain loss')
+    parser.add_argument("--fine_transport_weight", type=float,
+                        default=0.1, help='weight for the Boardary constrain loss')
     ## Lagrangian Feature loss
     parser.add_argument("--self_cycle_loss_weight", type=float, default = 1.0)
     parser.add_argument("--cross_cycle_loss_weight", type=float, default = 0.1)
@@ -217,6 +227,9 @@ def config_parser():
                         help='render the test set instead of render_poses path')
     parser.add_argument("--render_train", action='store_true', 
                         help='render the training set instead of render_poses path')
+    parser.add_argument("--render_vis", action='store_true', 
+                        help='render the training set instead of render_poses path')
+    parser.add_argument("--vis_view", type=int, default=0)
     
     parser.add_argument("--extract_occ_grid", action='store_true', 
                         help='render the training set instead of render_poses path')
@@ -327,7 +340,9 @@ def config_parser():
                         help='frequency of weight ckpt saving')
     parser.add_argument("--i_testset", type=int, default=50000, 
                         help='frequency of testset saving')
-    parser.add_argument("--i_video",   type=int, default=50000, 
+    parser.add_argument("--i_video",   type=int, default=200000, 
+                        help='frequency of render_poses video saving')
+    parser.add_argument("--i_visualize",   type=int, default=10000, 
                         help='frequency of render_poses video saving')
                         
     return parser

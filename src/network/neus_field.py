@@ -174,6 +174,7 @@ class SDFNetwork(nn.Module):
         pe_dim = self.pe_dim
         unmasked_ratio =  (global_step - start_step) / (end_step - start_step)
         unmasked_ratio = max(min(1.0, unmasked_ratio), 0.0)
+        # min_ratio = self.args.neus_progressive_pe_min_mask
         unmasked_dim = int(pe_dim * (0.5 * unmasked_ratio + 0.5))
         self.pe_mask = torch.cat([torch.ones(unmasked_dim), torch.zeros(pe_dim - unmasked_dim)])
 
