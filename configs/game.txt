@@ -1,4 +1,4 @@
-expname = game/1204_v2_all_smoke_reg
+expname = game/1206_v5_fix_bugs
 basedir = ./log
 
 ### data info
@@ -65,7 +65,7 @@ density_thresh_static = 30
 # density_activation = relu
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.08
+SmokeAlphaReguW = 0.2
 SmokeAlphaReguW_warmup = 0.08
 train_vel_within_rendering = False
 
@@ -92,10 +92,10 @@ neus_progressive_pe = True
 stage4_train_vel_interval = 1
 
 nseW = 1e-2
-vel_regulization_weight = 10.0
+vel_regulization_weight = 1.0
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 1e-2
+density_mapping_loss_weight = 1.0
 velocity_mapping_loss_weight = 1e-2
 color_mapping_loss_weight = 1.0
 
@@ -104,7 +104,10 @@ mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
 boundaryW = 1.0
-train_vel_uniform_sample = 2
+train_vel_uniform_sample = 1
+
+coarse_transport_weight = 100
+fine_transport_weight = 10
 
 model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/300000.tar
 

@@ -1,4 +1,4 @@
-expname = scalar/1204_v1_smoke_reg
+expname = scalar/1204_v3_later_global_alpha_reg
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 

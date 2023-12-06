@@ -1,4 +1,4 @@
-expname = Car/1202_v7_middle_less_color_mapping_loss
+expname = Car/1205_v1_100_color_mapping
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 

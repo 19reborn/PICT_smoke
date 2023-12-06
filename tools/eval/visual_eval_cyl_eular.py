@@ -35,7 +35,8 @@ ref_path = '/cluster/project/tang/yiming/dataset/pinf_gt/cyl/'
 # out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1112_v1_test_larger_nseW/'
 
 our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/volumeout_200001/'
-out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1204_v1_best_now/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1204_v1_best_now/'
+out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1204_v1_best_now_full/'
 
 
 glo_path = None
@@ -251,7 +252,9 @@ fr = 0
 
 testWarp = True
 frame_num = 0
-for framei in range(15,115,10): # [100]
+start_frame = 0
+# for framei in range(15,115,10): # [100]
+for framei in range(start_frame,150,1): # [100]
     print(framei)
     frame_num += 1
     rden, rvel = readData(ref_path, den_file%framei, vel_file%framei, oref_grids)
@@ -272,7 +275,7 @@ for framei in range(15,115,10): # [100]
         gvel = np.reshape(gvel, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
         gvel *= 0.5 # scalarflow only, 2 frames
 
-    if framei>15:
+    if framei>start_frame:
         rden_warpMID, rvel_warpMID = warpMidTest(_rvel_warp, _rden_warp, rvel, rden, oref_grids[1], oref_grids[2], oref_grids[0])
         rden_warp, rvel_warp = warpTest(_rvel_warp, _rden_warp, rvel, rden, oref_grids[1], oref_grids[2], oref_grids[0])
         
@@ -293,7 +296,7 @@ for framei in range(15,115,10): # [100]
         _rden_warp, _rvel_warp = np.copy(rden), np.copy(rvel)        
         
     if (ref_gs.x != our_gs.x) and (our_path is not None):
-        if framei>15:
+        if framei>start_frame:
             copyArrayToGridReal(target=oref_grids[1], source=rden_warpMID)
             copyArrayToGridMAC(target=oref_grids[2], source=rvel_warpMID)
             interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
@@ -337,7 +340,7 @@ for framei in range(15,115,10): # [100]
             save_fig(None, ovel, out_path+"oriour_", t=fr, vN=1.0)
             oden *= hull_data[0]
             ovel *= hull_data[0]
-        if framei>15:
+        if framei>start_frame:
             if our_path is not None:
                 oden_warp *= hull_data[0]; oden_warpMID *= hull_data[0]
                 ovel_warp *= hull_data[0]; ovel_warpMID *= hull_data[0]
@@ -351,10 +354,10 @@ for framei in range(15,115,10): # [100]
     if normDen and (our_path is not None):
         odscale = rden.mean()/oden.mean() 
         oden = oden * odscale
-        if framei>15:
+        if framei>start_frame:
             oden_warp = oden_warp * odscale; oden_warpMID = oden_warpMID * odscale
 
-    if framei>15:
+    if framei>start_frame:
         if our_path is not None:
             copyArrayToGridReal(target=our_grids[1], source=np.abs(oden_warp)*denratio*5.0)
             if True: save_fig(our_grids[1], ovel_warp, out_path+"warp_our_", t=fr) 
@@ -393,7 +396,7 @@ for framei in range(15,115,10): # [100]
     if glo_path is not None: _glo = Vmetrics(gvel, rvel, gden, rden, frameHull=uh, printname="glo")[:2]
     _ref = Vmetrics(rvel, None, rden, None, frameHull=uh, printname="ref")[:2]
     # w.o. inflow:
-    if framei ==15:
+    if framei ==start_frame:
         ovel_warp,gvel_warp,rvel_warp,oden_warp,gden_warp,rden_warp = [None]*6
         ovel_warpMID,gvel_warpMID,rvel_warpMID,oden_warpMID,gden_warpMID,rden_warpMID = [None]*6
     if our_path is not None: _our += Vmetrics(ovel, rvel, oden, rden, ovel_warp, oden_warp, ovel_warpMID, oden_warpMID, frameHull=uh, ignoreInflow=True, printname="our")
@@ -482,14 +485,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
     
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
     
     myffmpeg = FFmpegTool(os.path.join(out_path, "eval_vor.mp4"), row=n, col=2)
@@ -502,14 +505,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'glo_vort_vel_%04d.png'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_vort_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 2, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 2, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 2, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 2, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 2, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 2, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "warp.mp4"), row=n, col=2)
@@ -522,14 +525,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'warp_glo_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warp_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "warpMID.mp4"), row=n, col=2)
@@ -542,14 +545,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_glo_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
 
 if True:
