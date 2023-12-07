@@ -198,7 +198,7 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
         # todo::tricky now
         if not model.single_scene:
             if global_step >= 200000:
-                img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW  + extras['acch2'].mean() * args.SmokeAlphaReguW
+                img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW  + extras['acch2'].mean() * args.SmokeAlphaReguW * 0.25
             else:
                 img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
                 

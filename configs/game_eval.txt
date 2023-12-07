@@ -1,4 +1,4 @@
-expname = game/1204_v4_larger_larger_smoke_reg
+expname = game/1206_v7_less_less_global_smoke_reg
 basedir = ./log
 
 ### data info

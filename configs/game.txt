@@ -1,4 +1,4 @@
-expname = game/1206_v5_fix_bugs
+expname = game/1206_v7_less_less_global_smoke_reg
 basedir = ./log
 
 ### data info
@@ -65,7 +65,7 @@ density_thresh_static = 30
 # density_activation = relu
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.2
+SmokeAlphaReguW = 0.08
 SmokeAlphaReguW_warmup = 0.08
 train_vel_within_rendering = False
 

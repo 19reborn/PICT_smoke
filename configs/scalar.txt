@@ -1,4 +1,4 @@
-expname = scalar/1205_v2_100_vel_reg_continue_train
+expname = scalar/1205_v4_larger_vel_mapping
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -68,11 +68,11 @@ stage4_train_vel_interval = 1
 nse_loss_interval = 10
 
 nseW = 1e-2
-vel_regulization_weight = 100.0
+vel_regulization_weight = 1000.0
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 1e-3
-velocity_mapping_loss_weight = 1e-3
+velocity_mapping_loss_weight = 0.1
 color_mapping_loss_weight = 0.0
 
 max_mapping_frame_range = 50
