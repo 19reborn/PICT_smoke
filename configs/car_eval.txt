@@ -1,14 +1,14 @@
-expname = Car/1202_v7_middle_less_color_mapping_loss
-basedir = ./log
-# basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = Car/1206_v4_iters5
+# basedir = ./log
+basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
-datadir = ./data/Car
+datadir = ./data/Car_new
 dataset_type = pinf_data
 no_batching = True
 half_res = normal
 white_bkgd = True
-testskip = 1
+testskip = 20
 
 ### network arch
 net_model = hybrid_neus
@@ -22,8 +22,8 @@ N_importance = 0
 N_rand = 512
 i_embed = -1
 train_warp = True
-vol_output_W = 256
-train_vel_grid_size = 32
+vol_output_W = 384
+train_vel_grid_size = 24
 
 ### train params - iterations
 precrop_iters = 500
@@ -60,7 +60,7 @@ anneal_end = 50000
 i_img = 2000
 i_test = 10000
 i_weights = 10000
-i_video = 100000
+i_video = 400000
 N_iter = 400000
 
 cuda_ray = True
@@ -95,16 +95,19 @@ neus_progressive_pe_start = 20000
 
 use_scene_scale_before_pe = True
 stage4_train_vel_interval = 1
+nse_loss_interval = 5
+
+test_chunk = 1024
 
 nseW = 1e-2
 vel_regulization_weight = 0.1
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 0.001
-velocity_mapping_loss_weight = 0.001
-color_mapping_loss_weight = 5.0
+density_mapping_loss_weight = 0.5
+velocity_mapping_loss_weight = 0.01
+color_mapping_loss_weight = 100.0
 
-max_mapping_frame_range = 50
+max_mapping_frame_range = 100
 mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
@@ -112,8 +115,15 @@ mapping_frame_range_fading_last = 20000
 mapping_loss_fading = 10000
 
 boundaryW = 1.0
-train_vel_uniform_sample = 2
+train_vel_uniform_sample = 1
 inside_sdf = 0.00
 
 coarse_transport_weight = 100
 fine_transport_weight = 100
+
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1205_v3_less_smoke_alpha_reg/100000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1205_v5_larger_color_mapping/300000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1201_v6_512_rand/110000.tar
+
+# /home/yiming/Documents/workspace/Project_PINF/pinf_clean/data/Car_new
+# Eular:/cluster/project/tang/yiming/project/pinf_clean/data

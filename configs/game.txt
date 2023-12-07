@@ -1,4 +1,4 @@
-expname = game/1204_v2_all_smoke_reg
+expname = game/1206_v1_from_start
 basedir = ./log
 
 ### data info
@@ -22,6 +22,7 @@ N_rand = 512
 i_embed = -1
 train_warp = True
 vol_output_W = 256
+test_chunk = 1024
 
 ### train params - iterations
 precrop_iters = 500
@@ -92,7 +93,7 @@ neus_progressive_pe = True
 stage4_train_vel_interval = 1
 
 nseW = 1e-2
-vel_regulization_weight = 10.0
+vel_regulization_weight = 1.0
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 1e-2
@@ -106,6 +107,9 @@ mapping_frame_range_fading_last = 20000
 boundaryW = 1.0
 train_vel_uniform_sample = 2
 
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/300000.tar
+coarse_transport_weight = 10
+fine_transport_weight = 5
+
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/300000.tar
 
 
