@@ -1,6 +1,6 @@
-expname = Car/1206_v4_iters5
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = Car/1205_v1_100_color_mapping
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Car_new

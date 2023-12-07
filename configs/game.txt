@@ -1,4 +1,4 @@
-expname = game/1206_v1_from_start
+expname = game/1206_v7_less_less_global_smoke_reg
 basedir = ./log
 
 ### data info
@@ -96,7 +96,7 @@ nseW = 1e-2
 vel_regulization_weight = 1.0
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 1e-2
+density_mapping_loss_weight = 1.0
 velocity_mapping_loss_weight = 1e-2
 color_mapping_loss_weight = 1.0
 
@@ -105,7 +105,10 @@ mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
 boundaryW = 1.0
-train_vel_uniform_sample = 2
+train_vel_uniform_sample = 1
+
+coarse_transport_weight = 100
+fine_transport_weight = 10
 
 coarse_transport_weight = 10
 fine_transport_weight = 5

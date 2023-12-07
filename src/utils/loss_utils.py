@@ -198,9 +198,11 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
         # todo::tricky now
         if not model.single_scene:
             if global_step >= 200000:
-                img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
+                img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW  + extras['acch2'].mean() * args.SmokeAlphaReguW * 0.25
             else:
-                img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW  + extras['acch2'].mean() * args.SmokeAlphaReguW * 0.1
+                img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
+                
+            # img_loss += extras['acch2'].mean() * args.SmokeAlphaReguW
         else:
             if global_step >= 200000:
                 img_loss += (acc * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
@@ -560,17 +562,17 @@ def PDE_constraint(f_t, f_x, f_y, f_z,
     
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
-    # eqs += [mean_squared_error(feature,0.0)]
-    eqs += [L1_loss(feature,torch.zeros_like(feature))]
+    eqs += [mean_squared_error(feature,0.0)]
+    # eqs += [L1_loss(feature,torch.zeros_like(feature))]
 
     eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
     
-    # eqs += [L1_loss(U, torch.zeros_like(U))]
+    eqs += [L1_loss(U, torch.zeros_like(U))]
 
-    # eqs += [L1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
-    eqs += [mean_squared_error(U, 0.0)]
+    eqs += [L1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
+    # eqs += [mean_squared_error(U, 0.0)]
 
-    eqs += [mean_squared_error(Du_Dt,0.0)]
+    # eqs += [mean_squared_error(Du_Dt,0.0)]
     
     
     return eqs

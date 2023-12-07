@@ -449,7 +449,9 @@ def draw_trajectory(all_uv, image, output_dir=None):
             # try:
             cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, thickness)
             if frame_i > 0:
-                cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+                if i < prev_uv.shape[0]:
+                    cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+                # cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
             # except:
                 # continue
         prev_uv = uv
