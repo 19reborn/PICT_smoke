@@ -1,4 +1,4 @@
-expname = cyl/1202_v3_smaller_mapping_loss
+expname = cyl/1206_ablation_study_2_no_vel_mapping
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -16,7 +16,8 @@ use_viewdirs = False
 density_map_first_omega = 1
 position_map_first_omega = 10
 
-lagrangian_density_activation = softplus
+# lagrangian_density_activation = softplus
+lagrangian_density_activation = exp
 # density_activation = relu
 
 
@@ -73,7 +74,7 @@ density_thresh_static = 5
 SmokeInsideSDFW = 0.5
 SmokeAlphaReguW = 0.5
 SmokeAlphaReguW_warmup = 0.05
-
+test_chunk = 1024
 
 # boundary_delay = 10000
 
@@ -94,9 +95,9 @@ neus_early_terminated = True
 neus_progressive_pe = True
 
 stage4_train_vel_interval = 1
-density_mapping_loss_weight = 0.001
-velocity_mapping_loss_weight = 0.001
-color_mapping_loss_weight = 0.001
+density_mapping_loss_weight = 0.000
+velocity_mapping_loss_weight = 0.000
+color_mapping_loss_weight = 0.000
 ColorDivergenceW = 0.00
 
 nseW = 1e-2
@@ -108,4 +109,4 @@ SmokeInsideSDFW = 0.1
 boundaryW = 1.0
 inside_sdf = 0.0
 
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/060000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/060000.tar
