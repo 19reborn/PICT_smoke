@@ -787,7 +787,7 @@ def render_rays_cuda(ray_batch,
     # depth_mask = (dynamic_depth < static_depth).float()
     # dynamic_image = dynamic_image * depth_mask.reshape(-1, 1)
 
-    if model.training is False:
+    if model.training is False and model.args.test_mode:
         # render feature map
         feature_map = torch.zeros((N_rays, model.args.lagrangian_feature_dim)).cuda()
         vel_map = torch.zeros((N_rays, 3)).cuda()

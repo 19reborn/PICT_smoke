@@ -1,4 +1,4 @@
-expname = game/1206_v7_less_less_global_smoke_reg
+expname = game/1207_v1_from_start
 basedir = ./log
 
 ### data info
@@ -22,6 +22,7 @@ N_rand = 512
 i_embed = -1
 train_warp = True
 vol_output_W = 256
+train_vel_grid_size = 24
 test_chunk = 1024
 
 ### train params - iterations
