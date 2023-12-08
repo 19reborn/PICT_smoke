@@ -207,8 +207,9 @@ def train(args):
         elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian:
             # init d,g, not learn feature
             training_stage = 2
-            trainImg = False
-            trainVel = True
+            # trainImg = False
+            trainImg = True
+            trainVel = False
             trainVel_using_rendering_samples = False
         
         elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature:
@@ -256,10 +257,10 @@ def train(args):
         if trainImg and global_step > args.uniform_sample_step and args.cuda_ray:
             if first_update_occ_grid:
  
-                for i in range(8):
+                for i in range(16):
                     update_occ_grid(args, model, global_step, update_interval = 1, update_interval_static = 1, neus_early_terminated = False)
                 if not model.single_scene:
-                    update_static_occ_grid(args, model, times=10)
+                    update_static_occ_grid(args, model, times=30)
                 
                 first_update_occ_grid = False
             else:
@@ -456,6 +457,7 @@ def train(args):
             
             print(f"[TRAIN] Training stage: {training_stage} Iter: {global_step} Loss: {loss.item()}")
             print(f"CUDA memory allocated: {torch.cuda.max_memory_allocated() / 1024.0 / 1024.0 / 1024.0} GB\n")
+            print(f"[TRAIN] lr: {new_lrate}")
             writer.add_scalar('Loss/loss', loss.item(), global_step)
             
             if rendering_loss_dict is not None:

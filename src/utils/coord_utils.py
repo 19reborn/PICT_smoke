@@ -324,11 +324,15 @@ class Voxel_Tool(object):
             namepre = ["lagrangian_","","static_"]
         else:
             namepre = ["","static_"]
+        ret = {}
         for voxel_den, npre in zip(voxel_den_list, namepre):
             voxel_den = voxel_den.detach().cpu().numpy()
             if save_jpg:
                 jpg_path = os.path.join(head_tail[0], npre + os.path.splitext(head_tail[1])[0]+".jpg")
-                imageio.imwrite(jpg_path, den_scalar2rgb(voxel_den, scale=None, is3D=True, logv=False, mix=jpg_mix))
+                rgb = den_scalar2rgb(voxel_den, scale=None, is3D=True, logv=False, mix=jpg_mix)
+                imageio.imwrite(jpg_path, rgb)
+                if not 'static' in npre:
+                    ret[npre] = rgb
             if save_npz:
                 # to save some space
                 npz_path = os.path.join(head_tail[0], npre + os.path.splitext(head_tail[1])[0]+".npz")
@@ -336,6 +340,7 @@ class Voxel_Tool(object):
                 np.savez_compressed(npz_path, vel=voxel_den)
             if noStatic and 'static' in npre:
                 break
+        return ret
 
     @torch.no_grad()
     def vis_cross_feature_error_voxel(self, path, t, dynamic_model_lagrangian, middle_slice = False, chunk = 1024*32):
@@ -854,18 +859,24 @@ class Voxel_Tool(object):
         vel_scale = 160
         voxel_vel = self.get_voxel_velocity(model, deltaT, t, chunk, middle_slice=not save_npz).detach().cpu().numpy()
         
+        ret = {}
         if save_jpg:
             jpg_path = os.path.splitext(vel_path)[0]+".jpg"
-            imageio.imwrite(jpg_path, vel_uv2hsv(voxel_vel, scale=vel_scale, is3D=True, logv=False))
+            rgb = vel_uv2hsv(voxel_vel, scale=vel_scale, is3D=True, logv=False)
+            imageio.imwrite(jpg_path, rgb)
+            ret['vel'] = rgb
         if save_npz:
             if save_vort and save_jpg:
                 _, NETw = jacobian3D_np(voxel_vel)
                 head_tail = os.path.split(vel_path)
+                rgb = vel_uv2hsv(NETw[0],scale=vel_scale*5.0,is3D=True)
                 imageio.imwrite( os.path.join(head_tail[0], "vort"+os.path.splitext(head_tail[1])[0]+".jpg"),
-                        vel_uv2hsv(NETw[0],scale=vel_scale*5.0,is3D=True) )
+                         rgb)
+                ret['vort'] = rgb
             # to save some space
             voxel_vel = np.float16(voxel_vel)
             np.savez_compressed(vel_path, vel=voxel_vel)
+        return ret
 
 
 def jacobian3D(x):

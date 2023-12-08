@@ -180,11 +180,11 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
             if not self.single_scene:
                 for name, p in self.static_model.named_parameters():
                     p.requires_grad = False
-            if self.args.use_two_level_density:
-                for name, p in self.dynamic_model_siren.named_parameters():
-                    p.requires_grad = False
-            for name, p in self.dynamic_model_lagrangian.named_parameters():
-                p.requires_grad = True
+            # if self.args.use_two_level_density:
+            #     for name, p in self.dynamic_model_siren.named_parameters():
+            #         p.requires_grad = False
+            # for name, p in self.dynamic_model_lagrangian.named_parameters():
+            #     p.requires_grad = True
                 # if "position_map" in name or "density_map" in name or 'color_model' in name:
                 #     p.requires_grad = True
                 # else:

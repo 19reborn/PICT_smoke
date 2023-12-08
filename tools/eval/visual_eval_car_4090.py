@@ -1,4 +1,4 @@
-# /cluster/project/tang/yiming/project/mantaflow_nogui/build/manta /cluster/project/tang/yiming/project/pinf_clean/tools/eval/visual_eval_game_eular.py
+# /home/yiming/Documents/workspace/Project_PINF/mantaflow_nogui/build/manta /home/yiming/Documents/workspace/Project_PINF/pinf_clean/tools/eval/visual_eval_car_4090.py
 
 
 import os, sys, inspect
@@ -15,24 +15,19 @@ from _helpers import vel_uv2hsv, jacobian3D_np,divergence3D_np,jacobian2D_np,vor
 from _helpers import FFmpegTool
 
 
-ref_path = '/cluster/project/tang/yiming/dataset/pinf_gt/eval_data/gt_data/Game/np/'
+ref_path = '/mnt/sda/workspace/PINF_Project/eval_data/gt_data/Car/np/'
 
-# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/volumeout_395001/'
-# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/game/1206_v1_test_pipeline/'
-our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/game/1206_v7_less_less_global_smoke_reg/volumeout_400001/'
-out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/game/1207_v1_best_now/'
+our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1206_v4_iters5/volumeout_340001/'
+out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/car/1204_v1_best_now/'
 glo_path = None
 hull_path = None
 
 os.makedirs(out_path, exist_ok = True)
-res = 128
-upres = 4
-bWidth=1
-gs = vec3(res,int(res*0.8),int(res*0.85))
+    
+den_file, vel_file = "xl_den_%04d.f16.npz", "xl_vel_%04d.f16.npz"
 
-ref_gs = vec3(upres*gs.x,upres*gs.y,upres*gs.z)
-our_gs = vec3(256,216,204)
-
+ref_gs = vec3(768,192,304) # 178
+our_gs = vec3(384,96,154)
 
 def setSolver(gs, name):
     s   = FluidSolver(name=name, gridSize = gs)
@@ -85,8 +80,9 @@ def readData(basedir, den_file=None, vel_file=None, grids=[None,None,None], padd
         vel_np = None
     return den_np, vel_np
 
-def saveVel(Vin, path, scale=192):
-    # imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False)[::-1])
+def saveVel(Vin, path, scale=368):
+    # imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False)[:,::-1,:])
+    # imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False)[:,:,::-1])
     imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False))
 
 
@@ -96,11 +92,11 @@ def np_l2(np_array): return np.sum(np.square(np_array),axis=-1)
 ref_s, oref_grids = setSolver(ref_gs, 'ref')
 our_s, our_grids = setSolver(our_gs, 'our')
 
-oref_grids[1].load("/cluster/project/tang/yiming/dataset/pinf_gt/eval_data/gt_data/Game/stair_fine.uni")
+oref_grids[1].load("/mnt/sda/workspace/PINF_Project/eval_data/gt_data/Car/manta/car_fine.uni")
 flagArray = np.zeros([int(ref_gs.z), int(ref_gs.y), int(ref_gs.x), 1], dtype = np.float32)
 copyGridToArrayReal(target=flagArray, source=oref_grids[1])
 print(flagArray.min(), flagArray.mean(), flagArray.max())
-
+# import pdb;pdb.set_trace()
 if ref_gs.x != our_gs.x: # same res for evaluation
     newr_vel  = our_s.create(MACGrid)
     newr_den  = our_s.create(RealGrid)
@@ -111,56 +107,56 @@ if (ref_gs.x != our_gs.x) and (our_path is not None):
     interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
     flagArray = np.zeros([int(our_gs.z), int(our_gs.y), int(our_gs.x), 1], dtype = np.float32)
     copyGridToArrayReal(target=flagArray, source=ref_grids[1])
-
-bbox_min = 0.12,-0.1,-0.3
-bbox_max = 1.19,0.9,1.3
-# flagArray[:int(bbox_min[2]*our_gs.z),...] = 0.0
-# flagArray[int(bbox_max[2]*our_gs.z):,...] = 0.0
-flagArray[:,int(bbox_max[1]*our_gs.y):,...] = 0.0
-flagArray[:,:,:int(bbox_min[0]*our_gs.x),...] = 0.0
-# flagArray[:,:,int(bbox_max[0]*our_gs.x):,...] = 0.0
+# flagArray = np.ones_like(flagArray, dtype = np.float32)
+bbox_min = 0.05,-0.05,0.05
+bbox_max = 0.95,0.8,0.95
+flagArray[:int(0.05*154),...] = 0.0
+flagArray[int(0.95*154):,...] = 0.0
+flagArray[:,int(0.8*96):,...] = 0.0
+flagArray[:,:,:int(0.05*384),...] = 0.0
+flagArray[:,:,int(0.9*384):,...] = 0.0
 hull_flag = np.float32(flagArray > 1e-4)
-# flagArray[:int(bbox_min[2]*our_gs.z+1),...] = 0.0
-# flagArray[int(bbox_max[2]*our_gs.z)-1:,...] = 0.0
-flagArray[:,int(bbox_max[1]*our_gs.y)-1:,...] = 0.0
-flagArray[:,:,:int(bbox_min[0]*our_gs.x)+1,...] = 0.0
-# flagArray[:,:,int(bbox_max[0]*our_gs.x)-1:,...] = 0.0
+# hull_flag = np.float32(flagArray)
+flagArray[:int(0.05*154)+1,...] = 0.0
+flagArray[int(0.95*154)-1:,...] = 0.0
+flagArray[:,int(0.8*96)-1:,...] = 0.0
+flagArray[:,:,:int(0.05*384)+1,...] = 0.0
+flagArray[:,:,int(0.9*384)-1:,...] = 0.0
 hull_flag1 = np.float32(flagArray > 1)
-
-
-flagArray = np.ones([int(ref_gs.z), int(ref_gs.y), int(ref_gs.x), 1], dtype = np.float32)
-
-if ref_gs.x != our_gs.x: # same res for evaluation
-    newr_vel  = our_s.create(MACGrid)
-    newr_den  = our_s.create(RealGrid)
-    ref_grids = [our_grids[0], newr_den, newr_vel]
-
-if (ref_gs.x != our_gs.x) and (our_path is not None):
-    copyArrayToGridReal(target=oref_grids[1], source=flagArray)
-    interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
-    flagArray = np.zeros([int(our_gs.z), int(our_gs.y), int(our_gs.x), 1], dtype = np.float32)
-    copyGridToArrayReal(target=flagArray, source=ref_grids[1])
-
-bbox_min = 0.12,-0.1,-0.3
-bbox_max = 1.19,0.9,1.3
-# flagArray[:int(bbox_min[2]*our_gs.z),...] = 0.0
-# flagArray[int(bbox_max[2]*our_gs.z):,...] = 0.0
-flagArray[:,int(bbox_max[1]*our_gs.y):,...] = 0.0
-flagArray[:,:,:int(bbox_min[0]*our_gs.x),...] = 0.0
-# flagArray[:,:,int(bbox_max[0]*our_gs.x):,...] = 0.0
-# hull_flag_only_bbox = np.float32(flagArray > 1e-4)
-hull_flag_only_bbox = np.ones_like(flagArray)
-# flagArray[:int(bbox_min[2]*our_gs.z+1),...] = 0.0
-# flagArray[int(bbox_max[2]*our_gs.z)-1:,...] = 0.0
-flagArray[:,int(bbox_max[1]*our_gs.y)-1:,...] = 0.0
-flagArray[:,:,:int(bbox_min[0]*our_gs.x)+1,...] = 0.0
-# flagArray[:,:,int(bbox_max[0]*our_gs.x)-1:,...] = 0.0
-hull_flag1_only_bbox = np.float32(flagArray > 1)
-
+# hull_flag1 = np.float32(flagArray)
 normDen = True
 hullmask = True
 denratio = 1.2
 
+
+flagArray = np.ones([int(ref_gs.z), int(ref_gs.y), int(ref_gs.x), 1], dtype = np.float32)
+# import pdb;pdb.set_trace()
+if ref_gs.x != our_gs.x: # same res for evaluation
+    newr_vel  = our_s.create(MACGrid)
+    newr_den  = our_s.create(RealGrid)
+    ref_grids = [our_grids[0], newr_den, newr_vel]
+
+if (ref_gs.x != our_gs.x) and (our_path is not None):
+    copyArrayToGridReal(target=oref_grids[1], source=flagArray)
+    interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
+    flagArray = np.zeros([int(our_gs.z), int(our_gs.y), int(our_gs.x), 1], dtype = np.float32)
+    copyGridToArrayReal(target=flagArray, source=ref_grids[1])
+# flagArray = np.ones_like(flagArray, dtype = np.float32)
+bbox_min = 0.05,-0.05,0.05
+bbox_max = 0.95,0.8,0.95
+flagArray[:int(0.05*154),...] = 0.0
+flagArray[int(0.95*154):,...] = 0.0
+flagArray[:,int(0.8*96):,...] = 0.0
+flagArray[:,:,:int(0.05*384),...] = 0.0
+flagArray[:,:,int(0.9*384):,...] = 0.0
+hull_flag_only_bbox = np.float32(flagArray > 1e-4)
+# hull_flag = np.float32(flagArray)
+flagArray[:int(0.05*154)+1,...] = 0.0
+flagArray[int(0.95*154)-1:,...] = 0.0
+flagArray[:,int(0.8*96)-1:,...] = 0.0
+flagArray[:,:,:int(0.05*384)+1,...] = 0.0
+flagArray[:,:,int(0.9*384)-1:,...] = 0.0
+hull_flag1_only_bbox = np.float32(flagArray > 1)
 def save_fig(den, vel, image_dir, den_name='den_%04d.ppm', vel_name='vel_%04d.png', t=0, is2D=False, vN=1.0):
     # os.makedirs(image_dir, exist_ok = True) 
     if is2D:
@@ -172,11 +168,10 @@ def save_fig(den, vel, image_dir, den_name='den_%04d.ppm', vel_name='vel_%04d.pn
             imageio.imwrite(image_dir+'vor_%04d.png' % (t), vor_rgb(np.squeeze(NETw))[::-1])
     else:
         if den is not None:
-            projectPpmFull( den, image_dir+den_name % (t), 0, 5.0 )
+            projectPpmFull( den, image_dir+den_name % (t), 0, 4.0 )
         if vel is not None:
             saveVel(np.squeeze(vel), image_dir+vel_name % (t))
             _, NETw = jacobian3D_np(vel)
-            # saveVel(np.squeeze(NETw)*hull_flag1, image_dir+"vort_"+vel_name % (t), scale=720*vN)
             saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=720*vN)
 
 def printVelRange(gvel, name=""):
@@ -249,16 +244,15 @@ def Vmetrics(ovel=None, rvel=None, oden=None, rden=None, oVwarp=None, oDwarp=Non
 
 our_list, glo_list, ref_list =[], [], []
 fr = 0
-
 testWarp = True
 frame_num = 0
-# for framei in range(13,124, 10): # [100]
-for framei in range(0,130, 1): # [100]
+
+for framei in range(0,140, 1): # [100]
     print(framei)
     frame_num += 1
-    # if framei > 20:
     if True:
-        rden, rvel = readData(ref_path, "xl_den_%04d.f16.npz"%(framei), "xl_vel_%04d.f16.npz"%(framei), oref_grids)
+        # rden, rvel = readData(ref_path, "xl_den_%04d.f16.npz"%(163+framei), "xl_vel_%04d.f16.npz"%(163+framei), oref_grids)
+        rden, rvel = readData(ref_path, "xl_den_%04d.f16.npz"%(165+framei), "xl_vel_%04d.f16.npz"%(165+framei), oref_grids)
         rden = np.reshape(rden, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
         rvel = np.reshape(rvel, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
 
@@ -274,19 +268,22 @@ for framei in range(0,130, 1): # [100]
             copyArrayToGridMAC(target=oref_grids[2], source=rvel)
             interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
             interpolateMACGrid(target=ref_grids[2], source=oref_grids[2] )
-            # ref_grids[2].multConst(our_gs/ref_gs)
+            ref_grids[2].multConst(our_gs/ref_gs)
             rvel = np.copy(ovel)
             rden = np.copy(oden)
             copyGridToArrayReal(target=rden, source=ref_grids[1])
             copyGridToArrayMAC(target=rvel, source=ref_grids[2])
-
+            rden = rden * hull_flag
             rvel = rvel * hull_flag
-
+            
+            # copyArrayToGridReal(target=ref_grids[1], source=rden)
         if hullmask:
             if True: save_fig(None, rvel, out_path+"oriref_", t=fr)
             if True and (our_path is not None): save_fig(None, ovel, out_path+"oriour_", t=fr, vN=1.0)
 
-            hull_data = np.float32(rden > 1e-4)
+            # hull_data = np.float32(rden > 1e-4)
+            # hull_data = np.ones_like(rden)
+            # hull_data = hull_flag
 
             rden *= hull_flag
             rvel *= hull_flag
@@ -347,7 +344,6 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'glo_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_den_%04d.ppm'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    
     # text_off = 2
     # myffmpeg.add_label("ref", 2, text_off, 24)
     # if our_path is not None:
