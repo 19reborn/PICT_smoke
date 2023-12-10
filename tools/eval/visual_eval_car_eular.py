@@ -1,4 +1,4 @@
-#/cluster/project/tang/yiming/project/mantaflow_nogui/build/manta /cluster/project/tang/yiming/project/pinf_clean/tools/eval/visual_eval_car_eular.py
+# /cluster/project/tang/yiming/project/mantaflow_nogui/build/manta /cluster/project/tang/yiming/project/pinf_clean/tools/eval/visual_eval_car_eular.py
 
 
 import os, sys, inspect
@@ -17,8 +17,10 @@ from _helpers import FFmpegTool
 
 ref_path = '/cluster/project/tang/yiming/dataset/pinf_gt/eval_data/gt_data/Car/np/'
 
-our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/volumeout_395001/'
-out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/game/1204_v1_best_now/'
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/Car/1129_v5_larger_fine_density/volumeout_400001/'
+our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/Car/1129_v3_larger_omega/volumeout_400001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/car/1208_v1_old_data_best_full/'
+out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/car/1208_v1_old_data_best_full_use_gt_mask/'
 glo_path = None
 hull_path = None
 
@@ -81,7 +83,8 @@ def readData(basedir, den_file=None, vel_file=None, grids=[None,None,None], padd
     return den_np, vel_np
 
 def saveVel(Vin, path, scale=368):
-    imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False)[::-1])
+    # imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False)[::-1])
+    imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False))
 
 
 
@@ -94,7 +97,7 @@ oref_grids[1].load("/cluster/project/tang/yiming/dataset/pinf_gt/eval_data/gt_da
 flagArray = np.zeros([int(ref_gs.z), int(ref_gs.y), int(ref_gs.x), 1], dtype = np.float32)
 copyGridToArrayReal(target=flagArray, source=oref_grids[1])
 print(flagArray.min(), flagArray.mean(), flagArray.max())
-
+# import pdb;pdb.set_trace()
 if ref_gs.x != our_gs.x: # same res for evaluation
     newr_vel  = our_s.create(MACGrid)
     newr_den  = our_s.create(RealGrid)
@@ -105,7 +108,7 @@ if (ref_gs.x != our_gs.x) and (our_path is not None):
     interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
     flagArray = np.zeros([int(our_gs.z), int(our_gs.y), int(our_gs.x), 1], dtype = np.float32)
     copyGridToArrayReal(target=flagArray, source=ref_grids[1])
-
+# flagArray = np.ones_like(flagArray, dtype = np.float32)
 bbox_min = 0.05,-0.05,0.05
 bbox_max = 0.95,0.8,0.95
 flagArray[:int(0.05*154),...] = 0.0
@@ -114,18 +117,54 @@ flagArray[:,int(0.8*96):,...] = 0.0
 flagArray[:,:,:int(0.05*384),...] = 0.0
 flagArray[:,:,int(0.9*384):,...] = 0.0
 hull_flag = np.float32(flagArray > 1e-4)
+# hull_flag = np.float32(flagArray)
 flagArray[:int(0.05*154)+1,...] = 0.0
 flagArray[int(0.95*154)-1:,...] = 0.0
 flagArray[:,int(0.8*96)-1:,...] = 0.0
 flagArray[:,:,:int(0.05*384)+1,...] = 0.0
 flagArray[:,:,int(0.9*384)-1:,...] = 0.0
 hull_flag1 = np.float32(flagArray > 1)
+# hull_flag1 = np.float32(flagArray)
 normDen = True
 hullmask = True
 denratio = 1.2
+use_gt_mask = True
 
+flagArray = np.ones([int(ref_gs.z), int(ref_gs.y), int(ref_gs.x), 1], dtype = np.float32)
+# import pdb;pdb.set_trace()
+if ref_gs.x != our_gs.x: # same res for evaluation
+    newr_vel  = our_s.create(MACGrid)
+    newr_den  = our_s.create(RealGrid)
+    ref_grids = [our_grids[0], newr_den, newr_vel]
+
+if (ref_gs.x != our_gs.x) and (our_path is not None):
+    copyArrayToGridReal(target=oref_grids[1], source=flagArray)
+    interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
+    flagArray = np.zeros([int(our_gs.z), int(our_gs.y), int(our_gs.x), 1], dtype = np.float32)
+    copyGridToArrayReal(target=flagArray, source=ref_grids[1])
+# flagArray = np.ones_like(flagArray, dtype = np.float32)
+bbox_min = 0.05,-0.05,0.05
+bbox_max = 0.95,0.8,0.95
+flagArray[:int(0.05*154),...] = 0.0
+flagArray[int(0.95*154):,...] = 0.0
+flagArray[:,int(0.8*96):,...] = 0.0
+flagArray[:,:,:int(0.05*384),...] = 0.0
+flagArray[:,:,int(0.9*384):,...] = 0.0
+hull_flag_only_bbox = np.float32(flagArray > 1e-4)
+# hull_flag = np.float32(flagArray)
+flagArray[:int(0.05*154)+1,...] = 0.0
+flagArray[int(0.95*154)-1:,...] = 0.0
+flagArray[:,int(0.8*96)-1:,...] = 0.0
+flagArray[:,:,:int(0.05*384)+1,...] = 0.0
+flagArray[:,:,int(0.9*384)-1:,...] = 0.0
+hull_flag1_only_bbox = np.float32(flagArray > 1)
+
+if use_gt_mask:
+    hull_flag_only_bbox = hull_flag
+    hull_flag1_only_bbox = hull_flag1
+    
 def save_fig(den, vel, image_dir, den_name='den_%04d.ppm', vel_name='vel_%04d.png', t=0, is2D=False, vN=1.0):
-    os.makedirs(image_dir, exist_ok = True) 
+    # os.makedirs(image_dir, exist_ok = True) 
     if is2D:
         if den is not None:
             projectPpmFull( den, image_dir+ den_name% (t), 0, 1.0 )
@@ -139,7 +178,7 @@ def save_fig(den, vel, image_dir, den_name='den_%04d.ppm', vel_name='vel_%04d.pn
         if vel is not None:
             saveVel(np.squeeze(vel), image_dir+vel_name % (t))
             _, NETw = jacobian3D_np(vel)
-            saveVel(np.squeeze(NETw)*hull_flag1, image_dir+"vort_"+vel_name % (t), scale=720*vN)
+            saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=720*vN)
 
 def printVelRange(gvel, name=""):
     print(name+" vel_x range", gvel[...,0].min(), gvel[...,0].mean(), gvel[...,0].max())
@@ -213,11 +252,13 @@ our_list, glo_list, ref_list =[], [], []
 fr = 0
 testWarp = True
 frame_num = 0
-for framei in range(15,140+15): # [100]
+
+for framei in range(0,140, 1): # [100]
     print(framei)
     frame_num += 1
     if True:
-        rden, rvel = readData(ref_path, "xl_den_%04d.f16.npz"%(163+framei), "xl_vel_%04d.f16.npz"%(163+framei), oref_grids)
+        # rden, rvel = readData(ref_path, "xl_den_%04d.f16.npz"%(163+framei), "xl_vel_%04d.f16.npz"%(163+framei), oref_grids)
+        rden, rvel = readData(ref_path, "xl_den_%04d.f16.npz"%(165+framei), "xl_vel_%04d.f16.npz"%(165+framei), oref_grids)
         rden = np.reshape(rden, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
         rvel = np.reshape(rvel, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
 
@@ -246,13 +287,27 @@ for framei in range(15,140+15): # [100]
             if True: save_fig(None, rvel, out_path+"oriref_", t=fr)
             if True and (our_path is not None): save_fig(None, ovel, out_path+"oriour_", t=fr, vN=1.0)
 
+            # hull_data = np.float32(rden > 1e-4)
+            # hull_data = np.ones_like(rden)
+            # hull_data = hull_flag
             hull_data = np.float32(rden > 1e-4)
 
-            rden *= hull_data
-            rvel *= hull_data
+
             if our_path is not None:
-                oden *= hull_data
-                ovel *= hull_data
+                if use_gt_mask:
+                    oden *= hull_data
+                    ovel *= hull_data
+                    
+                                   
+                    rden *= hull_data
+                    rvel *= hull_data     
+                    
+                else:
+                    oden *= hull_flag_only_bbox
+                    ovel *= hull_flag_only_bbox
+                    
+                    rden *= hull_flag
+                    rvel *= hull_flag
             
         
         # print("den means, ref",rden.mean(),"our", oden.mean(), "glo", gden.mean())
@@ -334,14 +389,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
     
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
     
     myffmpeg = FFmpegTool(os.path.join(out_path, "eval_vor.mp4"), row=n, col=2)
@@ -354,14 +409,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'glo_vort_vel_%04d.png'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_vort_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 2, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 2, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 2, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 2, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 2, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 2, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "warp.mp4"), row=n, col=2)
@@ -374,14 +429,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'warp_glo_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warp_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "warpMID.mp4"), row=n, col=2)
@@ -394,14 +449,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_glo_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
 
 if True:

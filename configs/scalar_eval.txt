@@ -1,4 +1,4 @@
-expname = scalar/1205_v2_100_vel_reg_continue_train
+expname = scalar/1013_v5_from_start
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 

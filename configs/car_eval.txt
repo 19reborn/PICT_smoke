@@ -1,6 +1,6 @@
-expname = Car/1205_v1_100_color_mapping
-basedir = ./log
-# basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = Car/1209_v2_static_larger_thresh
+# basedir = ./log
+basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Car_new
@@ -13,7 +13,7 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 1
+density_map_first_omega = 30
 position_map_first_omega = 30
 
 ### train params - sampling

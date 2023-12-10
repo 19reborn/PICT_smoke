@@ -918,7 +918,7 @@ def update_occ_grid(args, model, global_step = 0, update_interval = 1000, update
                 sdf = 1.0 / (torch.abs(sdf)+1e-6)
                 return sdf
 
-            for i in range(2):
+            for i in range(30):
                 model.occupancy_grid_static.update_grid(get_density_static, S = 128)
       
       

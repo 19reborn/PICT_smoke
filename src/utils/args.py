@@ -229,6 +229,10 @@ def config_parser():
                         help='render the training set instead of render_poses path')
     parser.add_argument("--render_vis", action='store_true', 
                         help='render the training set instead of render_poses path')
+    parser.add_argument("--render_trajectory_only", action='store_true', 
+                        help='render the training set instead of render_poses path')
+    parser.add_argument("--render_no_vorticity", action='store_true', 
+                        help='render the training set instead of render_poses path')
     parser.add_argument("--vis_view", type=int, default=0)
     
     parser.add_argument("--extract_occ_grid", action='store_true', 

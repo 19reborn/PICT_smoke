@@ -17,8 +17,10 @@ from _helpers import FFmpegTool
 
 ref_path = '/cluster/project/tang/yiming/dataset/pinf_gt/eval_data/gt_data/Game/np/'
 
-our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/volumeout_395001/'
-out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/game/1206_v1_test_pipeline/'
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/volumeout_395001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/game/1206_v1_test_pipeline/'
+our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/game/1206_v7_less_less_global_smoke_reg/volumeout_400001/'
+out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/game/1207_v1_best_now/'
 glo_path = None
 hull_path = None
 
@@ -146,7 +148,8 @@ bbox_max = 1.19,0.9,1.3
 flagArray[:,int(bbox_max[1]*our_gs.y):,...] = 0.0
 flagArray[:,:,:int(bbox_min[0]*our_gs.x),...] = 0.0
 # flagArray[:,:,int(bbox_max[0]*our_gs.x):,...] = 0.0
-hull_flag_only_bbox = np.float32(flagArray > 1e-4)
+# hull_flag_only_bbox = np.float32(flagArray > 1e-4)
+hull_flag_only_bbox = np.ones_like(flagArray)
 # flagArray[:int(bbox_min[2]*our_gs.z+1),...] = 0.0
 # flagArray[int(bbox_max[2]*our_gs.z)-1:,...] = 0.0
 flagArray[:,int(bbox_max[1]*our_gs.y)-1:,...] = 0.0
@@ -249,8 +252,8 @@ fr = 0
 
 testWarp = True
 frame_num = 0
-for framei in range(13,124, 10): # [100]
-# for framei in range(0,145): # [100]
+# for framei in range(13,124, 10): # [100]
+for framei in range(0,130, 1): # [100]
     print(framei)
     frame_num += 1
     # if framei > 20:
