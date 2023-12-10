@@ -232,6 +232,8 @@ def render_only(args, model, testsavedir, render_poses, render_timesteps, test_b
 
     print('test poses shape', render_poses.shape)
     if args.render_eval:
+        if args.render_vis:
+            testsavedir = testsavedir + f"_vis_view{args.vis_view}"
         rgbs, _ = render_eval(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
         imageio.mimwrite(os.path.join(testsavedir, 'video.mp4'), to8b(rgbs), fps=30, quality=8)
     else:

@@ -1,4 +1,4 @@
-expname = scalar/1205_v4_larger_vel_mapping
+expname = scalar/1208_v2_larger_vel_reg
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -13,7 +13,7 @@ testskip = 60
 ### network arch
 net_model = siren
 use_viewdirs = False
-density_map_first_omega = 1
+density_map_first_omega = 30
 position_map_first_omega = 30
 
 ### train params - sampling
@@ -67,12 +67,12 @@ use_scene_scale_before_pe = True
 stage4_train_vel_interval = 1
 nse_loss_interval = 10
 
-nseW = 1e-2
-vel_regulization_weight = 1000.0
+nseW = 1e-3
+vel_regulization_weight = 100.0
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 1e-3
-velocity_mapping_loss_weight = 0.1
+velocity_mapping_loss_weight = 1e-1
 color_mapping_loss_weight = 0.0
 
 max_mapping_frame_range = 50
@@ -86,7 +86,11 @@ density_activation = exp
 lagrangian_density_activation = exp
 
 # model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/200000.tar
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/300000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/300000.tar
 
 coarse_transport_weight = 100
-fine_transport_weight = 100
+fine_transport_weight = 0.1
+feature_regulization_weight = 0.005
+stage4_train_vel_interval = 1
+
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1208_v1/300000.tar
