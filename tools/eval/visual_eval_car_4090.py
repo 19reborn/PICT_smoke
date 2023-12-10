@@ -17,8 +17,8 @@ from _helpers import FFmpegTool
 
 ref_path = '/mnt/sda/workspace/PINF_Project/eval_data/gt_data/Car/np/'
 
-our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1206_v4_iters5/volumeout_340001/'
-out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/car/1204_v1_best_now/'
+our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1210_v2_larger_mapping_loss/volumeout_250001/'
+out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/car/1210_v1_best_now/'
 glo_path = None
 hull_path = None
 
@@ -127,7 +127,7 @@ hull_flag1 = np.float32(flagArray > 1)
 normDen = True
 hullmask = True
 denratio = 1.2
-
+use_gt_mask = True
 
 flagArray = np.ones([int(ref_gs.z), int(ref_gs.y), int(ref_gs.x), 1], dtype = np.float32)
 # import pdb;pdb.set_trace()
@@ -157,6 +157,11 @@ flagArray[:,int(0.8*96)-1:,...] = 0.0
 flagArray[:,:,:int(0.05*384)+1,...] = 0.0
 flagArray[:,:,int(0.9*384)-1:,...] = 0.0
 hull_flag1_only_bbox = np.float32(flagArray > 1)
+
+if use_gt_mask:
+    hull_flag_only_bbox = hull_flag
+    hull_flag1_only_bbox = hull_flag1
+    
 def save_fig(den, vel, image_dir, den_name='den_%04d.ppm', vel_name='vel_%04d.png', t=0, is2D=False, vN=1.0):
     # os.makedirs(image_dir, exist_ok = True) 
     if is2D:
@@ -284,12 +289,24 @@ for framei in range(0,140, 1): # [100]
             # hull_data = np.float32(rden > 1e-4)
             # hull_data = np.ones_like(rden)
             # hull_data = hull_flag
+            hull_data = np.float32(rden > 1e-4)
 
-            rden *= hull_flag
-            rvel *= hull_flag
+
             if our_path is not None:
-                oden *= hull_flag_only_bbox
-                ovel *= hull_flag_only_bbox
+                if use_gt_mask:
+                    oden *= hull_data
+                    ovel *= hull_data
+                    
+                                   
+                    rden *= hull_data
+                    rvel *= hull_data     
+                    
+                else:
+                    oden *= hull_flag_only_bbox
+                    ovel *= hull_flag_only_bbox
+                    
+                    rden *= hull_flag
+                    rvel *= hull_flag
             
         
         # print("den means, ref",rden.mean(),"our", oden.mean(), "glo", gden.mean())
