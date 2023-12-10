@@ -18,9 +18,11 @@ from _helpers import FFmpegTool
 ref_path = '/cluster/project/tang/yiming/dataset/pinf_gt/eval_data/gt_data/Car/np/'
 
 # our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/Car/1129_v5_larger_fine_density/volumeout_400001/'
-our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/Car/1129_v3_larger_omega/volumeout_400001/'
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/Car/1129_v3_larger_omega/volumeout_400001/'
 # out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/car/1208_v1_old_data_best_full/'
-out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/car/1208_v1_old_data_best_full_use_gt_mask/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/car/1208_v1_old_data_best_full_use_gt_mask/'
+our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/Car/1208_v6_omega60_velocity/volumeout_370001/'
+out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/car/1209_v1_new_data_best_full_use_gt_mask/'
 glo_path = None
 hull_path = None
 

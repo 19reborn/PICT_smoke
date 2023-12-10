@@ -1,4 +1,4 @@
-expname = scalar/1205_v2_100_vel_reg_continue_train
+expname = scalar/1208_v1
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -13,7 +13,7 @@ testskip = 1
 ### network arch
 net_model = siren
 use_viewdirs = False
-density_map_first_omega = 1
+density_map_first_omega = 30
 position_map_first_omega = 30
 
 ### train params - sampling

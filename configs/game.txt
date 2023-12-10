@@ -1,4 +1,4 @@
-expname = game/1208_v1_larger_transport_less_vel_regu
+expname = game/1210_v3_larger_game_occ_thresh
 basedir = ./log
 
 ### data info
@@ -12,7 +12,7 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 1
+density_map_first_omega = 30
 position_map_first_omega = 30
 
 ### train params - sampling
@@ -61,8 +61,8 @@ N_iter = 400000
 
 cuda_ray = True
 scene_scale = 0.33
-density_thresh = 2.0
-density_thresh_static = 30
+density_thresh = 0.2
+density_thresh_static = 60
 # density_activation = relu
 
 SmokeInsideSDFW = 0.5
@@ -70,7 +70,7 @@ SmokeAlphaReguW = 0.08
 SmokeAlphaReguW_warmup = 0.08
 train_vel_within_rendering = False
 
-inside_sdf = 0.02
+inside_sdf = 0.00
 
 
 
@@ -96,20 +96,22 @@ nseW = 1e-2
 vel_regulization_weight = 0.01
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 1e-2
+density_mapping_loss_weight = 1e-1
 velocity_mapping_loss_weight = 1e-2
-color_mapping_loss_weight = 1.0
+color_mapping_loss_weight = 0.01
 
 max_mapping_frame_range = 50
 mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
-boundaryW = 2.0
+boundaryW = 1.0
 train_vel_uniform_sample = 2
 
 coarse_transport_weight = 100
-fine_transport_weight = 50
+fine_transport_weight = 0.1
 
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/090000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/090000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1207_v2_less_boundary_constrain/300000.tar
 
 
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1210_v2_original_smoke_reg/100000.tar
