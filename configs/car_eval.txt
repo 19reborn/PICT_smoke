@@ -1,4 +1,4 @@
-expname = Car/1208_v6_omega60_velocity
+expname = Car/1210_v4_extreme_large_color_mapping
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 

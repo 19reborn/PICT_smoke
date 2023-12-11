@@ -503,7 +503,8 @@ def test(args):
         
         testsavedir = os.path.join(basedir, expname, 'meshonly_{:06d}'.format(start+1))
         # display
-        mesh = trimesh.Trimesh(vertices / N * (max_rec - min_rec) + min_rec , triangles)
+        # mesh = trimesh.Trimesh(vertices / N * (max_rec - min_rec) + min_rec , triangles)
+        mesh = trimesh.Trimesh((vertices / N * (max_rec - min_rec) + min_rec)/args.scene_scale , triangles)
         os.makedirs(f"{testsavedir}", exist_ok=True)
         mesh.export(f"{testsavedir}/static_object.obj")
         print('Done output', f"{testsavedir}/static_object.obj")

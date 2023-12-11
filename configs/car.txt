@@ -1,4 +1,4 @@
-expname = Car/1210_v4_extreme_large_color_mapping
+expname = Car/1210_v5_nse_interval_3
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -133,5 +133,5 @@ feature_regulization_weight = 0.005
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1209_v3_study_recon/100000.tar
 
-
+nse_loss_interval = 3
 model_path = /cluster/project/tang/yiming/project/pinf_clean/log/car_base1209_100000.tar
