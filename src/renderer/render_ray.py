@@ -803,10 +803,11 @@ def render_rays_cuda(ray_batch,
             # weighted_vel = dynamic_weights.unsqueeze(-1) * vel
             # # vel_map.scatter_add_(0, rays_dynamic_id.long(), weighted_vel)
             # vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
-            
-            vel, vorticity = model.dynamic_model_lagrangian.velocity_model.forward_vorticity(torch.cat((pts_dynamic[...,:3], pts_dynamic[...,-1:]), dim=-1))
-            # vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
-            # vorticity = vel.clone()
+            if model.args.render_no_vorticity:
+                vel = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([pts_dynamic[...,:3], pts_dynamic[...,-1:]], dim=-1)).detach()
+                vorticity = vel.clone()
+            else:
+                vel, vorticity = model.dynamic_model_lagrangian.velocity_model.forward_vorticity(torch.cat((pts_dynamic[...,:3], pts_dynamic[...,-1:]), dim=-1))
             weighted_vel = dynamic_weights.unsqueeze(-1) * vel.detach()
             vel_map.scatter_add_(0, rays_dynamic_id.long().expand(-1,3), weighted_vel.reshape(-1,3))
             weighted_vorticity = dynamic_weights.unsqueeze(-1) * vorticity.detach()
@@ -1427,10 +1428,10 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                         pts_num = 8
                     elif 'Car' in model.args.datadir:
                         pts_num = 128
-                        density_mean = density_mean + (density_max - density_mean) * 0.1 # for car
+                        density_mean = density_mean + (density_max - density_mean) * 0.0 # for car
                     elif 'ScalarReal' in model.args.datadir:
                         pts_num = 8
-                        density_mean = density_mean + (density_max - density_mean) * 0.3 # for car
+                        density_mean = density_mean + (density_max - density_mean) * 0.3 # for scalar
                     else:
                         pts_num = 16
                     for strata_id in range(strata_num):
@@ -1463,7 +1464,8 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                         future_time = 1.0
                         # future_time = 0.5
                         future_mapped_pts3d = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(future_time)).detach() - mapping_base 
-                        mask = future_mapped_pts3d.norm(dim = -1) > 0.6
+                        # mask = future_mapped_pts3d.norm(dim = -1) > 0.4
+                        mask = future_mapped_pts3d.norm(dim = -1) > 0.3
                         print('filter out {} points'.format((~mask).sum().item()))
                         map_pts3d = map_pts3d[mask]
                         mapping_feature = mapping_feature[mask]
@@ -1486,11 +1488,7 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                 
                 
                 # if i % 50 == 0:
-                if 'Car' in model.args.datadir and i % 25 == 0:
-                    mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
-                    mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
-                    pts3d_base = map_pts3d
-                elif 'ScalarReal' in model.args.datadir and i % 1 == 0:
+                if 'Car' in model.args.datadir and i % 10 == 0:
                     mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
                     mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
                     pts3d_base = map_pts3d
@@ -1659,8 +1657,8 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                         density_mean = density_mean + (density_max - density_mean) * 0.2 # for game
                         pts_num = 8
                     elif 'Car' in model.args.datadir:
-                        pts_num = 16
-                        density_mean = density_mean + (density_max - density_mean) * 0.5 # for car
+                        pts_num = 128
+                        density_mean = density_mean + (density_max - density_mean) * 0.0 # for car
                     else:
                         pts_num = 16
 
@@ -1689,6 +1687,20 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                     mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(time_0)).detach()
                     mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(time_0)).detach()
                     pts3d_base = map_pts3d.clone().detach()
+                    
+                    
+                                        # filter points that are stick to the original point
+                    if 'Car' in model.args.datadir:
+                        # future_time = min((time_0 + 0.5), 1.0)
+                        future_time = 1.0
+                        # future_time = 0.5
+                        future_mapped_pts3d = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(future_time)).detach() - mapping_base 
+                        mask = future_mapped_pts3d.norm(dim = -1) > 0.4
+                        print('filter out {} points'.format((~mask).sum().item()))
+                        map_pts3d = map_pts3d[mask]
+                        mapping_feature = mapping_feature[mask]
+                        mapping_base = mapping_base[mask]
+                        pts3d_base = pts3d_base[mask]
                 # pts3d = model.trajectory_points.clone().detach()
                 
                 vel_pts2d = project_points(vel_pts3d.detach(), torch.tensor(K, dtype=torch.float32).cuda(), c2w=c2w[:3,:4])
@@ -1708,12 +1720,12 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                 vel_pts = model.dynamic_model_lagrangian.velocity_model.forward(torch.cat([vel_pts3d, float(cur_timestep)*torch.ones([vel_pts3d.shape[0], 1])], dim = -1)).detach()
                 vel_pts3d += vel_pts / model.args.time_size
                 
-                map_pts3d = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([vel_pts3d.shape[0], 1])*float(cur_timestep)).detach() - mapping_base + pts3d_base
+                map_pts3d = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach() - mapping_base + pts3d_base
                 # filter out points that are stick to the original point
                 
                 
                 # if i % 50 == 0:
-                if 'Car' in model.args.datadir and i % 50 == 0:
+                if 'Car' in model.args.datadir and i % 10 == 0:
                     print("update mapping base")
                     mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
                     mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()

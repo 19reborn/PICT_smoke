@@ -8,7 +8,7 @@ dataset_type = pinf_data
 no_batching = True
 half_res = normal
 white_bkgd = True
-testskip = 20
+testskip = 1
 
 ### network arch
 net_model = hybrid_neus
@@ -127,3 +127,5 @@ fine_transport_weight = 100
 
 # /home/yiming/Documents/workspace/Project_PINF/pinf_clean/data/Car_new
 # Eular:/cluster/project/tang/yiming/project/pinf_clean/data
+
+model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1210_v2_larger_mapping_loss/200000.tar
