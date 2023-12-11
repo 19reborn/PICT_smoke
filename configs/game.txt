@@ -1,5 +1,6 @@
-expname = game/1210_v3_larger_game_occ_thresh
-basedir = ./log
+expname = game/1211_v2_less_pe
+# basedir = ./log
+basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Game
@@ -51,7 +52,7 @@ bbox_max = 1.2,0.9,1.35
 ekW = 0.1
 i_weights = 5000
 i_embed_neus = 0
-multires_neus = 8
+multires_neus = 6
 anneal_end = 5000
 
 i_img = 1000
@@ -67,8 +68,8 @@ density_thresh_static = 60
 # density_activation = relu
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.08
-SmokeAlphaReguW_warmup = 0.08
+SmokeAlphaReguW = 0.05
+SmokeAlphaReguW_warmup = 0.05
 train_vel_within_rendering = False
 
 inside_sdf = 0.00
@@ -115,4 +116,6 @@ fine_transport_weight = 0.1
 # model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1207_v2_less_boundary_constrain/300000.tar
 
 
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1210_v2_original_smoke_reg/100000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1210_v2_original_smoke_reg/100000.tar
+
+test_chunk=1024
