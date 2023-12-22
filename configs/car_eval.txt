@@ -1,6 +1,6 @@
-expname = Car/1210_v2_larger_mapping_loss
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = Car/1219_v4_less_overlay_loss
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Car_new
@@ -22,7 +22,7 @@ N_importance = 0
 N_rand = 512
 i_embed = -1
 train_warp = True
-vol_output_W = 384
+vol_output_W = 256
 train_vel_grid_size = 24
 
 ### train params - iterations
@@ -65,8 +65,9 @@ N_iter = 400000
 
 cuda_ray = True
 scene_scale = 0.33
-density_thresh = 1
+density_thresh = 1.0
 density_thresh_static = 30
+# density_thresh_static = 60
 
 SmokeInsideSDFW = 0.5
 SmokeAlphaReguW = 0.02
@@ -80,7 +81,7 @@ ColorDivergenceW = 0.00
 # boundary_delay = 10000
 
 stage1_finish_recon = 100000
-uniform_sample_step = 30000
+uniform_sample_step = 10000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 100
 sdf_loss_delay = 200
@@ -89,43 +90,48 @@ stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 
 use_two_level_density = True
-neus_early_terminated = True
+neus_early_terminated = False
 neus_progressive_pe = True
 neus_progressive_pe_start = 20000
 
 use_scene_scale_before_pe = True
 stage4_train_vel_interval = 1
-nse_loss_interval = 5
+nse_loss_interval = 10
 
 test_chunk = 1024
 
 nseW = 1e-2
-vel_regulization_weight = 0.1
+vel_regulization_weight = 0.01
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 0.5
+density_mapping_loss_weight = 0.01
 velocity_mapping_loss_weight = 0.01
-color_mapping_loss_weight = 100.0
+color_mapping_loss_weight = 5000.0
 
-max_mapping_frame_range = 100
+max_mapping_frame_range = 50
+# max_mapping_frame_range = 100
 mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
 # mapping_loss_fading = 50000
 mapping_loss_fading = 10000
 
-boundaryW = 1.0
-train_vel_uniform_sample = 1
-inside_sdf = 0.00
+boundaryW = 0.8
+train_vel_uniform_sample = 2
+inside_sdf = 0.005
 
 coarse_transport_weight = 100
-fine_transport_weight = 100
+fine_transport_weight = 0.01
+
+feature_regulization_weight = 0.005
 
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1205_v3_less_smoke_alpha_reg/100000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1205_v5_larger_color_mapping/300000.tar
 # model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1201_v6_512_rand/110000.tar
 
-# /home/yiming/Documents/workspace/Project_PINF/pinf_clean/data/Car_new
-# Eular:/cluster/project/tang/yiming/project/pinf_clean/data
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1206_v3_original_smoke_reg/030000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1208_v4_from_start/030000.tar
 
-model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1210_v2_larger_mapping_loss/200000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1209_v3_study_recon/100000.tar
+
+# smokeOverlayW = 0.01
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/car_base1209_100000.tar

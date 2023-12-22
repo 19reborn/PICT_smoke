@@ -1,6 +1,6 @@
-expname = game/1211_v2_less_pe
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = game/1215_v1_no_boundary
+basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Game
@@ -106,7 +106,7 @@ max_mapping_frame_range = 50
 mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
-boundaryW = 1.0
+boundaryW = 0.0
 train_vel_uniform_sample = 2
 
 coarse_transport_weight = 100
