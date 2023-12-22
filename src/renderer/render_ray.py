@@ -1575,8 +1575,8 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                 filename = os.path.join(velocity_dir, 'velocity_{:03d}.png'.format(i))
                 rgb = extras['velocity_map']
                 # visualize_direction
-                # _hsv = vel2hsv(rgb.cpu(), scale=300, is3D=True, logv=False) # cyl, game
-                _hsv = vel2hsv(rgb.cpu(), scale=300, is3D=False, logv=False) # scalar
+                _hsv = vel2hsv(rgb.cpu(), scale=300, is3D=True, logv=False) # cyl, game
+                # _hsv = vel2hsv(rgb.cpu(), scale=300, is3D=False, logv=False) # scalar
                 # velLegendHSV(_hsv, True, lw=max(1,min(6,int(0.025*3))), constV=255)
                 rgb = cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR)
                 # imageio.imwrite(filename, cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR))
@@ -1588,8 +1588,8 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                 # rgb = extras['voriticity_map'] * 1 / 255
                 rgb = extras['voriticity_map']
                 # import pdb
-                # _hsv = vel2hsv(rgb.cpu(), scale=20, is3D=True, logv=False) # cyl, game
-                _hsv = vel2hsv(rgb.cpu(), scale=30, is3D=False, logv=False)
+                _hsv = vel2hsv(rgb.cpu(), scale=20, is3D=True, logv=False) # cyl, game
+                # _hsv = vel2hsv(rgb.cpu(), scale=30, is3D=False, logv=False)
                 rgb = cv2.cvtColor(_hsv, cv2.COLOR_HSV2BGR)
                 # imageio.imwrite(filename, cv2.cvtColor(vel2hsv(rgb.cpu(), scale=20, is3D=True, logv=False), cv2.COLOR_HSV2BGR))
                 imageio.imwrite(filename, rgb)
@@ -1730,6 +1730,9 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
                     mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
                     mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
                     pts3d_base = map_pts3d
+                elif 'Cyl' in model.args.datadir:
+                    torch.cuda.empty_cache()
+                    continue
                 elif i % 50 == 0:
                     mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(map_pts3d,  torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()
                     mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([map_pts3d.shape[0], 1])*float(cur_timestep)).detach()

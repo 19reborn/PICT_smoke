@@ -16,8 +16,8 @@ def evaluate_mapping(args, model, testsavedir, voxel_writer, t_info):
     # frame_list = range(0,frame_N, 1)
     frame_list = range(0,frame_N, 1)
     
-    sample_pts = 1024
-    # sample_pts = 32*32*32
+    # sample_pts = 1024
+    sample_pts = 32*32*32
     # sample_pts = 32*32*32
     # sample_pts = 32*32*32
     
@@ -56,3 +56,7 @@ def evaluate_mapping(args, model, testsavedir, voxel_writer, t_info):
     plt.legend()  # Add a legend to the plot
     # plt.show()
     plt.savefig(os.path.join(testsavedir, f'mapping_distance_error.png'))
+    
+    # save the error
+    np.save(os.path.join(testsavedir, f'mapping_error.npy'), mapping_l2_error)
+    np.save(os.path.join(testsavedir, f'feature_error.npy'), feature_l2_error)

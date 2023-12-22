@@ -420,7 +420,7 @@ class VelocityNetwork(nn.Module):
 
         cross_mapped_xyz = self.position_map(features, mapped_t)
 
-        base_mapped_xyz = self.position_map(features, t)
+        base_mapped_xyz = self.position_map(features, t).detach()
 
         mapped_xyz = x + cross_mapped_xyz - base_mapped_xyz
 

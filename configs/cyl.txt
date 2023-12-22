@@ -1,4 +1,4 @@
-expname = cyl/1206_ablation_study_2_no_vel_mapping
+expname = cyl/1221_ablation_no_vel_mapping
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -13,11 +13,10 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_viewdirs = False
-density_map_first_omega = 1
-position_map_first_omega = 10
+density_map_first_omega = 30
+position_map_first_omega = 30
 
-# lagrangian_density_activation = softplus
-lagrangian_density_activation = exp
+lagrangian_density_activation = softplus
 # density_activation = relu
 
 
@@ -63,7 +62,8 @@ i_img = 1000
 i_test = 50000
 i_weights = 10000
 i_video = 200000
-N_iter = 200000
+# N_iter = 200000
+N_iter = 150000
 
 cuda_ray = True
 # cuda_ray = False
@@ -74,7 +74,7 @@ density_thresh_static = 5
 SmokeInsideSDFW = 0.5
 SmokeAlphaReguW = 0.5
 SmokeAlphaReguW_warmup = 0.05
-test_chunk = 1024
+
 
 # boundary_delay = 10000
 
@@ -95,9 +95,9 @@ neus_early_terminated = True
 neus_progressive_pe = True
 
 stage4_train_vel_interval = 1
-density_mapping_loss_weight = 0.000
-velocity_mapping_loss_weight = 0.000
-color_mapping_loss_weight = 0.000
+density_mapping_loss_weight = 0.001
+velocity_mapping_loss_weight = 0.0
+color_mapping_loss_weight = 0.001
 ColorDivergenceW = 0.00
 
 nseW = 1e-2
@@ -109,4 +109,12 @@ SmokeInsideSDFW = 0.1
 boundaryW = 1.0
 inside_sdf = 0.0
 
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/060000.tar
+coarse_transport_weight = 1
+fine_transport_weight = 1.0
+
+mapping_loss_fading = 10000
+
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1129_v1/060000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/040000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1213_v1_larger_coarse_tranpsport/050000.tar
+model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1213_v3_less_color_mapping/060000.tar

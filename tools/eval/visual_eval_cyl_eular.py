@@ -34,10 +34,84 @@ ref_path = '/cluster/project/tang/yiming/dataset/pinf_gt/cyl/'
 # our_path = '/mnt/sda/workspace/PINF_Project/our_output/cyl/1112_v1_test/volumeout_400001/'
 # out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/cyl/1112_v1_test_larger_nseW/'
 
-our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/volumeout_200001/'
 # out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1204_v1_best_now/'
-out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1204_v1_best_now_full/'
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/volumeout_200001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1204_v1_best_now_full/'
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v3_smaller_mapping_loss/volumeout_200001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1211_ablation_v1_less_mapping/'
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1206_ablation_study_2_no_vel_mapping/volumeout_200001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1213_ablation_v2_no_vel_mapping/'
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1213_v3_less_color_mapping/volumeout_120001'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1214_v1_test_on_larger_vel_mapping'
 
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1213_v4_larger_vel_map_loss/volumeout_140001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1214_v2_test_on_larger_vel_mapping/'
+
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1214_ablation_no_cycle_loss/volumeout_150001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1215_v1_ablation_no_cycle_loss/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1214_v2_150k_iters/volumeout_150001'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1215_v2_150k_iters/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1214_ablation_no_boundary_from_start_fixed/volumeout_150001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1217_ablation_v1_no_boundary/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1220_ablation_no_vel_mapping/volumeout_150001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1221_ablation_no_vel_mapping/'
+
+our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1221_ablation_no_vel_mapping/volumeout_150001/'
+out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1222_ablation_no_vel_mapping/'
+
+if out_path[-1] != "/": out_path += "/"
+if our_path[-1] != "/": our_path += "/"
+
+# frame_num = 150
+# ppm_list = os.listdir(out_path)
+
+# save useful images for comparison
+# density_output_dir = os.path.join(out_path, "density")
+# os.makedirs(density_output_dir, exist_ok=True)
+# vel_output_dir = os.path.join(out_path, "velocity")
+# os.makedirs(vel_output_dir, exist_ok=True)
+# vor_output_dir = os.path.join(out_path, "vorticity")
+# os.makedirs(vor_output_dir, exist_ok=True)
+# for frame_id in range(frame_num):
+#     # ref_den_path = os.path.join(out_path, "ref_den_%04d.ppm"%frame_id)
+#     ref_den_path = out_path + "ref_den_%04d.ppm"%frame_id
+#     imageio.imwrite(os.path.join(density_output_dir, "ref_den_%04d.png"%frame_id), imageio.imread(ref_den_path))
+    
+#     our_den_path = out_path +  "our_den_%04d.ppm"%frame_id
+#     imageio.imwrite(os.path.join(density_output_dir, "our_den_%04d.png"%frame_id), imageio.imread(our_den_path))
+    
+#     comparison_density = np.concatenate((imageio.imread(ref_den_path), imageio.imread(our_den_path)), axis=0)
+#     imageio.imwrite(os.path.join(density_output_dir, "comparison_den_%04d.png"%frame_id), comparison_density)
+    
+#     ref_vel_path = out_path +  "ref_vel_%04d.png"%frame_id
+#     imageio.imwrite(os.path.join(vel_output_dir, "ref_vel_%04d.png"%frame_id), imageio.imread(ref_vel_path))
+    
+#     our_vel_path = out_path + "our_vel_%04d.png"%frame_id
+#     imageio.imwrite(os.path.join(vel_output_dir, "our_vel_%04d.png"%frame_id), imageio.imread(our_vel_path))
+    
+#     comparison_velocity = np.concatenate((imageio.imread(ref_vel_path), imageio.imread(our_vel_path)), axis=0)
+#     imageio.imwrite(os.path.join(vel_output_dir, "comparison_vel_%04d.png"%frame_id), comparison_velocity)
+    
+    
+#     ref_vort_path = out_path +  "ref_vort_vel_%04d.png"%frame_id
+#     imageio.imwrite(os.path.join(vor_output_dir, "ref_vort_vel_%04d.png"%frame_id), imageio.imread(ref_vort_path))
+    
+#     our_vort_path = out_path +  "our_vort_vel_%04d.png"%frame_id
+#     imageio.imwrite(os.path.join(vor_output_dir, "our_vort_vel_%04d.png"%frame_id), imageio.imread(our_vort_path))
+    
+#     comparison_vorticity = np.concatenate((imageio.imread(ref_vort_path), imageio.imread(our_vort_path)), axis=0)
+#     imageio.imwrite(os.path.join(vor_output_dir, "comparison_vort_%04d.png"%frame_id), comparison_vorticity)
+    
+    
+    
+# ppm_list = [os.remove(os.path.join(out_path, _)) for _ in ppm_list if _.endswith(".ppm") or _.endswith(".png")] 
+
+
+# exit(1)
 
 glo_path = None
 hull_path = None

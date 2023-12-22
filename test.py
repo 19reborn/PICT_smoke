@@ -290,7 +290,9 @@ def output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = F
         vel_rgbs = []
         vorticy_rgbs = []
         den_rgbs = []
+        den_jacob_rgbs = []
         lagrangian_den_rgbs = []
+        lagrangian_den_jacob_rgbs = []
         
         for frame_i in frame_list:
 
@@ -300,9 +302,14 @@ def output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = F
             noStatic = True
             if ret is not None:
                 den_rgbs.append(ret[""])
+                if model.args.save_jacobian_den:
+                    den_jacob_rgbs.append(ret["jacobian"])
+                    
                 if "lagrangian_" in ret:
                     lagrangian_den_rgbs.append(ret["lagrangian_"])
-            
+                    if model.args.save_jacobian_den:
+                        lagrangian_den_jacob_rgbs.append(ret["lagrangian_jacobian"])
+                    
             
             ret = voxel_writer.save_voxel_vel_npz_with_grad(model, os.path.join(testsavedir,"v_%04d.npz"%frame_i), t_info[-1], cur_t, args.chunk, savenpz, savejpg, save_vort)
             if ret is not None:
@@ -319,7 +326,10 @@ def output_voxel(args, model, testsavedir, voxel_writer, t_info, voxel_video = F
             imageio.mimwrite(testsavedir + 'vel_video.mp4', np.stack(vel_rgbs,axis=0).astype(np.uint8), fps=20, quality=10)
         if len(vorticy_rgbs) > 0:
             imageio.mimwrite(testsavedir + 'vort_video.mp4', np.stack(vorticy_rgbs,axis=0).astype(np.uint8), fps=20, quality=10)
-            
+        if len(den_jacob_rgbs) > 0:
+            imageio.mimwrite(testsavedir + 'den_jacob_video.mp4', np.stack(den_jacob_rgbs,axis=0).astype(np.uint8), fps=20, quality=10)
+        if len(lagrangian_den_jacob_rgbs) > 0:
+            imageio.mimwrite(testsavedir + 'lagrangian_den_jacob_video.mp4', np.stack(lagrangian_den_jacob_rgbs,axis=0).astype(np.uint8), fps=20, quality=10)
         
         
     print('Done output', testsavedir)
