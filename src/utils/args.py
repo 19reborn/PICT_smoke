@@ -34,6 +34,7 @@ def config_parser():
                         help='for siren and hybrid models, the step to finish fading model layers one by one during training.')
     parser.add_argument("--density_distillation_delay", type=int, default=2000, help="stage 2 total training steps" )
     parser.add_argument("--feature_regulization_weight", type=float, default=1e-1)
+    parser.add_argument("--density_distillation_weight", type=float, default=1.0)
 
     ## Stage 2
     parser.add_argument("--stage2_finish_init_lagrangian", type=int, default=0, help="stage 2 total training steps" )
@@ -89,6 +90,10 @@ def config_parser():
                         default=-0.0, help='weight for the VGG loss')
     parser.add_argument("--ColorDivergenceW", type=float,
                         default=0.0, help='weight for the VGG loss')
+    parser.add_argument("--smokeMaskW", type=float,
+                        default=0.0, help='weight for the VGG loss')
+    parser.add_argument("--smokeOverlayW", type=float,
+                        default=0.0, help='weight for the VGG loss')
     parser.add_argument("--overlayW", type=float,
                         default=-0.0, help='weight for the overlay regularization')
     parser.add_argument("--d2vW", type=float,
@@ -123,6 +128,8 @@ def config_parser():
                         default=1, help='weight for the Boardary constrain loss')
     parser.add_argument("--fine_transport_weight", type=float,
                         default=0.1, help='weight for the Boardary constrain loss')
+    parser.add_argument("--feature_transport_weight", type=float,
+                        default=1, help='weight for the Boardary constrain loss')
     ## Lagrangian Feature loss
     parser.add_argument("--self_cycle_loss_weight", type=float, default = 1.0)
     parser.add_argument("--cross_cycle_loss_weight", type=float, default = 0.1)
@@ -210,6 +217,7 @@ def config_parser():
                         help='In output mode: the output resolution along x; In training mode: the sampling resolution for training')
     parser.add_argument("--full_vol_output", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
+    parser.add_argument("--save_jacobian_den", action='store_true') 
     
     
     
@@ -230,6 +238,8 @@ def config_parser():
     parser.add_argument("--render_vis", action='store_true', 
                         help='render the training set instead of render_poses path')
     parser.add_argument("--render_trajectory_only", action='store_true', 
+                        help='render the training set instead of render_poses path')
+    parser.add_argument("--render_no_vorticity", action='store_true', 
                         help='render the training set instead of render_poses path')
     parser.add_argument("--vis_view", type=int, default=0)
     

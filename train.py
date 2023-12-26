@@ -371,7 +371,7 @@ def train(args):
                 _den_siren = model.dynamic_model_siren.density(training_samples)
 
                 # loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
-                loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach()))
+                loss += F.smooth_l1_loss(F.relu(_den_lagrangian), F.relu(_den_siren.detach())) * args.density_distillation_weight
                 # loss += F.smooth_l1_loss(features, torch.zeros_like(features)) * 0.005 # feature regulization
                 loss += F.l1_loss(features, torch.zeros_like(features)) * args.feature_regulization_weight # feature regulization
 

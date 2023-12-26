@@ -1,4 +1,5 @@
-expname = scalar/1205_v2_100_vel_reg_continue_train
+# expname = scalar/1219_ablation_v1_single_layer_less_mapping_constraints
+expname = sig24_submission/scalar/1213
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -8,12 +9,12 @@ dataset_type = pinf_data
 no_batching = True
 half_res = half
 white_bkgd = True
-testskip = 1
+testskip = 60
 
 ### network arch
 net_model = siren
 use_viewdirs = False
-density_map_first_omega = 1
+density_map_first_omega = 30
 position_map_first_omega = 30
 
 ### train params - sampling
@@ -30,13 +31,16 @@ precrop_frac = 0.5
 lrate_decay = 500
 fading_layers = 5000
 tempo_delay = 0
-vel_delay = 10000
+vel_delay = 10000   
 N_iter = 600000
 
 ### train params - loss weights
 vggW = 0.00 # [0.001 - 0.01] larger values are good for high-frequency info
-ghostW = 0.07 # scalar needs a larger ghostW due to density-color ambiguity
+# ghostW = 0.07 # scalar needs a larger ghostW due to density-color ambiguity
+ghostW = 0.15 # scalar needs a larger ghostW due to density-color ambiguity
 d2vW = 0.0 # [0.0 - 4.0, larger values are good for buoyancy driven smoke]
+
+SmokeAlphaReguW = 0.000
 
 ### scene params
 bbox_min = 0.05
@@ -45,11 +49,11 @@ bbox_max = 0.9
 # render_only
 # render_test
 cuda_ray = True
-density_thresh = 0.5
+density_thresh = 0.003
 i_testset = 10000
 i_weights = 5000
 i_img = 1000
-i_video = 50000
+i_video = 600000
 
 
 stage1_finish_recon = 10000
@@ -64,8 +68,8 @@ use_scene_scale_before_pe = True
 stage4_train_vel_interval = 1
 nse_loss_interval = 10
 
-nseW = 1e-2
-vel_regulization_weight = 50.0
+nseW = 1e-3
+vel_regulization_weight = 100.0
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 1e-3
@@ -81,3 +85,14 @@ mapping_frame_range_fading_last = 20000
 # mapping_loss_fading = 100000
 density_activation = exp
 lagrangian_density_activation = exp
+
+
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/200000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/300000.tar
+
+coarse_transport_weight = 100
+fine_transport_weight = 0.1
+feature_regulization_weight = 0.005
+stage4_train_vel_interval = 1
+
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1208_v1/300000.tar

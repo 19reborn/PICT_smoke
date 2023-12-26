@@ -197,10 +197,12 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
     else:
         # todo::tricky now
         if not model.single_scene:
-            if global_step >= 200000:
-                img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW  + extras['acch2'].mean() * args.SmokeAlphaReguW * 0.25
+            if global_step >= 150000:
+                img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW  + extras['acch2'].mean() * args.SmokeAlphaReguW * 0.10
             else:
                 img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
+                
+            # img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW  + extras['acch2'].mean() * args.SmokeAlphaReguW * 0.1
                 
             # img_loss += extras['acch2'].mean() * args.SmokeAlphaReguW
         else:
@@ -212,6 +214,11 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
         # img_loss += (extras['acch1'] * (target_mask[:,0].float())).mean() * 0.05
         img_loss += (extras['acch1'] * (target_mask[:,0].float())).mean() * 0.2
         # if provide static scene mask
+    
+    if not model.single_scene and args.smokeMaskW > 0.0:
+        smoke_acc = extras['acch2'].detach()
+        static_acc = extras['acch1']
+        img_loss += (smoke_acc * (1.0 - static_acc)).mean() * args.smokeMaskW
     
     # for car, sperate 
     if args.ColorDivergenceW > 0.0 and not model.single_scene:
@@ -261,16 +268,16 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
             samples_xyz_dynamic = extras['samples_xyz_dynamic'].clone().detach()
 
             ## overlay loss on static_samples, only penalize dynamic part
-            static_sdf_on_static = extras['raw_static'][...,3:4]
-            smoke_den_on_static = model.density_dynamic(samples_xyz_static_t.detach())
+            # static_sdf_on_static = extras['raw_static'][...,3:4]
+            # smoke_den_on_static = model.density_dynamic(samples_xyz_static_t.detach())
 
             ## overlay loss on dynamic_samples, only penalize static part
             smoke_den_on_dynamic = extras['raw'][...,3:4]
             static_sdf_on_dynamic = model.sdf_static(samples_xyz_dynamic)
 
-            inside_mask_on_static = static_sdf_on_static.detach() <= - inside_sdf
+            # inside_mask_on_static = static_sdf_on_static.detach() <= - inside_sdf
 
-            smoke_inside_loss_on_static = torch.sum((smoke_den_on_static*inside_mask_on_static) ** 2) / (inside_mask_on_static.sum() + 1e-6)
+            # smoke_inside_loss_on_static = torch.sum((smoke_den_on_static*inside_mask_on_static) ** 2) / (inside_mask_on_static.sum() + 1e-6)
 
             inside_mask_on_dynamic = static_sdf_on_dynamic.detach() <= - inside_sdf
 
@@ -289,7 +296,43 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
 
 
         rendering_loss = rendering_loss + smoke_inside_sdf_loss * w_smoke_inside_sdf
-        
+
+    if args.smokeOverlayW > 1e-8 and not model.single_scene:
+        if global_step > args.uniform_sample_step and args.cuda_ray:
+          
+            samples_xyz_static = extras['samples_xyz_static'].clone().detach()
+
+            samples_xyz_static_t = torch.cat([samples_xyz_static, time_locate * torch.ones_like(samples_xyz_static[..., :1])], dim=-1) # [N, 4]
+            samples_xyz_dynamic = extras['samples_xyz_dynamic'].clone().detach()
+            
+            
+            ## overlay loss on dynamic_samples, only penalize static part
+            smoke_den_on_dynamic = F.relu(extras['raw'][...,3:4]).detach()
+            static_sdf_on_dynamic = model.sdf_static(samples_xyz_dynamic)
+            
+            inv_s = model.get_deviation().detach()
+            sigmoid_sdf = torch.sigmoid(static_sdf_on_dynamic*inv_s)
+            static_den = inv_s * sigmoid_sdf * (1 - sigmoid_sdf)
+            
+            # overlay_loss = torch.sum((smoke_den_on_dynamic*sdf_density) ** 2) / (smoke_den_on_dynamic.sum() + 1e-6)
+            overlay_loss = torch.div(2.0 * (smoke_den_on_dynamic * static_den), (torch.square(smoke_den_on_dynamic) + torch.square(static_den) + 1e-8 ))
+            overlay_loss = torch.mean(overlay_loss)
+            
+            
+
+        else:
+            smoke_den = F.relu(extras['raw'][...,3:4]).detach()
+            static_sdf = extras['raw_static'][...,3:4]
+            inv_s = model.get_deviation().detach()
+            sigmoid_sdf = torch.sigmoid(static_sdf*inv_s)
+            static_den = inv_s * sigmoid_sdf * (1 - sigmoid_sdf)
+            
+            overlay_loss = torch.div(2.0 * (smoke_den * static_den), (torch.square(smoke_den) + torch.square(static_den) + 1e-8 ))
+            overlay_loss = torch.mean(overlay_loss)
+            
+        rendering_loss = rendering_loss + overlay_loss * args.smokeOverlayW
+
+
     rendering_loss_dict['smoke_inside_sdf_loss'] = smoke_inside_sdf_loss
     
     ghost_loss = None
@@ -350,7 +393,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
                 Du_Dt)
         
             # coasre density transport, fine density transport, feature continuity, velocity divergence, scale regularzation, Du_Dt
-            split_nse_wei = [args.coarse_transport_weight, args.fine_transport_weight, 1.0, 0.1, args.vel_regulization_weight, 1e-1]
+            split_nse_wei = [args.coarse_transport_weight, args.fine_transport_weight, args.feature_transport_weight, 0.1, args.vel_regulization_weight, 1e-1]
         else:
             _den_lagrangian, features, jacobian = den_model_lagrangian.density_with_jacobian(training_samples)
             _d_x, _d_y, _d_z, _d_t = [torch.squeeze(_, -1) for _ in jacobian.split(1, dim=-1)] # (N,3)

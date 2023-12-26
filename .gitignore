@@ -35,3 +35,4 @@ out*.txt
 
 scripts
 mpi_output
+*.obj

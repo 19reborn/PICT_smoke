@@ -333,11 +333,18 @@ class Voxel_Tool(object):
                 imageio.imwrite(jpg_path, rgb)
                 if not 'static' in npre:
                     ret[npre] = rgb
+            if model.args.save_jacobian_den:
+                jacobian_den= jacobianDen_np(voxel_den)
+                rgb = vel_uv2hsv(jacobian_den[0], scale=160, is3D=True, logv=False)
+                jpg_path = os.path.join(head_tail[0], npre + os.path.splitext(head_tail[1])[0]+"_jacobian.jpg")
+                imageio.imwrite(jpg_path, rgb)
+                ret[npre+"jacobian"] = rgb
             if save_npz:
                 # to save some space
                 npz_path = os.path.join(head_tail[0], npre + os.path.splitext(head_tail[1])[0]+".npz")
                 voxel_den = np.float16(voxel_den)
                 np.savez_compressed(npz_path, vel=voxel_den)
+                
             if noStatic and 'static' in npre:
                 break
         return ret
@@ -550,7 +557,8 @@ class Voxel_Tool(object):
     def vis_vel_integration(self, frame_list, t_list, model, sample_pts = 128, change_feature_interval = 1, chunk = 1024*32):
 
         dynamic_model_lagrangian = model.dynamic_model_lagrangian
-        dynamic_model = model.dynamic_model_siren
+        # dynamic_model = model.dynamic_model_siren
+        dynamic_model = model.dynamic_model
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
 
@@ -627,7 +635,7 @@ class Voxel_Tool(object):
     def vis_mapping_voxel_2d(self, frame_list, t_list, model, sample_pts = 128, change_feature_interval = 1, chunk = 1024*32):
 
         dynamic_model_lagrangian = model.dynamic_model_lagrangian
-        dynamic_model = model.dynamic_model_siren
+        dynamic_model = model.dynamic_model
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
 
@@ -683,7 +691,7 @@ class Voxel_Tool(object):
     def eval_mapping_error(self, frame_list, t_list, model, sample_pts = 128, chunk = 1024*32):
 
         dynamic_model_lagrangian = model.dynamic_model_lagrangian
-        dynamic_model = model.dynamic_model_siren
+        dynamic_model = model.dynamic_model
         # dynamic_model = model.dynamic_model_lagrangian
         # middle_slice, only for fast visualization of the middle slice
         D,H,W = self.D,self.H,self.W
@@ -959,3 +967,20 @@ def jacobian3D_np(x):
     
     return j, c
 
+def jacobianDen_np(x):
+    # x, (b,)d,h,w,ch
+    # return jacobian and curl
+
+    if len(x.shape) < 5:
+        x = np.expand_dims(x, axis=0)
+    dudx = x[:,:,:,1:,0] - x[:,:,:,:-1,0]
+    dudy = x[:,:,1:,:,0] - x[:,:,:-1,:,0]
+    dudz = x[:,1:,:,:,0] - x[:,:-1,:,:,0]
+    
+    dudx = np.concatenate((dudx, np.expand_dims(dudx[:,:,:,-1], axis=3)), axis=3)
+    dudy = np.concatenate((dudy, np.expand_dims(dudy[:,:,-1,:], axis=2)), axis=2)
+    dudz = np.concatenate((dudz, np.expand_dims(dudz[:,-1,:,:], axis=1)), axis=1)
+
+    j = np.stack([dudx,dudy,dudz], axis=-1)
+    
+    return j
