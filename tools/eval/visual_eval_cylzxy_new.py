@@ -22,8 +22,12 @@ ref_path = '/root/data/wym/workspace/mantadata_7.24/mantaScene2_3d/np'
 # out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1108_v3_ablation_larger_density_mapping/'
 # our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1108_v1_larger_nse_weights/volumeout_300001/'
 # out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1108_v4_ablation_larger_nseW/'
-our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1108_v3_no_density_mapping_loss/volumeout_300001/'
-out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1108_v5_ablation_no_density_mapping/'
+# our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1108_v3_no_density_mapping_loss/volumeout_300001/'
+# out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1108_v5_ablation_no_density_mapping/'
+# our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1206_ablation_study_2_no_vel_mapping/volumeout_200001'
+# out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1211_v1_ablation_no_vel_mapping/'
+our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1206_ablation_study_1_no_den_mapping/volumeout_200001'
+out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1211_v1_ablation_no_den_mapping/'
 
 glo_path = None
 hull_path = None
@@ -237,8 +241,12 @@ our_list, glo_list, ref_list =[], [], []
 fr = 0
 
 testWarp = True
-for framei in range(15,115,10): # [100]
+frame_num = 0
+start_frame = 0
+# for framei in range(15,115,10): # [100]
+for framei in range(start_frame,150,1): # [100]
     print(framei)
+    frame_num += 1
     rden, rvel = readData(ref_path, den_file%framei, vel_file%framei, oref_grids)
     rden = np.reshape(rden, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
     rvel = np.reshape(rvel, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
@@ -257,7 +265,7 @@ for framei in range(15,115,10): # [100]
         gvel = np.reshape(gvel, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
         gvel *= 0.5 # scalarflow only, 2 frames
 
-    if framei>15:
+    if framei>start_frame:
         rden_warpMID, rvel_warpMID = warpMidTest(_rvel_warp, _rden_warp, rvel, rden, oref_grids[1], oref_grids[2], oref_grids[0])
         rden_warp, rvel_warp = warpTest(_rvel_warp, _rden_warp, rvel, rden, oref_grids[1], oref_grids[2], oref_grids[0])
         
@@ -278,7 +286,7 @@ for framei in range(15,115,10): # [100]
         _rden_warp, _rvel_warp = np.copy(rden), np.copy(rvel)        
         
     if (ref_gs.x != our_gs.x) and (our_path is not None):
-        if framei>15:
+        if framei>start_frame:
             copyArrayToGridReal(target=oref_grids[1], source=rden_warpMID)
             copyArrayToGridMAC(target=oref_grids[2], source=rvel_warpMID)
             interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
@@ -322,7 +330,7 @@ for framei in range(15,115,10): # [100]
             save_fig(None, ovel, out_path+"oriour_", t=fr, vN=1.0)
             oden *= hull_data[0]
             ovel *= hull_data[0]
-        if framei>15:
+        if framei>start_frame:
             if our_path is not None:
                 oden_warp *= hull_data[0]; oden_warpMID *= hull_data[0]
                 ovel_warp *= hull_data[0]; ovel_warpMID *= hull_data[0]
@@ -336,10 +344,10 @@ for framei in range(15,115,10): # [100]
     if normDen and (our_path is not None):
         odscale = rden.mean()/oden.mean() 
         oden = oden * odscale
-        if framei>15:
+        if framei>start_frame:
             oden_warp = oden_warp * odscale; oden_warpMID = oden_warpMID * odscale
 
-    if framei>15:
+    if framei>start_frame:
         if our_path is not None:
             copyArrayToGridReal(target=our_grids[1], source=np.abs(oden_warp)*denratio*5.0)
             if True: save_fig(our_grids[1], ovel_warp, out_path+"warp_our_", t=fr) 
@@ -378,7 +386,7 @@ for framei in range(15,115,10): # [100]
     if glo_path is not None: _glo = Vmetrics(gvel, rvel, gden, rden, frameHull=uh, printname="glo")[:2]
     _ref = Vmetrics(rvel, None, rden, None, frameHull=uh, printname="ref")[:2]
     # w.o. inflow:
-    if framei ==15:
+    if framei ==start_frame:
         ovel_warp,gvel_warp,rvel_warp,oden_warp,gden_warp,rden_warp = [None]*6
         ovel_warpMID,gvel_warpMID,rvel_warpMID,oden_warpMID,gden_warpMID,rden_warpMID = [None]*6
     if our_path is not None: _our += Vmetrics(ovel, rvel, oden, rden, ovel_warp, oden_warp, ovel_warpMID, oden_warpMID, frameHull=uh, ignoreInflow=True, printname="our")
@@ -440,14 +448,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_den_%04d.ppm'), stt=0, fps=15)
     myffmpeg.join_cmd()
     
-    text_off = 2
-    myffmpeg.add_label("ref", 2, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 2, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 2, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 2, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 2, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 2, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "eval_vel.mp4"), row=n, col=3 if hullmask else 2) # if use hull_data. col should be 3
@@ -467,14 +475,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
     
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
     
     myffmpeg = FFmpegTool(os.path.join(out_path, "eval_vor.mp4"), row=n, col=2)
@@ -487,14 +495,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'glo_vort_vel_%04d.png'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'Diff_glo_vort_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 2, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 2, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 2, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 2, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 2, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 2, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "warp.mp4"), row=n, col=2)
@@ -507,14 +515,14 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'warp_glo_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warp_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
 
     myffmpeg = FFmpegTool(os.path.join(out_path, "warpMID.mp4"), row=n, col=2)
@@ -527,16 +535,55 @@ if True:
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_glo_den_%04d.ppm'), stt=0, fps=15)
         myffmpeg.add_image(os.path.join(out_path, 'warpMID_glo_vel_%04d.png'), stt=0, fps=15)
     myffmpeg.join_cmd()
-    text_off = 2
-    myffmpeg.add_label("ref", 402, text_off, 24)
-    if our_path is not None:
-        text_off += 192
-        myffmpeg.add_label("our", 402, text_off, 24)
-    if glo_path is not None: 
-        text_off += 192
-        myffmpeg.add_label("glo", 402, text_off, 24)
+    # text_off = 2
+    # myffmpeg.add_label("ref", 402, text_off, 24)
+    # if our_path is not None:
+    #     text_off += 192
+    #     myffmpeg.add_label("our", 402, text_off, 24)
+    # if glo_path is not None: 
+    #     text_off += 192
+    #     myffmpeg.add_label("glo", 402, text_off, 24)
     myffmpeg.export(overwrite=True)
 
 if True:
+# if False:
     ppm_list = os.listdir(out_path)
+    
+    # save useful images for comparison
+    density_output_dir = os.path.join(out_path, "density")
+    os.makedirs(density_output_dir, exist_ok=True)
+    vel_output_dir = os.path.join(out_path, "velocity")
+    os.makedirs(vel_output_dir, exist_ok=True)
+    vor_output_dir = os.path.join(out_path, "vorticity")
+    os.makedirs(vor_output_dir, exist_ok=True)
+    for frame_id in range(frame_num):
+        ref_den_path = os.path.join(out_path, "ref_den_%04d.ppm"%frame_id)
+        imageio.imwrite(os.path.join(density_output_dir, "ref_den_%04d.png"%frame_id), imageio.imread(ref_den_path))
+        
+        our_den_path = os.path.join(out_path, "our_den_%04d.ppm"%frame_id)
+        imageio.imwrite(os.path.join(density_output_dir, "our_den_%04d.png"%frame_id), imageio.imread(our_den_path))
+        
+        comparison_density = np.concatenate((imageio.imread(ref_den_path), imageio.imread(our_den_path)), axis=0)
+        imageio.imwrite(os.path.join(density_output_dir, "comparison_den_%04d.png"%frame_id), comparison_density)
+        
+        ref_vel_path = os.path.join(out_path, "ref_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vel_output_dir, "ref_vel_%04d.png"%frame_id), imageio.imread(ref_vel_path))
+        
+        our_vel_path = os.path.join(out_path, "our_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vel_output_dir, "our_vel_%04d.png"%frame_id), imageio.imread(our_vel_path))
+        
+        comparison_velocity = np.concatenate((imageio.imread(ref_vel_path), imageio.imread(our_vel_path)), axis=0)
+        imageio.imwrite(os.path.join(vel_output_dir, "comparison_vel_%04d.png"%frame_id), comparison_velocity)
+        
+        
+        ref_vort_path = os.path.join(out_path, "ref_vort_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vor_output_dir, "ref_vort_vel_%04d.png"%frame_id), imageio.imread(ref_vort_path))
+        
+        our_vort_path = os.path.join(out_path, "our_vort_vel_%04d.png"%frame_id)
+        imageio.imwrite(os.path.join(vor_output_dir, "our_vort_vel_%04d.png"%frame_id), imageio.imread(our_vort_path))
+        
+        comparison_vorticity = np.concatenate((imageio.imread(ref_vort_path), imageio.imread(our_vort_path)), axis=0)
+        imageio.imwrite(os.path.join(vor_output_dir, "comparison_vort_%04d.png"%frame_id), comparison_vorticity)
+        
+        
     ppm_list = [os.remove(os.path.join(out_path, _)) for _ in ppm_list if _.endswith(".ppm") or _.endswith(".png")] 
