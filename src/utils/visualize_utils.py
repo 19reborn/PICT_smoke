@@ -1,6 +1,7 @@
 
 import numpy as np
 import cv2 as cv
+import os
 import matplotlib.pyplot as plt
 from plyfile import PlyData, PlyElement
 import pandas as pd
@@ -82,7 +83,7 @@ def vel2hsv(velin, is3D, logv, scale=None): # 2D
         v = np.log10(v+1)
     
     hsv = np.zeros(ori_shape, np.uint8)
-    hsv[...,0] = ang*(180/np.pi/2)
+    hsv[...,0] = ang *(180/np.pi/2)
     if is3D:
         hsv[...,1] = 255 - angY*(240/np.pi*2)  
     else:
@@ -424,6 +425,117 @@ def draw_points(uv, image, output_dir=None):
     return image
 
 
+# def draw_trajectory(all_uv, image, output_dir=None):
+#     frame_num = len(all_uv)
+#     print(frame_num)
+#     prev_uv = None
+    
+#     ori_image = image.copy()
+#     for frame_i in range(frame_num):
+#         alpha = max(1 - 0.9 * ((frame_num - frame_i) / ((frame_num + 1) * .99)), 0.1)
+
+
+#         uv = all_uv[frame_i]
+#         if frame_i == frame_num - 1:
+#             point_size = 1
+
+#             point_color = (0, 255, 255)
+#             thickness = 4 #  0 、4、8
+#         else:
+#             point_size = 1
+
+#             point_color = (0, 0, 255)
+#             thickness = 1
+
+#         line_color = (0, 0, 255)
+#         line_thickness = 1
+
+#         line_image = ori_image.copy()
+#         draw_line = False
+#         for i, coor in enumerate(uv.cpu().numpy()):
+
+#             point_color = np.array(color_map(i/max(1, float(uv.shape[0] - 1)))[:3]) * 255
+
+#             # try:
+#             # cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, thickness) 
+#             cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, -1, lineType=16) 
+#             if frame_i > 0:
+#                 if i < prev_uv.shape[0]:
+#                     draw_line = True
+#                     line_color = np.array(color_map(i/max(1, float(prev_uv.shape[0] - 1)))[:3]) * 255
+#                     cv.line(line_image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, 1, lineType=16)
+#                     # cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+#                 # cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+#         if draw_line:
+#             image = cv.addWeighted(line_image, alpha, image, 1 - alpha, 0)
+#             # except:
+#                 # continue
+#         prev_uv = uv
+#     if output_dir is not None:
+#         cv.imwrite(output_dir,image)
+
+        
+            
+#     return image
+
+
+# def draw_trajectory(all_uv, image, output_dir=None):
+#     frame_num = len(all_uv)
+#     print(frame_num)
+#     prev_uv = None
+    
+#     ori_image = image.copy()
+#     for frame_i in range(frame_num):
+#         alpha = max(1 - 0.9 * ((frame_num - frame_i) / ((frame_num + 1) * .99)), 0.1)
+
+
+#         uv = all_uv[frame_i]
+#         if frame_i == frame_num - 1:
+#             point_size = 1
+
+#             point_color = (0, 255, 255)
+#             thickness = 4 #  0 、4、8
+#         else:
+#             point_size = 1
+
+#             point_color = (0, 0, 255)
+#             thickness = 1
+
+#         line_color = (0, 0, 255)
+#         line_thickness = 1
+
+#         line_image = ori_image.copy()
+#         draw_line = False
+#         for i, coor in enumerate(uv.cpu().numpy()):
+
+#             point_color = np.array(color_map(i/max(1, float(uv.shape[0] - 1)))[:3]) * 255
+
+#             # try:
+#             # cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, thickness) 
+#             cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, -1, lineType=16) 
+#             if frame_i > 0:
+#                 if i < prev_uv.shape[0]:
+#                     draw_line = True
+#                     line_color = np.array(color_map(i/max(1, float(prev_uv.shape[0] - 1)))[:3]) * 255
+#                     cv.line(line_image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, 1, lineType=16)
+#                     # cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+#                 # cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+#         # if draw_line:
+#             # image = cv.addWeighted(line_image, alpha, image, 1 - alpha, 0)
+#             # except:
+#                 # continue
+#         prev_uv = uv
+#     if output_dir is not None:
+#         cv.imwrite(output_dir,image)
+
+        
+            
+#     return image
+
+from matplotlib import cm
+
+color_map = cm.get_cmap("jet")
+
 def draw_trajectory(all_uv, image, output_dir=None):
 
     frame_num = len(all_uv)
@@ -445,19 +557,129 @@ def draw_trajectory(all_uv, image, output_dir=None):
         line_color = (0, 0, 255)
         line_thickness = 1
 
+        image_cur = image.copy()
+        alpha = max(1 - 0.9 * ((frame_num - frame_i) / ((frame_num+1) * .99)), 0.1)
         for i, coor in enumerate(uv.cpu().numpy()):
+
+            point_color = np.array(color_map(i/max(1, float(uv.shape[0] - 1)))[:3]) * 255
             # try:
-            cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, thickness)
             if frame_i > 0:
                 if i < prev_uv.shape[0]:
-                    cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+                    cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), point_color, line_thickness)
+                # image = cv.addWeighted(image, alpha, image_cur, 1 - alpha, 0)
+                image = cv.addWeighted(image, 1 - alpha, image_cur, alpha, 0)
+
+            cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, thickness)
                 # cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
             # except:
                 # continue
+        # alpha = max(1 - 0.9 * ((frame_num - frame_i - 1) / ((frame_num) * .99)), 0.1)
+        # alpha = min(alpha, 0.9)
+        # print('frame_i, frame_num, alpha', frame_i, frame_num, alpha)
+
+
         prev_uv = uv
+
+
     if output_dir is not None:
         cv.imwrite(output_dir,image)
 
         
             
     return image
+
+def draw_all_trajectory(all_uv, images, output_dir=None):
+
+    frame_num = len(all_uv)
+    print(frame_num)
+    prev_uv = None
+    output_images = []
+    for frame_i in range(frame_num):
+
+        img_curr = images[frame_i]
+
+        for t in range(frame_i):
+
+            img1 = img_curr.copy()
+            # changing opacity
+            alpha = max(1 - 0.9 * ((frame_i - t) / ((frame_i + 1) * .99)), 0.1)
+
+            uv = all_uv[t]
+            next_uv = all_uv[t+1]
+
+            # for i, coor in enumerate(next_uv.cpu().numpy()):
+            for i, coor in enumerate(uv.cpu().numpy()):
+                point_color = np.array(color_map(i/max(1, float(uv.shape[0] - 1)))[:3]) * 255
+                # cv.line(img1, (int(coor[0]),int(coor[1])), (int(uv[i][0]),int(uv[i][1])), point_color,  thickness=1, lineType=16)
+                cv.line(img1, (int(coor[0]),int(coor[1])), (int(next_uv[i][0]),int(next_uv[i][1])), point_color,  thickness=1, lineType=16)
+                # cv.line(img1, (int(coor[0]),int(coor[1])), (int(next_uv[i][0]),int(next_uv[i][1])), point_color,  thickness=1)
+            # print(alpha)
+            # import pdb
+            # pdb.set_trace()
+            # cv.imwrite('test.png',img1)
+            img_curr = cv.addWeighted(img1, alpha, img_curr, 1 - alpha, 0)
+
+        uv = all_uv[frame_i]
+        for i, coor in enumerate(uv.cpu().numpy()):
+
+            point_color = np.array(color_map(i/max(1, float(uv.shape[0] - 1)))[:3]) * 255
+            # cv.circle(img_curr, (int(coor[0]),int(coor[1])), point_size, point_color, thickness)
+            # cv.circle(img_curr, (int(coor[0]),int(coor[1])), 2, point_color, 1)
+            cv.circle(img_curr, (int(coor[0]),int(coor[1])), 2, point_color, -1, lineType=16)
+                    # cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+                # except:
+                    # continue
+            # alpha = max(1 - 0.9 * ((frame_num - frame_i - 1) / ((frame_num) * .99)), 0.1)
+            # alpha = min(alpha, 0.9)
+            # print('frame_i, frame_num, alpha', frame_i, frame_num, alpha)
+
+
+
+        output_images.append(img_curr)
+        if output_dir is not None:
+            filename = os.path.join(output_dir, '2d_trajectory_{:03d}.png'.format(frame_i))
+            cv.imwrite(filename, img_curr)
+
+                
+    return output_images
+
+
+# def draw_trajectory(all_uv, image, output_dir=None):
+
+#     frame_num = len(all_uv)
+#     print(frame_num)
+#     prev_uv = None
+#     for frame_i in range(frame_num):
+#         uv = all_uv[frame_i]
+#         if frame_i == frame_num - 1:
+#             point_size = 1
+
+#             point_color = (0, 255, 255)
+#             thickness = 4 #  0 、4、8
+#         else:
+#             point_size = 1
+
+#             point_color = (0, 0, 255)
+#             thickness = 1
+
+#         line_color = (0, 0, 255)
+#         line_thickness = 1
+
+#         for i, coor in enumerate(uv.cpu().numpy()):
+
+#             point_color = np.array(color_map(i/max(1, float(uv.shape[0] - 1)))[:3]) * 255
+#             # try:
+#             cv.circle(image, (int(coor[0]),int(coor[1])), point_size, point_color, thickness)
+#             if frame_i > 0:
+#                 if i < prev_uv.shape[0]:
+#                     cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+#                 # cv.line(image, (int(coor[0]),int(coor[1])), (int(prev_uv[i][0]),int(prev_uv[i][1])), line_color, line_thickness)
+#             # except:
+#                 # continue
+#         prev_uv = uv
+#     if output_dir is not None:
+#         cv.imwrite(output_dir,image)
+
+        
+            
+#     return image

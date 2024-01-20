@@ -206,8 +206,8 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
                 
             # img_loss += extras['acch2'].mean() * args.SmokeAlphaReguW
         else:
-            if global_step >= 200000:
-                img_loss += (acc * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
+            # if global_step >= 200000:
+            img_loss += (acc * (((gt_rgb - bg_color).abs().sum(-1) < 1e-4)).float()).mean() * args.SmokeAlphaReguW 
 
     if args.use_mask:
     # if args.use_mask and global_step <= 20000:

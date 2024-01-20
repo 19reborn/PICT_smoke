@@ -864,20 +864,24 @@ class Voxel_Tool(object):
             np.savez_compressed(vel_path, vel=voxel_vel)
 
     def save_voxel_vel_npz_with_grad(self, model, vel_path, deltaT, t, chunk, save_npz=True, save_jpg=False, save_vort=False):
-        vel_scale = 160
+        # vel_scale = 160
+        # vel_scale = 300
+        vel_scale = 500
         voxel_vel = self.get_voxel_velocity(model, deltaT, t, chunk, middle_slice=not save_npz).detach().cpu().numpy()
         
         ret = {}
         if save_jpg:
             jpg_path = os.path.splitext(vel_path)[0]+".jpg"
-            rgb = vel_uv2hsv(voxel_vel, scale=vel_scale, is3D=True, logv=False)
+            rgb = vel_uv2hsv(voxel_vel, scale=1000, is3D=True, logv=False)
             imageio.imwrite(jpg_path, rgb)
             ret['vel'] = rgb
         if save_npz:
             if save_vort and save_jpg:
                 _, NETw = jacobian3D_np(voxel_vel)
                 head_tail = os.path.split(vel_path)
-                rgb = vel_uv2hsv(NETw[0],scale=vel_scale*5.0,is3D=True)
+                # rgb = vel_uv2hsv(NETw[0],scale=vel_scale*5.0,is3D=True)
+                # rgb = vel_uv2hsv(NETw[0],scale=1500,is3D=True)
+                rgb = vel_uv2hsv(NETw[0],scale=1000,is3D=True)
                 imageio.imwrite( os.path.join(head_tail[0], "vort"+os.path.splitext(head_tail[1])[0]+".jpg"),
                          rgb)
                 ret['vort'] = rgb

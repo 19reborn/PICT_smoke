@@ -205,6 +205,7 @@ def config_parser():
                         help='test mode')
     parser.add_argument("--output_voxel", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
+    parser.add_argument("--masked_voxel", action='store_true')
     parser.add_argument("--voxel_video", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
     parser.add_argument("--visualize_mapping", action='store_true', 
@@ -237,6 +238,7 @@ def config_parser():
                         help='render the training set instead of render_poses path')
     parser.add_argument("--render_vis", action='store_true', 
                         help='render the training set instead of render_poses path')
+    parser.add_argument("--render_2d_trajectory", action='store_true') 
     parser.add_argument("--render_trajectory_only", action='store_true', 
                         help='render the training set instead of render_poses path')
     parser.add_argument("--render_no_vorticity", action='store_true', 

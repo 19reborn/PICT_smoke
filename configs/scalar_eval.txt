@@ -1,5 +1,4 @@
-# expname = scalar/1219_ablation_v1_single_layer_less_mapping_constraints
-expname = sig24_submission/scalar/1213
+expname = scalar/1212_ablation_v3_no_coarse_density_fixed
 basedir = ./log
 # basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
@@ -49,7 +48,8 @@ bbox_max = 0.9
 # render_only
 # render_test
 cuda_ray = True
-density_thresh = 0.003
+# density_thresh = 0.003
+density_thresh = 0.1
 i_testset = 10000
 i_weights = 5000
 i_img = 1000
@@ -69,7 +69,7 @@ stage4_train_vel_interval = 1
 nse_loss_interval = 10
 
 nseW = 1e-3
-vel_regulization_weight = 100.0
+vel_regulization_weight = 0.01
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 1e-3
@@ -90,9 +90,11 @@ lagrangian_density_activation = exp
 # model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/200000.tar
 # model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/300000.tar
 
-coarse_transport_weight = 100
-fine_transport_weight = 0.1
+coarse_transport_weight = 0
+fine_transport_weight = 1.0
+density_distillation_weight = 0
 feature_regulization_weight = 0.005
 stage4_train_vel_interval = 1
+
 
 # model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1208_v1/300000.tar

@@ -12,7 +12,7 @@ from src.dataset.load_pinf import load_pinf_frame_data
 from src.network.hybrid_model import create_model
 
 from src.renderer.occupancy_grid import init_occ_grid, update_occ_grid
-from src.renderer.render_ray import render_path, render_eval
+from src.renderer.render_ray import render_path, render_eval, render_2d_trajectory
 
 from src.utils.args import config_parser
 from src.utils.training_utils import set_rand_seed, save_log
@@ -231,7 +231,12 @@ def render_only(args, model, testsavedir, render_poses, render_timesteps, test_b
     print('RENDER ONLY')
 
     print('test poses shape', render_poses.shape)
-    if args.render_eval:
+    if args.render_2d_trajectory:
+        if args.render_vis:
+            testsavedir = testsavedir + f"_vis_view{args.vis_view}"
+        render_2d_trajectory(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
+        exit(1)
+    elif args.render_eval:
         if args.render_vis:
             testsavedir = testsavedir + f"_vis_view{args.vis_view}"
         rgbs, _ = render_eval(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
