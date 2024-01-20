@@ -1,10 +1,9 @@
-# /root/data/wym/workspace/mantaflow/build/manta  /root/data/wym/workspace/pinf_clean/tools/eval/visual_eval_cylzxy_new.py
+# /home/yiming/Documents/workspace/Project_PINF/mantaflow_nogui/build/manta /home/yiming/Documents/workspace/Project_PINF/pinf_clean/tools/eval/visual_eval_game_4090.py
 
 import os, sys, inspect
 import numpy as np
 from manta import *
 import imageio
-import pandas as pd
 
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -14,40 +13,25 @@ sys.path.insert(0, parentdir)
 from _helpers import vel_uv2hsv, jacobian3D_np,divergence3D_np,jacobian2D_np,vor_rgb
 from _helpers import FFmpegTool
 
-ref_path = '/root/data/wym/workspace/mantadata_7.24/mantaScene2_3d/np'
 
-# our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1107_v2_with_vel_mapping_loss/volumeout_300001/'
-# out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1108_v2_ablation_with_vel_mapping_loss/'
-# our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1108_v2_larger_density_mapping_loss/volumeout_300001/'
-# out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1108_v3_ablation_larger_density_mapping/'
-# our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1108_v1_larger_nse_weights/volumeout_300001/'
-# out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1108_v4_ablation_larger_nseW/'
-# our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1108_v3_no_density_mapping_loss/volumeout_300001/'
-# out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1108_v5_ablation_no_density_mapping/'
-# our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1206_ablation_study_2_no_vel_mapping/volumeout_200001'
-# out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1211_v1_ablation_no_vel_mapping/'
-our_path = '/root/data/wym/workspace/pinf_clean/log/cyl/1206_ablation_study_1_no_den_mapping/volumeout_200001'
-out_path = '/root/data/wym/workspace/pinf_clean/log/evaluate/' + '/cyl/1211_v1_ablation_no_den_mapping/'
+ref_path = '/mnt/sda/workspace/PINF_Project/eval_data/gt_data/Game/np/'
 
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/volumeout_395001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/game/1206_v1_test_pipeline/'
+our_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/game/1211_v2_less_pe/volumeout_400001/'
+out_path = '/home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/evaluate/' + '/game/1212_v1_less_pe/'
 glo_path = None
 hull_path = None
 
 os.makedirs(out_path, exist_ok = True)
-# if not os.path.exists(out_path):os.mkdir(out_path)
-    
-den_file, vel_file = "density_high_%04d.f16.npz", "velocity_high_%04d.f16.npz"
+res = 128
+upres = 4
+bWidth=1
+gs = vec3(res,int(res*0.8),int(res*0.85))
 
-ref_gs = vec3(256,256,256) # 178
-our_gs = vec3(256,256,256)
+ref_gs = vec3(upres*gs.x,upres*gs.y,upres*gs.z)
+our_gs = vec3(256,216,204)
 
-st = vec3(0,0,0)
-sz = vec3(0,0,0)
-pad = our_gs - sz - st
-sz = [int(sz.x), int(sz.y), int(sz.z)]
-st = [int(st.x), int(st.y), int(st.z)]
-pad = [int(pad.x), int(pad.y), int(pad.z)]
-# padding = ((0,0),(st[0],pad[0]),(st[1],pad[1]),(st[2],pad[2]),(0,0))
-padding = None
 
 def setSolver(gs, name):
     s   = FluidSolver(name=name, gridSize = gs)
@@ -71,6 +55,8 @@ def load_numpy(filename, grid=None, padding=None, flip=False):
         if flip: npy[-1] = npy[-1] * -1.0
         npy = np.concatenate(npy,axis=-1)
 
+    npy = np.float32(npy)
+
     if npy.shape[0] == 100 and npy.shape[1] > 150: # only for scalarflow, todo resolution
         npy = npy[:,:150,...]
     if padding is not None:
@@ -78,9 +64,6 @@ def load_numpy(filename, grid=None, padding=None, flip=False):
         npy = np.pad(npy, padding, 'constant')
         # print(npy.shape)
     if flip: npy = npy[:,::-1,...]
-    
-    npy = np.float32(npy)
-    # print(npy.shape)
     if grid is not None:
         if npy.shape[-1] == 3:
             copyArrayToGridMAC(npy, grid) # todo, centered,
@@ -101,9 +84,81 @@ def readData(basedir, den_file=None, vel_file=None, grids=[None,None,None], padd
         vel_np = None
     return den_np, vel_np
 
-def saveVel(Vin, path, scale=144):
+def saveVel(Vin, path, scale=192):
+    # imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False)[::-1])
     imageio.imwrite( path, vel_uv2hsv(Vin, scale=scale, is3D=True, logv=False))
-    # imageio.imwrite( path, vel_uv2hsv(Vin[:,::-1,...], scale=scale, is3D=True, logv=False)[::-1])
+
+
+
+def np_l2(np_array): return np.sum(np.square(np_array),axis=-1)
+
+ref_s, oref_grids = setSolver(ref_gs, 'ref')
+our_s, our_grids = setSolver(our_gs, 'our')
+
+oref_grids[1].load("/mnt/sda/workspace/PINF_Project/eval_data/gt_data/Game/stair_fine.uni")
+flagArray = np.zeros([int(ref_gs.z), int(ref_gs.y), int(ref_gs.x), 1], dtype = np.float32)
+copyGridToArrayReal(target=flagArray, source=oref_grids[1])
+print(flagArray.min(), flagArray.mean(), flagArray.max())
+
+if ref_gs.x != our_gs.x: # same res for evaluation
+    newr_vel  = our_s.create(MACGrid)
+    newr_den  = our_s.create(RealGrid)
+    ref_grids = [our_grids[0], newr_den, newr_vel]
+
+if (ref_gs.x != our_gs.x) and (our_path is not None):
+    copyArrayToGridReal(target=oref_grids[1], source=flagArray)
+    interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
+    flagArray = np.zeros([int(our_gs.z), int(our_gs.y), int(our_gs.x), 1], dtype = np.float32)
+    copyGridToArrayReal(target=flagArray, source=ref_grids[1])
+
+bbox_min = 0.12,-0.1,-0.3
+bbox_max = 1.19,0.9,1.3
+# flagArray[:int(bbox_min[2]*our_gs.z),...] = 0.0
+# flagArray[int(bbox_max[2]*our_gs.z):,...] = 0.0
+flagArray[:,int(bbox_max[1]*our_gs.y):,...] = 0.0
+flagArray[:,:,:int(bbox_min[0]*our_gs.x),...] = 0.0
+# flagArray[:,:,int(bbox_max[0]*our_gs.x):,...] = 0.0
+hull_flag = np.float32(flagArray > 1e-4)
+# flagArray[:int(bbox_min[2]*our_gs.z+1),...] = 0.0
+# flagArray[int(bbox_max[2]*our_gs.z)-1:,...] = 0.0
+flagArray[:,int(bbox_max[1]*our_gs.y)-1:,...] = 0.0
+flagArray[:,:,:int(bbox_min[0]*our_gs.x)+1,...] = 0.0
+# flagArray[:,:,int(bbox_max[0]*our_gs.x)-1:,...] = 0.0
+hull_flag1 = np.float32(flagArray > 1)
+
+
+flagArray = np.ones([int(ref_gs.z), int(ref_gs.y), int(ref_gs.x), 1], dtype = np.float32)
+
+if ref_gs.x != our_gs.x: # same res for evaluation
+    newr_vel  = our_s.create(MACGrid)
+    newr_den  = our_s.create(RealGrid)
+    ref_grids = [our_grids[0], newr_den, newr_vel]
+
+if (ref_gs.x != our_gs.x) and (our_path is not None):
+    copyArrayToGridReal(target=oref_grids[1], source=flagArray)
+    interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
+    flagArray = np.zeros([int(our_gs.z), int(our_gs.y), int(our_gs.x), 1], dtype = np.float32)
+    copyGridToArrayReal(target=flagArray, source=ref_grids[1])
+
+bbox_min = 0.12,-0.1,-0.3
+bbox_max = 1.19,0.9,1.3
+# flagArray[:int(bbox_min[2]*our_gs.z),...] = 0.0
+# flagArray[int(bbox_max[2]*our_gs.z):,...] = 0.0
+flagArray[:,int(bbox_max[1]*our_gs.y):,...] = 0.0
+flagArray[:,:,:int(bbox_min[0]*our_gs.x),...] = 0.0
+# flagArray[:,:,int(bbox_max[0]*our_gs.x):,...] = 0.0
+# hull_flag_only_bbox = np.float32(flagArray > 1e-4)
+hull_flag_only_bbox = np.ones_like(flagArray)
+# flagArray[:int(bbox_min[2]*our_gs.z+1),...] = 0.0
+# flagArray[int(bbox_max[2]*our_gs.z)-1:,...] = 0.0
+flagArray[:,int(bbox_max[1]*our_gs.y)-1:,...] = 0.0
+flagArray[:,:,:int(bbox_min[0]*our_gs.x)+1,...] = 0.0
+# flagArray[:,:,int(bbox_max[0]*our_gs.x)-1:,...] = 0.0
+hull_flag1_only_bbox = np.float32(flagArray > 1)
+
+normDen = True
+hullmask = True
+denratio = 1.2
 
 def save_fig(den, vel, image_dir, den_name='den_%04d.ppm', vel_name='vel_%04d.png', t=0, is2D=False, vN=1.0):
     # os.makedirs(image_dir, exist_ok = True) 
@@ -116,58 +171,12 @@ def save_fig(den, vel, image_dir, den_name='den_%04d.ppm', vel_name='vel_%04d.pn
             imageio.imwrite(image_dir+'vor_%04d.png' % (t), vor_rgb(np.squeeze(NETw))[::-1])
     else:
         if den is not None:
-            # projectPpmFull( den, image_dir+den_name % (t), 0, 0.3 )
-            # projectPpmFull( den, image_dir+den_name % (t), 0, 1.0 )
-            projectPpmFull( den, image_dir+den_name % (t), 0, 1.5 )
+            projectPpmFull( den, image_dir+den_name % (t), 0, 5.0 )
         if vel is not None:
-            # saveVel(np.squeeze(vel), image_dir+vel_name % (t))
-            saveVel(np.squeeze(vel), image_dir+vel_name % (t), scale = 300)
+            saveVel(np.squeeze(vel), image_dir+vel_name % (t))
             _, NETw = jacobian3D_np(vel)
-            # saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=720*vN)
-            saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=1500)
-            # saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=256)
-
-def np_l2(np_array): return np.sum(np.square(np_array),axis=-1)
-
-ref_s, oref_grids = setSolver(ref_gs, 'ref')
-our_s, our_grids = setSolver(our_gs, 'our')
-
-if False:
-    _data_path = _p +"nobackup/nerf/ex_TR20210419/mydata/synth/hull/"
-    hull_full = []
-    for framei in range(60,120,2): # [100]
-        print(framei)
-        hull_file = glo_path + "frame_%06d/volume_hull.npz"
-        hull_data = load_numpy(hull_file%framei,grid=our_grids[1], padding=padding,flip=True) # shape 1,102,156,87,1
-        our_grids[1].multConst(0.2)
-        save_fig(our_grids[1],None, _data_path, den_name = "hull_%04d.ppm", t=framei)
-        saveVisGrid(hull_data[0]*2, os.path.join(_data_path, 'hull_%04d.jpg'%framei) , drawKind.den3D, 1.0)
-
-        hull_full.append(hull_data)
-    hull_full = np.concatenate(hull_full, axis=0)
-    print(hull_full.shape) # (30, 128, 192, 128, 1)
-    np.savez_compressed(os.path.join(_data_path, 'hull.npz'),hull_full)
-    exit()
-
-if hull_path is not None:
-    all_hulldata = np.load(hull_path)["arr_0"]
-
-if ref_gs.x != our_gs.x: # same res for evaluation
-    newr_vel  = our_s.create(MACGrid)
-    newr_den  = our_s.create(RealGrid)
-    ref_grids = [our_grids[0], newr_den, newr_vel]
-else:
-    ref_grids = oref_grids
-
-if glo_path is not None:
-    glo_vel  = our_s.create(MACGrid)
-    glo_den  = our_s.create(RealGrid)
-    glo_grids = [our_grids[0], glo_den, glo_vel]
-
-normDen = True
-hullmask = False
-# hullmask = True
-denratio = 1.2
+            # saveVel(np.squeeze(NETw)*hull_flag1, image_dir+"vort_"+vel_name % (t), scale=720*vN)
+            saveVel(np.squeeze(NETw), image_dir+"vort_"+vel_name % (t), scale=720*vN)
 
 def printVelRange(gvel, name=""):
     print(name+" vel_x range", gvel[...,0].min(), gvel[...,0].mean(), gvel[...,0].max())
@@ -242,198 +251,88 @@ fr = 0
 
 testWarp = True
 frame_num = 0
-start_frame = 0
-# for framei in range(15,115,10): # [100]
-for framei in range(start_frame,150,1): # [100]
+# for framei in range(13,124, 10): # [100]
+for framei in range(0,130, 1): # [100]
     print(framei)
     frame_num += 1
-    rden, rvel = readData(ref_path, den_file%framei, vel_file%framei, oref_grids)
-    rden = np.reshape(rden, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
-    rvel = np.reshape(rvel, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
+    # if framei > 20:
+    if True:
+        rden, rvel = readData(ref_path, "xl_den_%04d.f16.npz"%(framei), "xl_vel_%04d.f16.npz"%(framei), oref_grids)
+        rden = np.reshape(rden, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
+        rvel = np.reshape(rvel, [int(ref_gs.z),int(ref_gs.y),int(ref_gs.x), -1])
 
-    
-    if our_path is not None:
-        oden, ovel = readData(our_path, "d_%04d.npz"%framei, "v_%04d.npz"%framei, our_grids)
-        oden = np.reshape(oden, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
-        ovel = np.reshape(ovel, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
-    if hullmask:
-        hull_data = oden > 0.1 # buggy
-        
-    if glo_path is not None:
-        gden, gvel = readData(glo_path,"frame_%06d/density.npz"%framei, "frame_%06d/velocity.npz"%framei, glo_grids,padding=padding,flip=True)
-        gden = np.reshape(gden, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1]) 
-        gvel = np.reshape(gvel, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
-        gvel *= 0.5 # scalarflow only, 2 frames
-
-    if framei>start_frame:
-        rden_warpMID, rvel_warpMID = warpMidTest(_rvel_warp, _rden_warp, rvel, rden, oref_grids[1], oref_grids[2], oref_grids[0])
-        rden_warp, rvel_warp = warpTest(_rvel_warp, _rden_warp, rvel, rden, oref_grids[1], oref_grids[2], oref_grids[0])
         
         if our_path is not None:
-            oden_warpMID, ovel_warpMID = warpMidTest(_ovel_warp, _oden_warp, ovel, oden, our_grids[1], our_grids[2], our_grids[0])
-            oden_warp, ovel_warp = warpTest(_ovel_warp, _oden_warp, ovel, oden, our_grids[1], our_grids[2], our_grids[0])
-            
-        if glo_path is not None:
-            gden_warpMID, gvel_warpMID = warpMidTest(_gvel_warp, _gden_warp, gvel, gden, glo_grids[1], glo_grids[2], glo_grids[0])
-            gden_warp, gvel_warp = warpTest(_gvel_warp, _gden_warp, gvel, gden, glo_grids[1], glo_grids[2], glo_grids[0])
-               
+            oden, ovel = readData(our_path, "d_%04d.npz"%framei, "v_%04d.npz"%framei, our_grids)
+            oden = np.reshape(oden, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
+            ovel = np.reshape(ovel, [int(our_gs.z),int(our_gs.y),int(our_gs.x), -1])
+
         
-    if testWarp:
-        if our_path is not None:
-            _oden_warp, _ovel_warp = np.copy(oden), np.copy(ovel)
-        if glo_path is not None:
-            _gden_warp, _gvel_warp = np.copy(gden), np.copy(gvel)
-        _rden_warp, _rvel_warp = np.copy(rden), np.copy(rvel)        
-        
-    if (ref_gs.x != our_gs.x) and (our_path is not None):
-        if framei>start_frame:
-            copyArrayToGridReal(target=oref_grids[1], source=rden_warpMID)
-            copyArrayToGridMAC(target=oref_grids[2], source=rvel_warpMID)
+        if (ref_gs.x != our_gs.x) and (our_path is not None):
+            copyArrayToGridReal(target=oref_grids[1], source=rden)
+            copyArrayToGridMAC(target=oref_grids[2], source=rvel)
             interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
             interpolateMACGrid(target=ref_grids[2], source=oref_grids[2] )
-            ref_grids[2].multConst(our_gs/ref_gs)
-            rden_warpMID = np.copy(oden)
-            rvel_warpMID = np.copy(ovel)
-            copyGridToArrayReal(target=rden_warpMID, source=ref_grids[1])
-            copyGridToArrayMAC(target=rvel_warpMID, source=ref_grids[2])
+            # ref_grids[2].multConst(our_gs/ref_gs)
+            rvel = np.copy(ovel)
+            rden = np.copy(oden)
+            copyGridToArrayReal(target=rden, source=ref_grids[1])
+            copyGridToArrayMAC(target=rvel, source=ref_grids[2])
 
-            copyArrayToGridReal(target=oref_grids[1], source=rden_warp)
-            copyArrayToGridMAC(target=oref_grids[2], source=rvel_warp)
-            interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
-            interpolateMACGrid(target=ref_grids[2], source=oref_grids[2] )
-            ref_grids[2].multConst(our_gs/ref_gs)
-            rden_warp = np.copy(oden)
-            rvel_warp = np.copy(ovel)
-            copyGridToArrayReal(target=rden_warp, source=ref_grids[1])
-            copyGridToArrayMAC(target=rvel_warp, source=ref_grids[2])
+            rvel = rvel * hull_flag
 
-        copyArrayToGridReal(target=oref_grids[1], source=rden)
-        copyArrayToGridMAC(target=oref_grids[2], source=rvel)
-        interpolateGrid( target=ref_grids[1], source=oref_grids[1] )
-        interpolateMACGrid(target=ref_grids[2], source=oref_grids[2] )
-        ref_grids[2].multConst(our_gs/ref_gs)
-        rvel = np.copy(ovel)
-        rden = np.copy(oden)
-        copyGridToArrayReal(target=rden, source=ref_grids[1])
-        copyGridToArrayMAC(target=rvel, source=ref_grids[2])
-    
-    if hullmask:
-        if True: save_fig(None, rvel, out_path+"oriref_", t=fr)        
-        rden *= hull_data[0]
-        rvel *= hull_data[0]
-        
-        if (glo_path is not None):
-            save_fig(None, gvel, out_path+"origlo_", t=fr)
-            gden *= hull_data[0]
-            gvel *= hull_data[0]
-        if our_path is not None:
-            save_fig(None, ovel, out_path+"oriour_", t=fr, vN=1.0)
-            oden *= hull_data[0]
-            ovel *= hull_data[0]
-        if framei>start_frame:
+        if hullmask:
+            if True: save_fig(None, rvel, out_path+"oriref_", t=fr)
+            if True and (our_path is not None): save_fig(None, ovel, out_path+"oriour_", t=fr, vN=1.0)
+
+            hull_data = np.float32(rden > 1e-4)
+
+            rden *= hull_flag
+            rvel *= hull_flag
             if our_path is not None:
-                oden_warp *= hull_data[0]; oden_warpMID *= hull_data[0]
-                ovel_warp *= hull_data[0]; ovel_warpMID *= hull_data[0]
-            if (glo_path is not None):
-                gden_warp *= hull_data[0]; gden_warpMID *= hull_data[0]
-                gvel_warp *= hull_data[0]; gvel_warpMID *= hull_data[0]
-            rden_warp *= hull_data[0]; rden_warpMID *= hull_data[0]
-            rvel_warp *= hull_data[0]; rvel_warpMID *= hull_data[0]
-    
-    # print("den means, ref",rden.mean(),"our", oden.mean(), "glo", gden.mean())
-    if normDen and (our_path is not None):
-        odscale = rden.mean()/oden.mean() 
-        oden = oden * odscale
-        if framei>start_frame:
-            oden_warp = oden_warp * odscale; oden_warpMID = oden_warpMID * odscale
+                oden *= hull_flag_only_bbox
+                ovel *= hull_flag_only_bbox
+            
+        
+        # print("den means, ref",rden.mean(),"our", oden.mean(), "glo", gden.mean())
+        if normDen and (our_path is not None):
+            odscale = rden.mean()/oden.mean() 
+            print(rden.mean(), oden.mean(), odscale)
+            oden = oden * odscale
 
-    if framei>start_frame:
+        printVelRange(rvel, "ref")
+        if our_path is not None: printVelRange(ovel, "our")
+        print("ref den range", rden.min(), rden.mean(), rden.max())
+        if our_path is not None: print("our den range", oden.min(), oden.mean(), oden.max())
+
+        copyArrayToGridReal(target=ref_grids[1], source=rden)
+        if our_path is not None: copyArrayToGridReal(target=our_grids[1], source=oden)
+        if True: save_fig(ref_grids[1], rvel, out_path+"ref_", t=fr)
+        if our_path is not None: save_fig(our_grids[1], ovel, out_path+"our_", t=fr, vN=1.0)
+
+        # with inflow:
+        
+        if False:
+            uh = hull_data # None 
+            if our_path is not None: _our = Vmetrics(ovel, rvel, oden, rden, frameHull=uh, printname="our")[:2]
+            _ref = Vmetrics(rvel, None, rden, None, frameHull=uh, printname="ref")[:2]
+            # w.o. inflow:
+            if framei==60:
+                ovel_warp,gvel_warp,rvel_warp,oden_warp,gden_warp,rden_warp = [None]*6
+                ovel_warpMID,gvel_warpMID,rvel_warpMID,oden_warpMID,gden_warpMID,rden_warpMID = [None]*6
+            if our_path is not None: _our += Vmetrics(ovel, rvel, oden, rden, ovel_warp, oden_warp, ovel_warpMID, oden_warpMID, frameHull=uh, ignoreInflow=True, printname="our")
+            if glo_path is not None: _glo += Vmetrics(gvel, rvel, gden, rden, gvel_warp, gden_warp, gvel_warpMID, gden_warpMID, frameHull=uh, ignoreInflow=True, printname="glo")
+            _ref += Vmetrics(rvel, None, rden, None, rvel_warp, rden_warp, rvel_warpMID, rden_warpMID, frameHull=uh, ignoreInflow=True, printname="ref")
+
+            if our_path is not None: our_list += _our
+            if glo_path is not None: glo_list += _glo
+            ref_list += _ref
+
         if our_path is not None:
-            copyArrayToGridReal(target=our_grids[1], source=np.abs(oden_warp)*denratio*5.0)
-            if True: save_fig(our_grids[1], ovel_warp, out_path+"warp_our_", t=fr) 
-            copyArrayToGridReal(target=our_grids[1], source=np.abs(oden_warpMID)*denratio*5.0)
-            if True: save_fig(our_grids[1], ovel_warpMID, out_path+"warpMID_our_", t=fr)           
-        if glo_path is not None:
-            copyArrayToGridReal(target=glo_grids[1], source=np.abs(gden_warp)*denratio*5.0)
-            if True: save_fig(glo_grids[1], gvel_warp, out_path+"warp_glo_", t=fr)
-            copyArrayToGridReal(target=glo_grids[1], source=np.abs(gden_warpMID)*denratio*5.0)
-            if True: save_fig(glo_grids[1], gvel_warpMID, out_path+"warpMID_glo_", t=fr)
-        copyArrayToGridReal(target=ref_grids[1], source=np.abs(rden_warp)*denratio*5.0)
-        if True: save_fig(ref_grids[1], rvel_warp, out_path+"warp_ref_", t=fr)
-        copyArrayToGridReal(target=ref_grids[1], source=np.abs(rden_warpMID)*denratio*5.0)
-        if True: save_fig(ref_grids[1], rvel_warpMID, out_path+"warpMID_ref_", t=fr)
-
-    printVelRange(rvel, "ref")
-    if our_path is not None: printVelRange(ovel, "our")
-    if glo_path is not None: printVelRange(gvel, "glo")
-    print("ref den range", rden.min(), rden.mean(), rden.max())
-    if our_path is not None: print("our den range", oden.min(), oden.mean(), oden.max())
-    if glo_path is not None: print("glo den range", gden.min(), gden.mean(), gden.max())
-
-    copyArrayToGridReal(target=ref_grids[1], source=rden)
-    if our_path is not None: copyArrayToGridReal(target=our_grids[1], source=oden)
-    if glo_path is not None: copyArrayToGridReal(target=glo_grids[1], source=gden)
-    if True: save_fig(ref_grids[1], rvel, out_path+"ref_", t=fr)
-    if our_path is not None: save_fig(our_grids[1], ovel, out_path+"our_", t=fr, vN=1.0)
-    if glo_path is not None: save_fig(glo_grids[1], gvel, out_path+"glo_", t=fr)
-
-    # with inflow:
-    if hullmask:
-        uh = hull_data[0] # None 
-    else:
-        uh = None
-    if our_path is not None: _our = Vmetrics(ovel, rvel, oden, rden, frameHull=uh, printname="our")[:2]
-    if glo_path is not None: _glo = Vmetrics(gvel, rvel, gden, rden, frameHull=uh, printname="glo")[:2]
-    _ref = Vmetrics(rvel, None, rden, None, frameHull=uh, printname="ref")[:2]
-    # w.o. inflow:
-    if framei ==start_frame:
-        ovel_warp,gvel_warp,rvel_warp,oden_warp,gden_warp,rden_warp = [None]*6
-        ovel_warpMID,gvel_warpMID,rvel_warpMID,oden_warpMID,gden_warpMID,rden_warpMID = [None]*6
-    if our_path is not None: _our += Vmetrics(ovel, rvel, oden, rden, ovel_warp, oden_warp, ovel_warpMID, oden_warpMID, frameHull=uh, ignoreInflow=True, printname="our")
-    if glo_path is not None: _glo += Vmetrics(gvel, rvel, gden, rden, gvel_warp, gden_warp, gvel_warpMID, gden_warpMID, frameHull=uh, ignoreInflow=True, printname="glo")
-    _ref += Vmetrics(rvel, None, rden, None, rvel_warp, rden_warp, rvel_warpMID, rden_warpMID, frameHull=uh, ignoreInflow=True, printname="ref")
-
-    if our_path is not None: our_list += _our
-    if glo_path is not None: glo_list += _glo
-    ref_list += _ref
-
-    if our_path is not None:
-        copyArrayToGridReal(target=our_grids[1], source=np.abs(rden - oden)*denratio)
-        if True: save_fig(our_grids[1], ovel - rvel, out_path+"Diff_our_", t=fr)
-    if glo_path is not None:
-        copyArrayToGridReal(target=glo_grids[1], source=np.abs(rden - gden)*denratio)
-        if True: save_fig(glo_grids[1], gvel - rvel, out_path+"Diff_glo_", t=fr)
+            copyArrayToGridReal(target=our_grids[1], source=np.abs(rden - oden)*denratio)
+            if True: save_fig(our_grids[1], ovel - rvel, out_path+"Diff_our_", t=fr)
     fr += 1
-
-Vname = Vmetrics(nameonly=True)
-Vname = ["Inflow_" +a for a in Vname[:2]] + Vname
-metricN = len(Vname)
-if our_path is not None:
-    our_list = np.reshape(np.float32(our_list), [-1,metricN]) # 30,N
-if glo_path is not None:
-    glo_list = np.reshape(np.float32(glo_list), [-1,metricN]) # 30,N
-ref_list = np.reshape(np.float32(ref_list), [-1,metricN]) # 30,N
-
-pd_dict = {}
-for i in range(metricN):
-    if our_path is not None: pd_dict["our_%s"%Vname[i]] = pd.Series(our_list[:,i])
-    if glo_path is not None: pd_dict["glo_%s"%Vname[i]] = pd.Series(glo_list[:,i])
-    if i >= 2:
-        pd_dict["ref_%s"%Vname[i]] = pd.Series(ref_list[:,i])
-
-pd_dict["mean"] = pd.Series(["ref", "our", "glo"])
-for i in range(metricN):
-    pd_add = [ref_list[:,i].mean()]
-    print("Avg %s means, ref"%Vname[i],ref_list[:,i].mean())
-    if our_path is not None: 
-        pd_add += [our_list[:,i].mean()]
-        print("Avg %s means, our"%Vname[i],our_list[:,i].mean())
-    if glo_path is not None: 
-        pd_add += [glo_list[:,i].mean()]
-        print("Avg %s means, glo"%Vname[i],glo_list[:,i].mean())
-    pd_dict[Vname[i]] = pd.Series(pd_add)
     
-pd.DataFrame(pd_dict).to_csv(os.path.join(out_path,"eval_l2.csv"), mode='w')
 
 if True:
     n = 1 + sum(x is not None for x in [our_path, glo_path])
