@@ -19,40 +19,18 @@ pip install -e .
 ```
 
 
-
 ## Run
 
-Hybrid scene (default, original PINF)
-kernprof -l run_pinf.py --config configs/PINF_configs/sphere.txt
+### Training
+
+Take the Cylinder scene as an example:
 
 
-Scalar scene:
-- original PINF
 ```
-CUDA_VISIBLE_DEVICES=7 kernprof -l run_pinf.py --config configs/PINF_configs/scalar.txt
-
-Hybrid scene with neus:
-```
-CUDA_VISIBLE_DEVICES=7 python run_pinf.py --config configs/sphere_neus.txt
-or
-CUDA_VISIBLE_DEVICES=7 kernprof -l run_pinf.py --config configs/sphere_neus.txt
+python train.py --config configs/cyl.txt
 ```
 
-## Install problem
-- Ninja is required to load C++ extensions
-pip install Ninja
 
-
-## EVAL
-- generate mesh
-```
-kernprof -l -o 7.2.lprof run_pinf.py  --config configs/hybrid_neus_cuda/game_7.7_continue_train.txt --mesh_only
-```
-
-- test speed
-python -m line_profiler run_pinf.py.lprof > test_speed.txt
-
-
-## Install problem
+### Installing problem
 - Ninja is required to load C++ extensions
 pip install Ninja
