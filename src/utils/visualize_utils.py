@@ -619,7 +619,9 @@ def draw_all_trajectory(all_uv, images, output_dir=None):
             # cv.imwrite('test.png',img1)
             img_curr = cv.addWeighted(img1, alpha, img_curr, 1 - alpha, 0)
 
+
         uv = all_uv[frame_i]
+        
         for i, coor in enumerate(uv.cpu().numpy()):
 
             point_color = np.array(color_map(i/max(1, float(uv.shape[0] - 1)))[:3]) * 255
@@ -633,9 +635,9 @@ def draw_all_trajectory(all_uv, images, output_dir=None):
             # alpha = min(alpha, 0.9)
             # print('frame_i, frame_num, alpha', frame_i, frame_num, alpha)
 
-
-
-        output_images.append(img_curr)
+        mask = (images[frame_i]) > 0.1
+        img_curr[~mask] = 0
+        output_images.append(img_curr[:,:,::-1])
         if output_dir is not None:
             filename = os.path.join(output_dir, '2d_trajectory_{:03d}.png'.format(frame_i))
             cv.imwrite(filename, img_curr)

@@ -2048,6 +2048,7 @@ def render_eval(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchun
 def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray, netchunk = 1024 * 64, gt_imgs=None, savedir=None, render_factor=0, render_steps=None, bkgd_color=None):
     H, W, focal = hwf
 
+    print("begin render 2d trajectory")
 
     if render_factor!=0:
         # Render downsampled for speed
@@ -2163,7 +2164,7 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
           
             
             
-            if i == 70:
+            if i == 120:
                 N_rays = rgb_dynamic.shape[0] * rgb_dynamic.shape[1]
                 
                 # render trajectory map
@@ -2194,16 +2195,20 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
                 # sampled_ray_idx = rng.choice(N_rays, 200)
                 # sampled_ray_idx = rng.choice(N_rays, 500)
                 
-                mask = acc.squeeze(-1).detach().cpu().numpy()
-                masked_ray_sum =  (mask > 1e-2).sum()
-                mask_indices = np.where(mask.reshape(-1) > 1e-2)[0]
+                # mask = acc.squeeze(-1).detach().cpu().numpy()
+                mask = points_weights_sum.cpu().numpy()
+                
+                masked_ray_sum =  (mask > 0.2).sum()
+                # mask_indices = np.where(mask.reshape(-1) > 1e-1)[0]
+                # mask_indices = np.where(mask.reshape(-1) > 5e-1)[0]
+                mask_indices = np.where(mask.reshape(-1) > 0.2)[0]
                 
                 # sampled_ray_idx = rng.choice(mask_indices, 200)
 
                 # sampled_ray_idx = mask_indices[::20]
                 # sampled_ray_idx = mask_indices[::10]
                 # sampled_ray_idx = mask_indices[::50]
-                sampled_ray_idx = mask_indices[::80]
+                sampled_ray_idx = mask_indices[::130]
 
 
                 time_0 = cur_timestep
@@ -2215,13 +2220,15 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
     
     strat_frame = 0
 
-    for i in tqdm(range(len(render_poses) -1, strat_frame, -1)):
+    for idx, i in enumerate(tqdm(range(len(render_poses) -1, strat_frame, -1))):
 
         if render_steps is not None:
             cur_timestep = render_steps[i]
 
         mapped_points = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([model.trajectory_points.shape[0], 1])*float(cur_timestep)).detach() - mapping_base + pts3d_base
         # model.trajectory_points = mapped_points
+        
+        
 
 
 
@@ -2256,7 +2263,7 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
         # if i % 30 == 0 and i is not 0:
             # break
         # if i % 50 == 0 and i is not 0:
-        # if i % 50 == 0 and not i == len(render_poses) - 1:
+        # if i % 25 == 0 and not idx == 0:
         #     time_0 = cur_timestep
         #     mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(mapped_points, torch.ones([model.trajectory_points.shape[0], 1])*float(time_0)).detach()
         #     mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([model.trajectory_points.shape[0], 1])*float(time_0)).detach()
