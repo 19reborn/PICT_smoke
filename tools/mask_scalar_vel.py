@@ -12,9 +12,9 @@ from PIL import Image
 # base_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/scalar/0115_v1_no_reg/volumeout_260001'
 # base_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/scalar/0115_v1_no_reg/volumeout_415001'
 # base_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/scalar/0115_v1_no_reg/volumeout_445001'
-# base_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/scalar/0115_v1_no_reg/volumeout_600001'
+base_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/scalar/0115_v1_no_reg/volumeout_600001'
 # base_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/scalar/0116_v4_larger_ghost_loss/volumeout_600001'
-base_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/scalar/1219_ablation_v1_single_layer_less_mapping_constraints/volumeout_600001'
+# base_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/scalar/1219_ablation_v1_single_layer_less_mapping_constraints/volumeout_600001'
 # base_dir = '/cluster/project/tang/yiming/project/pinf_clean/log/scalar/1212_ablation_v3_no_coarse_density_fixed/volumeout_600001'
 
 
@@ -70,9 +70,9 @@ vort_video = cv2.VideoWriter(output_dir + 'vorticity.mp4', fourcc, 20, (width, h
 masked_vel_video = cv2.VideoWriter(output_dir + 'masked_velocity.mp4', fourcc, 20, (width, height))
 masked_vort_video = cv2.VideoWriter(output_dir + 'masked_vorticity.mp4', fourcc, 20, (width, height))
 
-# mask_thresh = 0.1 * 255
+mask_thresh = 0.15 * 255
 # mask_thresh = 0.075 * 255
-mask_thresh = 0.05 * 255
+# mask_thresh = 0.05 * 255
 
 for i in range(len(den_files)):
     print('Processing ' + str(i) + '...')

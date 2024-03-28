@@ -1,4 +1,7 @@
-expname = game/1204_v2_all_smoke_reg
+# expname = game/1204_v2_all_smoke_reg
+# basedir = ./log
+
+expname = sig24_submission/game/1204
 basedir = ./log
 
 ### data info

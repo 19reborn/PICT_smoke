@@ -597,7 +597,8 @@ def draw_all_trajectory(all_uv, images, output_dir=None):
     for frame_i in range(frame_num):
 
         img_curr = images[frame_i]
-
+        mask = (images[frame_i]) > 0.1
+        
         for t in range(frame_i):
 
             img1 = img_curr.copy()
@@ -636,8 +637,9 @@ def draw_all_trajectory(all_uv, images, output_dir=None):
             # print('frame_i, frame_num, alpha', frame_i, frame_num, alpha)
 
         mask = (images[frame_i]) > 0.1
-        img_curr[~mask] = 0
-        output_images.append(img_curr[:,:,::-1])
+        img_curr[~mask] = 0        img_curr[~mask] = 0
+        # output_images.append(img_curr)
+        output_images.append(img_curr[:,:,::-1][:,:,::-1])
         if output_dir is not None:
             filename = os.path.join(output_dir, '2d_trajectory_{:03d}.png'.format(frame_i))
             cv.imwrite(filename, img_curr)

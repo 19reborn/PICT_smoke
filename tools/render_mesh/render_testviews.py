@@ -180,11 +180,11 @@ frame_num = data_transform['frame_num']
 # from src.dataset.load_pinf import load_pinf_frame_data
 # images, masks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, data_extras = load_pinf_frame_data(args, args.datadir, args.half_res, args.testskip, args.trainskip)
 
-# model_trimesh = trimesh.load("./game_ours.obj")
-# out_name = "ours"
+model_trimesh = trimesh.load("./game_ours.obj")
+out_name = "ours"
 
-model_trimesh = trimesh.load("./game_pinf.obj")
-out_name = "pinf"
+# model_trimesh = trimesh.load("./game_pinf.obj")
+# out_name = "pinf"
 
 trimesh.repair.fix_normals(model_trimesh)
 
