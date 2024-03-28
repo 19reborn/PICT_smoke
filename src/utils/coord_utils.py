@@ -329,7 +329,8 @@ class Voxel_Tool(object):
             voxel_den = voxel_den.detach().cpu().numpy()
             if save_jpg:
                 jpg_path = os.path.join(head_tail[0], npre + os.path.splitext(head_tail[1])[0]+".jpg")
-                rgb = den_scalar2rgb(voxel_den, scale=None, is3D=True, logv=False, mix=jpg_mix)
+                # rgb = den_scalar2rgb(voxel_den, scale=None, is3D=True, logv=False, mix=jpg_mix)
+                rgb = den_scalar2rgb(voxel_den, scale=100, is3D=True, logv=False, mix=jpg_mix)
                 imageio.imwrite(jpg_path, rgb)
                 if not 'static' in npre:
                     ret[npre] = rgb

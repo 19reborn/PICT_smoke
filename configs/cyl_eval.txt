@@ -8,7 +8,7 @@ dataset_type = pinf_data
 no_batching = True
 half_res = normal
 white_bkgd = True
-testskip = 20
+testskip = 1
 
 ### network arch
 net_model = hybrid_neus

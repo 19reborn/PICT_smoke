@@ -2163,7 +2163,7 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
           
             
             
-            if i == 70:
+            if i == 100:
                 N_rays = rgb_dynamic.shape[0] * rgb_dynamic.shape[1]
                 
                 # render trajectory map
@@ -2194,16 +2194,20 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
                 # sampled_ray_idx = rng.choice(N_rays, 200)
                 # sampled_ray_idx = rng.choice(N_rays, 500)
                 
-                mask = acc.squeeze(-1).detach().cpu().numpy()
-                masked_ray_sum =  (mask > 1e-2).sum()
-                mask_indices = np.where(mask.reshape(-1) > 1e-2)[0]
+                mask = points_weights_sum.cpu().numpy()
+                
+                masked_ray_sum =  (mask > 0.2).sum()
+                # mask_indices = np.where(mask.reshape(-1) > 1e-1)[0]
+                # mask_indices = np.where(mask.reshape(-1) > 5e-1)[0]
+                mask_indices = np.where(mask.reshape(-1) > 0.2)[0]
                 
                 # sampled_ray_idx = rng.choice(mask_indices, 200)
 
                 # sampled_ray_idx = mask_indices[::20]
                 # sampled_ray_idx = mask_indices[::10]
                 # sampled_ray_idx = mask_indices[::50]
-                sampled_ray_idx = mask_indices[::80]
+                # sampled_ray_idx = mask_indices[::80] # cyl
+                sampled_ray_idx = mask_indices[::200] # game
 
 
                 time_0 = cur_timestep
@@ -2213,7 +2217,7 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
 
                 mapped_points = model.trajectory_points
     
-    strat_frame = 0
+    strat_frame = 30
 
     for i in tqdm(range(len(render_poses) -1, strat_frame, -1)):
 
@@ -2223,7 +2227,7 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
         mapped_points = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([model.trajectory_points.shape[0], 1])*float(cur_timestep)).detach() - mapping_base + pts3d_base
         # model.trajectory_points = mapped_points
 
-
+        mapped_density =  model.dynamic_model.density(torch.cat([mapped_points, torch.ones([mapped_points.shape[0], 1])*float(cur_timestep)], dim = -1)).detach()
 
         mapped_points_3d = mapped_points * points_weights.reshape(-1,1)
         mapped_points_3d_merged = torch.zeros((N_rays,  mapped_points_3d.shape[-1]), device = mapped_points_3d.device, dtype = mapped_points_3d.dtype)
@@ -2256,7 +2260,7 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
         # if i % 30 == 0 and i is not 0:
             # break
         # if i % 50 == 0 and i is not 0:
-        # if i % 50 == 0 and not i == len(render_poses) - 1:
+        # if i % 25 == 0 and not i == len(render_poses) - 1:
         #     time_0 = cur_timestep
         #     mapping_feature = model.dynamic_model_lagrangian.velocity_model.forward_feature(mapped_points, torch.ones([model.trajectory_points.shape[0], 1])*float(time_0)).detach()
         #     mapping_base = model.dynamic_model_lagrangian.velocity_model.mapping_forward_using_features(mapping_feature, torch.ones([model.trajectory_points.shape[0], 1])*float(time_0)).detach()
