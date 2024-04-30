@@ -2165,7 +2165,7 @@ def render_2d_trajectory(model, render_poses, hwf, K, chunk, near, far, cuda_ray
             
             
             if i == 100:
-            if i == 120:
+            # if i == 120:
                 N_rays = rgb_dynamic.shape[0] * rgb_dynamic.shape[1]
                 
                 # render trajectory map

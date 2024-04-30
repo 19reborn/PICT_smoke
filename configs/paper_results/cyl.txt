@@ -1,5 +1,6 @@
-expname = cyl/1221_ablation_no_vel_mapping
+expname = cyl/1213_v4_larger_vel_map_loss
 basedir = ./log
+# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Cyl
@@ -61,8 +62,7 @@ i_img = 1000
 i_test = 50000
 i_weights = 10000
 i_video = 200000
-# N_iter = 200000
-N_iter = 150000
+N_iter = 200000
 
 cuda_ray = True
 # cuda_ray = False
@@ -94,7 +94,7 @@ neus_early_terminated = True
 neus_progressive_pe = True
 
 stage4_train_vel_interval = 1
-density_mapping_loss_weight = 0.001
+density_mapping_loss_weight = 0.1
 velocity_mapping_loss_weight = 0.0
 color_mapping_loss_weight = 0.001
 ColorDivergenceW = 0.00
@@ -108,8 +108,8 @@ SmokeInsideSDFW = 0.1
 boundaryW = 1.0
 inside_sdf = 0.0
 
-coarse_transport_weight = 1
-fine_transport_weight = 1.0
+coarse_transport_weight = 10
+fine_transport_weight = 0.01
 
 mapping_loss_fading = 10000
 

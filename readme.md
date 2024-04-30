@@ -30,6 +30,28 @@ Take the Cylinder scene as an example:
 python train.py --config configs/cyl.txt
 ```
 
+### Testing
+
+```
+
+sbatch scripts/cyl_eval.sh
+
+python test.py --config configs/cyl.txt --testskip 1 --output_voxel --full_vol_output
+
+# then
+sbatch scripts/eval_with_gt.s
+
+/cluster/project/tang/yiming/project/mantaflow_nogui/build/manta /cluster/project/tang/yiming/project/pinf_clean/tools/eval/visual_eval_cyl_eular.py
+
+```
+
+## Tunable parameters
+- neus_early_terminated
+for cyl and car
+
+- density activation
+for scalar, use exp
+
 
 ### Installing problem
 - Ninja is required to load C++ extensions

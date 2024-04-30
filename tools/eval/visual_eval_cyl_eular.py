@@ -60,8 +60,42 @@ ref_path = '/cluster/project/tang/yiming/dataset/pinf_gt/cyl/'
 # our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1220_ablation_no_vel_mapping/volumeout_150001/'
 # out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1221_ablation_no_vel_mapping/'
 
-our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1221_ablation_no_vel_mapping/volumeout_150001/'
-out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1222_ablation_no_vel_mapping/'
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/cyl/1221_ablation_no_vel_mapping/volumeout_150001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/evaluate/' + '/cyl/1222_ablation_no_vel_mapping/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0328_v3_neus_early_terminated/volumeout_150001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0328_v3_neus_early_terminated/'
+
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0401_v2_60omega_lessMapping/volumeout_150001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0402_v1_60omega/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0401_v3_30omega_lessMapping/volumeout_150001'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0401_v3_30omega/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0404_v1/volumeout_150001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0404_v1/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0404_v2_larger_vel_mapping_less_fine_transport/volumeout_150001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0405_v1/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0406_v2/volumeout_150001'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0406_v1/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0415_less_fine_transport/volumeout_150001'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0415_v1/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0416_less_vel_mapping/volumeout_150001'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0416_v1/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0417_v1_repeat/volumeout_150001'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0417_v1/'
+
+# our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0418_v1_less_den_mapping/volumeout_150001/'
+# out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0418_v1/'
+
+our_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/cyl/0418_v2_less_COLOR_mapping/volumeout_150001'
+out_path = '/cluster/project/tang/yiming/project/pinf_clean/log/sig24_camera_ready/metrics' + '/cyl/0418_v2_less_COLOR_mapping/'
 
 if out_path[-1] != "/": out_path += "/"
 if our_path[-1] != "/": our_path += "/"

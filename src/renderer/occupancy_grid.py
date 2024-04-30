@@ -9,6 +9,7 @@ import raymarching
 from src.utils.training_utils import batchify, batchify_func
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
 
 def _meshgrid3d(
     res, device):

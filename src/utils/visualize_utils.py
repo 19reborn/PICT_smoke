@@ -637,7 +637,7 @@ def draw_all_trajectory(all_uv, images, output_dir=None):
             # print('frame_i, frame_num, alpha', frame_i, frame_num, alpha)
 
         mask = (images[frame_i]) > 0.1
-        img_curr[~mask] = 0        img_curr[~mask] = 0
+        img_curr[~mask] = 0 
         # output_images.append(img_curr)
         output_images.append(img_curr[:,:,::-1][:,:,::-1])
         if output_dir is not None:

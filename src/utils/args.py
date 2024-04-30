@@ -177,8 +177,6 @@ def config_parser():
                         help='for siren and hybrid models, the step to start learning the velocity.')
     parser.add_argument("--N_iter", type=int, default=200000,
                         help='for siren and hybrid models, the step to start learning the velocity.')  
-    parser.add_argument("--train_warp", default=False, action='store_true',
-                        help='train radiance model with velocity warpping')
     parser.add_argument("--adaptive_num_rays", action='store_true')
     parser.add_argument("--target_batch_size", type=int, default=2**17)
     parser.add_argument("--use_mask", action='store_true')

@@ -528,8 +528,8 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         # color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
         color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
         # color_mapping_loss = L1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
-        # color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
-        color_mapping_loss = l2_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
+        color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
+        # color_mapping_loss = l2_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
         vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading
         vel_loss_dict['color_mapping_loss'] = color_mapping_loss
 

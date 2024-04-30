@@ -1,4 +1,4 @@
-expname = sig24_camera_ready/car/0403_v2_larger_transport_preload
+expname = sig24_camera_ready/car/0330_v3_larger_fine_transport_l1_color_mapping
 basedir = ./log
 
 ### data info
@@ -67,7 +67,7 @@ i_img = 2000
 i_test = 10000
 i_weights = 10000
 i_video = 400000
-N_iter = 200000
+N_iter = 400000
 
 cuda_ray = True
 scene_scale = 0.33
@@ -99,29 +99,37 @@ neus_early_terminated = True
 neus_progressive_pe = True
 neus_progressive_pe_start = 20000
 use_scene_scale_before_pe = True
-
+stage4_train_vel_interval = 1
+nse_loss_interval = 10
 
 test_chunk = 1024
 
-
-## pde loss
 nseW = 1e-2
-vel_regulization_weight = 0.01
-coarse_transport_weight = 10
-fine_transport_weight = 5.0
-
-## mapping loss
+vel_regulization_weight = 0.1
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
 density_mapping_loss_weight = 0.1
 velocity_mapping_loss_weight = 0.1
-color_mapping_loss_weight = 10.0
+color_mapping_loss_weight = 1.0
+
 max_mapping_frame_range = 50
+
+# mapping_loss_fading = 50000
 mapping_loss_fading = 10000
 
-
-
-## boundary loss 
 boundaryW = 0.5
+train_vel_uniform_sample = 1
 inside_sdf = 0.02
 
+coarse_transport_weight = 1
+fine_transport_weight = 1
+
+# feature_regulization_weight = 0.005
+
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1205_v3_less_smoke_alpha_reg/100000.tar
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1201_v6_512_rand/110000.tar
+
+# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1206_v3_original_smoke_reg/030000.tar
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1208_v4_from_start/030000.tar
+
+# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1209_v3_study_recon/100000.tar

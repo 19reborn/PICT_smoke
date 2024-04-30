@@ -1,6 +1,6 @@
-expname = Car/1219_v4_less_overlay_loss
-basedir = ./log
-# basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = Car/1210_v2_larger_mapping_loss
+# basedir = ./log
+basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Car_new
@@ -70,7 +70,7 @@ density_thresh_static = 30
 # density_thresh_static = 60
 
 SmokeInsideSDFW = 0.5
-SmokeAlphaReguW = 0.02
+SmokeAlphaReguW = 0.10
 SmokeAlphaReguW_warmup = 0.02
 train_vel_within_rendering = False
 boundaryW = 0.5
@@ -90,7 +90,7 @@ stage2_finish_init_lagrangian = 0
 stage3_finish_init_feature = 0
 
 use_two_level_density = True
-neus_early_terminated = False
+neus_early_terminated = True
 neus_progressive_pe = True
 neus_progressive_pe_start = 20000
 
@@ -104,9 +104,9 @@ nseW = 1e-2
 vel_regulization_weight = 0.01
 cross_cycle_loss_weight = 1.0
 self_cycle_loss_weight = 1.0
-density_mapping_loss_weight = 0.01
-velocity_mapping_loss_weight = 0.01
-color_mapping_loss_weight = 5000.0
+density_mapping_loss_weight = 0.001
+velocity_mapping_loss_weight = 0.001
+color_mapping_loss_weight = 500.0
 
 max_mapping_frame_range = 50
 # max_mapping_frame_range = 100
@@ -116,9 +116,9 @@ mapping_frame_range_fading_last = 20000
 # mapping_loss_fading = 50000
 mapping_loss_fading = 10000
 
-boundaryW = 0.8
-train_vel_uniform_sample = 2
-inside_sdf = 0.005
+boundaryW = 0.5
+train_vel_uniform_sample = 1
+inside_sdf = 0.02
 
 coarse_transport_weight = 100
 fine_transport_weight = 0.01
@@ -131,7 +131,4 @@ feature_regulization_weight = 0.005
 # model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1206_v3_original_smoke_reg/030000.tar
 # model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1208_v4_from_start/030000.tar
 
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1209_v3_study_recon/100000.tar
-
-smokeOverlayW = 0.001
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/car_base1209_100000.tar
+model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1209_v3_study_recon/100000.tar
