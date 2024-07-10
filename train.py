@@ -158,36 +158,15 @@ def train(args):
     # some loss terms 
     
 
-    # init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None if not args.use_mask else masks[i_train])
     init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None)
 
-
-    ## debug
-    # voxel_den_list = voxel_writer.get_voxel_density_list(model, 0.5, args.chunk, 
-    #         middle_slice=False)[::-1]
-        
-       
-    # voxel_img = []
-    # for voxel in voxel_den_list:
-    #     voxel = voxel.detach().cpu().numpy()
-    #     if voxel.shape[-1] == 1:
-    #         voxel_img.append(den_scalar2rgb(voxel, scale=None, is3D=True, logv=False, mix=True))
-    #     else:
-    #         voxel_img.append(vel_uv2hsv(voxel, scale=300, is3D=True, logv=False))
-    # voxel_img = np.concatenate(voxel_img, axis=0) # 128,64*3,3
-    # imageio.imwrite( os.path.join(testimgdir, 'vox_{:06d}.png'.format(0)), voxel_img)
-    
+  
 
 
     trainVGG = False
     trainVel = False
     trainVel_using_rendering_samples = False
     trainImg = False
-
-    total_loss_fading = 1.0
-    
-    # if not model.single_scene and global_step >= args.uniform_sample_step:
-    #     update_static_occ_grid(args, model, 100)
 
     local_step = 0
     model.train()
