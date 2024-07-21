@@ -82,14 +82,14 @@ smoke_recon_delay_start = 0
 smoke_recon_delay_last = 10000
 sdf_loss_delay = 2000
 
-stage2_finish_init_lagrangian = 0
-stage3_finish_init_feature = 0
+
+
 
 use_two_level_density = True
 use_scene_scale_before_pe = True
 neus_progressive_pe = True
 
-stage4_train_vel_interval = 1
+stage2_train_vel_interval = 1
 
 nseW = 1e-2
 vel_regulization_weight = 10.0

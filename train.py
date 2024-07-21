@@ -7,7 +7,6 @@ import torch.nn.functional as F
 
 from tqdm import trange
 
-from src.dataset.load_dryice import load_dryice_data
 from src.dataset.load_pinf import load_pinf_frame_data
 
 from src.network.hybrid_model import create_model
@@ -35,30 +34,16 @@ def train(args):
 
     # Load data
     cam_info_others = None
-    ## todo:: organize dataloader
-    if args.dataset_type == "dryice":
-        images, masks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, cam_info_others = load_dryice_data(args, args.datadir, args.half_res, args.testskip, args.trainskip)
-        Ks = []
-        for img_i in range(len(images)):
-            _cam_id = cam_info_others["cam_ids"][img_i]
-            _cam_info = cam_info_others["cam_%d"%_cam_id]
-            focals = _cam_info["focal"]
-            principles = _cam_info["princpt"]
-            K = [
-                [focals[0], 0, principles[0]],
-                [0, focals[1], principles[1]],
-                [0, 0, 1]
-            ]
-            Ks.append(K)
-    else:
-        images, masks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, data_extras = load_pinf_frame_data(args, args.datadir, args.half_res, args.testskip, args.trainskip)
-        Ks = [
-            [
-            [hwf[-1], 0, 0.5*hwf[1]],
-            [0, hwf[-1], 0.5*hwf[0]],
-            [0, 0, 1]
-            ] for hwf in hwfs
-        ]
+ 
+    images, masks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, data_extras = load_pinf_frame_data(args, args.datadir, args.half_res, args.testskip, args.trainskip)
+    Ks = [
+        [
+        [hwf[-1], 0, 0.5*hwf[1]],
+        [0, hwf[-1], 0.5*hwf[0]],
+        [0, 0, 1]
+        ] for hwf in hwfs
+    ]
+    
     voxel_tran_inv = np.linalg.inv(voxel_tran)
     print('Loaded pinf frame data', images.shape, render_poses.shape, hwfs[0], args.datadir)
     print('Loaded voxel matrix', voxel_tran, 'voxel scale',  voxel_scale)
@@ -89,16 +74,7 @@ def train(args):
 
     global_step = start
 
-
     
-
-    # tempoInStep = max(0,args.tempo_delay) if "hybrid" in args.net_model else 0
-    # velInStep = max(0,args.vel_delay) if args.nseW > 1e-8 else 0 # after tempoInStep
-    # BoundaryInStep = max(0,args.boundary_delay) if args.boundaryW > 1e-8 else 0 # after velInStep
-    
-    # if args.net_model != "nerf":
-    #     model_fading_update(all_models, start, tempoInStep, velInStep, "hybrid" in args.net_model)
-
     # Move testing data to GPU
     render_poses = torch.Tensor(render_poses).to(device)
     render_timesteps = torch.Tensor(render_timesteps).to(device)
@@ -162,7 +138,6 @@ def train(args):
 
   
 
-
     trainVGG = False
     trainVel = False
     trainVel_using_rendering_samples = False
@@ -183,56 +158,18 @@ def train(args):
             trainVel = False
             trainVel_using_rendering_samples = False
 
-        elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian:
-            # init d,g, not learn feature
-            training_stage = 2
-            # trainImg = False
-            trainImg = True
-            trainVel = False
-            trainVel_using_rendering_samples = False
-        
-        elif global_step <= args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature:
-            # start learn feature, add its relevant constrain
-            # but still only learn from reference density and color , do not use image
-            # total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian, 10000) # 
-            total_loss_fading = 1.0 # 
-            training_stage = 3
-            trainImg = False
-            trainVel = True
-            trainVel_using_rendering_samples = False
-
         else:
-            # start learn feature, add its relevant constrain
-            # but still only learn from reference density and color , do not use image
-            # total_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature, 10000) # 
-            # if training_stage is not 4:
-            #     # first convert to stage 4
-            #     update_static_occ_grid(args, model, 10)
-
             total_loss_fading = 1.0 
-            training_stage = 4
+            training_stage = 2
             trainImg = True
-            # trainVel = True
-            trainVel = global_step % args.stage4_train_vel_interval == 0
-            # trainVel = True
-            # trainVel_using_rendering_samples = True # todo:: use this
-            # trainVel_using_rendering_samples = False # todo:: use this
-            # trainVel_using_rendering_samples = True # todo:: use this
-            # trainVel_using_rendering_samples = args.train_vel_within_rendering and not ((global_step // 20) % args.train_vel_uniform_sample == 0)# todo:: use this
-            trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % args.train_vel_uniform_sample == 0)# todo:: use this
-            # trainVel_using_rendering_samples = False # todo:: use this
-            # trainVel_using_rendering_samples = not ((global_step // args.stage4_train_vel_interval) % 2 == 0)# todo:: use this
+            trainVel = global_step % args.stage2_train_vel_interval == 0
+            trainVel_using_rendering_samples = not ((global_step // args.stage2_train_vel_interval) % args.train_vel_uniform_sample == 0)
 
         model.iter_step = global_step
         model.update_model(training_stage, global_step) # progressive training for siren smoke
-        # model.update_model_type(training_stage)
-        # model.update_fading_step(min(args.fading_layers, global_step)) # progressive training for siren smoke
     
 
 
-        # if training_stage == 1:
-        # model.update_fading_step(min(args.stage1_finish_recon, global_step)) # progressive training for siren smoke
-        
         if trainImg and global_step > args.uniform_sample_step and args.cuda_ray:
             if first_update_occ_grid:
  
@@ -278,22 +215,12 @@ def train(args):
 
             _cam_info = None
 
-            if args.dataset_type == 'dryice':
-                _cam_id = cam_info_others["cam_ids"][img_i]
-                _cam_info = cam_info_others["cam_%d"%_cam_id]
-                focals = _cam_info["focal"]
-                principles = _cam_info["princpt"]
-                K = np.array([
-                    [focals[0], 0, principles[0]],
-                    [0, focals[1], principles[1]],
-                    [0, 0, 1]
-                ])
-            else:
-                K = np.array([
-                    [focal, 0, 0.5*W],
-                    [0, focal, 0.5*H],
-                    [0, 0, 1]
-                ])
+    
+            K = np.array([
+                [focal, 0, 0.5*W],
+                [0, focal, 0.5*H],
+                [0, 0, 1]
+            ])
 
             # batch_rays: training rays
             # target_s: target image
@@ -301,10 +228,7 @@ def train(args):
 
             batch_rays, target_s, dw, target_mask, bg_color, select_coords = prepare_rays(args, H, W, K, pose, target, trainVGG, global_step, start, N_rand, target_mask, _cam_info)
 
-            if args.dataset_type == 'dryice':
-                pass
-            else:
-                bg_color = bg_color + args.white_bkgd
+            bg_color = bg_color + args.white_bkgd
 
             rgb, disp, acc, extras = render(H, W, K, model, N_samples = args.N_samples, chunk=args.training_ray_chunk, rays=batch_rays, netchunk=args.netchunk,
                                         time_step=time_locate,
@@ -356,8 +280,6 @@ def train(args):
 
 
         if trainVel:
-        # if trainVel or training_stage == 4:
-        # if ((trainVel or training_stage == 4) and args.use_two_level_density ) or (not args.use_two_level_density and trainVel):
             if trainVel_using_rendering_samples:
 
     
@@ -384,7 +306,7 @@ def train(args):
                 training_t = torch.ones([training_samples.shape[0], 1])*time_locate
                 training_samples = torch.cat([training_samples,training_t], dim=-1)
 
-            vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage, local_step = global_step // args.stage4_train_vel_interval, global_step = global_step)
+            vel_loss, vel_loss_dict = get_velocity_loss(args, model, training_samples, training_stage, local_step = global_step // args.stage2_train_vel_interval, global_step = global_step)
 
             loss += vel_loss
 
@@ -396,20 +318,12 @@ def train(args):
         optimizer.step()
     
 
-        # if global_step <= 500:
-            # new_lrate = 1e-2
-        # else:
-            ###   update learning rate   ###
+
         decay_rate = 0.1
         decay_steps = args.lrate_decay * 1000
         new_lrate = args.lrate * (decay_rate ** (global_step / decay_steps))
         for param_group in optimizer.param_groups:
             param_group['lr'] = new_lrate
-            # if args.neus_larger_lr_decay and param_group['name'] == 'static_model':
-            #     neus_decay_rate = 0.02
-            #     new_lrate = args.lrate * (neus_decay_rate ** (global_step / decay_steps))
-            #     param_group['lr'] = new_lrate 
-
 
         if args.adaptive_num_rays and args.cuda_ray == True and global_step > args.uniform_sample_step:
             samples_per_ray = extras["num_points"] / (extras["num_rays"] + 1e-6)
@@ -640,7 +554,6 @@ def train(args):
             voxel_writer = Voxel_Tool(voxel_tran,voxel_tran_inv,voxel_scale,resZ,resY,resX,middleView='mid3', hybrid_neus='hybrid_neus' in args.net_model)
             visualize_all(args, model, voxel_writer, t_info, global_step)
 
-        # if global_step % args.i_testset==0 and global_step > 0 and trainImg:
         if global_step % args.i_testset==0 and global_step > 0:
             model.eval()
             testsavedir = os.path.join(basedir, expname, 'testset_{:06d}'.format(global_step))

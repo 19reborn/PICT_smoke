@@ -6,7 +6,6 @@ import torch.nn.functional as F
 
 from tqdm import trange
 
-from src.dataset.load_dryice import load_dryice_data
 from src.dataset.load_pinf import load_pinf_frame_data
 
 from src.network.hybrid_model import create_model
@@ -19,7 +18,6 @@ from src.utils.training_utils import set_rand_seed, save_log
 from src.utils.coord_utils import BBox_Tool, Voxel_Tool, jacobian3D, get_voxel_pts
 from src.utils.loss_utils import get_rendering_loss, get_velocity_loss, fade_in_weight, to8b
 from src.utils.visualize_utils import draw_mapping, draw_mapping_3d, draw_mapping_3d_animation, vel_uv2hsv, den_scalar2rgb
-from src.utils.evaluate_utils import evaluate_mapping
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -74,7 +72,7 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     draw_mapping(os.path.join(testsavedir, f'vis_map_xz_interval{change_feature_interval}.png'), grid_xz.cpu().numpy())
 
 
-    change_feature_interval = 1000
+    change_feature_interval = 50
     sample_pts = 128
     
     mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
@@ -221,7 +219,7 @@ def visualize_all(args, model, voxel_writer, t_info, global_step):
     
     testsavedir = os.path.join(basedir, expname, 'vis_summary_{:06d}'.format(global_step+1), 'eval_mapping')
     os.makedirs(testsavedir, exist_ok=True)
-    evaluate_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
+
 
 def render_only(args, model, testsavedir, render_poses, render_timesteps, test_bkg_color, hwf, K, near, far, cuda_ray, gt_images):
     model.eval()
@@ -235,7 +233,6 @@ def render_only(args, model, testsavedir, render_poses, render_timesteps, test_b
         if args.render_vis:
             testsavedir = testsavedir + f"_vis_view{args.vis_view}"
         render_2d_trajectory(model, render_poses, hwf, K, args.test_chunk, near, far, netchunk = args.netchunk, cuda_ray = cuda_ray, gt_imgs=gt_images, savedir=testsavedir, render_factor=args.render_factor, render_steps=render_timesteps, bkgd_color=test_bkg_color)
-        exit(1)
     elif args.render_eval:
         if args.render_vis:
             testsavedir = testsavedir + f"_vis_view{args.vis_view}"
@@ -349,30 +346,15 @@ def test(args):
 
     # Load data
     cam_info_others = None
-    ## todo:: organize dataloader
-    if args.dataset_type == "dryice":
-        images, masks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, cam_info_others = load_dryice_data(args, args.datadir, args.half_res, args.testskip, args.trainskip)
-        Ks = []
-        for img_i in range(len(images)):
-            _cam_id = cam_info_others["cam_ids"][img_i]
-            _cam_info = cam_info_others["cam_%d"%_cam_id]
-            focals = _cam_info["focal"]
-            principles = _cam_info["princpt"]
-            K = [
-                [focals[0], 0, principles[0]],
-                [0, focals[1], principles[1]],
-                [0, 0, 1]
-            ]
-            Ks.append(K)
-    else:
-        images, masks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, data_extras = load_pinf_frame_data(args, args.datadir, args.half_res, args.testskip, args.trainskip)
-        Ks = [
-            [
-            [hwf[-1], 0, 0.5*hwf[1]],
-            [0, hwf[-1], 0.5*hwf[0]],
-            [0, 0, 1]
-            ] for hwf in hwfs
-        ]
+
+    images, masks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, data_extras = load_pinf_frame_data(args, args.datadir, args.half_res, args.testskip, args.trainskip)
+    Ks = [
+        [
+        [hwf[-1], 0, 0.5*hwf[1]],
+        [0, hwf[-1], 0.5*hwf[0]],
+        [0, 0, 1]
+        ] for hwf in hwfs
+    ]
     voxel_tran_inv = np.linalg.inv(voxel_tran)
     print('Loaded pinf frame data', images.shape, render_poses.shape, hwfs[0], args.datadir)
     print('Loaded voxel matrix', voxel_tran, 'voxel scale',  voxel_scale)
@@ -475,7 +457,7 @@ def test(args):
     init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None)
 
     model.iter_step = global_step
-    model.update_model(4, global_step)
+    model.update_model(2, global_step)
     
     if args.mesh_only:
         print('mesh ONLY')
@@ -538,9 +520,6 @@ def test(args):
     elif args.visualize_mapping:
         testsavedir = os.path.join(basedir, expname, 'vis_mapping_{:06d}'.format(start+1))
         visualize_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
-    elif args.evaluate_mapping:
-        testsavedir = os.path.join(basedir, expname, 'eval_mapping_{:06d}'.format(start+1))
-        evaluate_mapping(args, model, testsavedir, voxel_writer, t_info=t_info)
     elif args.render_only:
         testsavedir = os.path.join(basedir, expname, 'renderonly_{}_{:06d}'.format('test' if args.render_test else 'path', start+1))
         if args.render_eval:

@@ -43,58 +43,6 @@ def pose_spherical(theta, phi, radius, rotZ=True, wx=0.0, wy=0.0, wz=0.0):
     
     return c2w
 
-def resize_flow(flow, H_new, W_new):
-    H_old, W_old = flow.shape[0:2]
-    flow_resized = cv2.resize(flow, (W_new, H_new), interpolation=cv2.INTER_LINEAR)
-    flow_resized[:, :, 0] *= H_new / H_old
-    flow_resized[:, :, 1] *= W_new / W_old
-    return flow_resized
-
-def get_grid(H, W, num_img, flows_b, flow_masks_b):
-
-    # |--------------------|  |--------------------|
-    # |       j            |  |       v            |
-    # |   i   *            |  |   u   *            |
-    # |                    |  |                    |
-    # |--------------------|  |--------------------|
-
-    # i, j = np.meshgrid(np.arange(W, dtype=np.float32),
-    #                    np.arange(H, dtype=np.float32), indexing='xy')
-
-    # grid = np.empty((0, H, W, 5), np.float32)
-    # for idx in range(num_img):
-    #     grid = np.concatenate((grid, np.stack([i,
-    #                                            j,
-    #                                            flows_b[idx, :, :, 0],
-    #                                            flows_b[idx, :, :, 1],
-    #                                            flow_masks_b[idx, :, :]], -1)[None, ...]))
-    
-    # 创建网格坐标
-    i, j = np.meshgrid(np.arange(W, dtype=np.float32),
-                    np.arange(H, dtype=np.float32), indexing='xy')
-
-
-    # 扩展维度，方便拼接
-    i = i[np.newaxis, ..., np.newaxis]
-    j = j[np.newaxis, ..., np.newaxis]
-    i = i.repeat(num_img, axis=0)
-    j = j.repeat(num_img, axis=0)
-    flows = np.stack([flows_b[..., 0],
-                    flows_b[..., 1],
-                    flow_masks_b], axis=-1)
-
-    # 合并网格坐标和 flows
-    grid = np.concatenate((i, j, flows), axis=-1)
-
-    ## checked
-    # uv_grid = grid[0,:,:,:2]
-    # uv_grid_gt = torch.stack(torch.meshgrid(torch.arange(H), torch.arange(W)),dim=-1)
-
-    # (torch.tensor(uv_grid) - uv_grid_gt).sum()
-
-    return grid
-
-
 
 
 def visualize_poses(poses, size=0.1):
@@ -127,11 +75,6 @@ def visualize_poses(poses, size=0.1):
     # trimesh.Scene(objects).show()
     scene.export('camera_pose_original.ply')
     exit(1)
-    # 提取点云数据
-    # point_cloud = scene.export(file_type="ply", return_vertex_colors=False)
-
-    # 保存点云数据为PLY文件
-    # trimesh.points.export_point_cloud("camera_pose.ply", point_cloud.vertices)
 
 
 
@@ -145,9 +88,6 @@ def load_pinf_frame_data(args, basedir, half_res='normal', testskip=1, train_ski
     counts = [0]
     merge_counts = [0]
     t_info = [0.0,0.0,0.0,0.0]
-    all_flows_b = []
-    all_flow_masks_b = []   
-    use_optical_flow = args.FlowW > 0
 
     # render params
     near, far, radius, phi, rotZ, r_center = 0.0, 1.0, 0.5, 20, False, np.float32([0.0]*3)
@@ -196,8 +136,6 @@ def load_pinf_frame_data(args, basedir, half_res='normal', testskip=1, train_ski
                 msks = []
                 poses = []
                 time_steps = []
-                flows_b = []
-                flow_masks_b = []   
                 H, W, Focal = 0, 0, 0
 
                 f_name = os.path.join(basedir, train_video['file_name'])
@@ -206,10 +144,7 @@ def load_pinf_frame_data(args, basedir, half_res='normal', testskip=1, train_ski
                     frame_num = train_video['frame_num']
                     delta_t = 1.0/train_video['frame_num']
                     video_name = train_video['file_name']
-                    # extract idx from video name in format of 'train{idx}.mp4'
-                    camera_idx = int(video_name[5:-4]) ## todo: use re
 
-                    flow_dir = os.path.join(basedir, 'flow', f'view{camera_idx}')  
                     
 
                 for frame_i in range(0, train_video['frame_num'], skip):
@@ -230,56 +165,8 @@ def load_pinf_frame_data(args, basedir, half_res='normal', testskip=1, train_ski
                     
                     imgs.append(frame)
 
-                    if s == 'train' and use_optical_flow:
-                        # add flow
-                        if frame_i == 0:
-                            bwd_flow, bwd_mask = np.zeros((H, W, 2)), np.zeros((H, W))
-                        else:
-                            bwd_flow_path = os.path.join(flow_dir, '%03d_bwd.npz'%frame_i)
-                            bwd_data = np.load(bwd_flow_path)
-                            bwd_flow, bwd_mask = bwd_data['flow'], bwd_data['mask']
-                            bwd_flow = resize_flow(bwd_flow, H, W)
-                            bwd_mask = np.float32(bwd_mask)
-                            bwd_mask = cv2.resize(bwd_mask, (W, H),
-                                                interpolation=cv2.INTER_NEAREST)
-                            
-                        flows_b.append(bwd_flow)
-                        flow_masks_b.append(bwd_mask)  
-
-                if s == 'train' and use_optical_flow:
-                    flows_b = np.stack(flows_b, -1)
-                    flow_masks_b = np.stack(flow_masks_b, -1)     
-
-                    flows_b = np.moveaxis(flows_b, -1, 0).astype(np.float32)
-                    flow_masks_b = np.moveaxis(flow_masks_b, -1, 0).astype(np.float32)       
-
-                    all_flow_masks_b.append(flow_masks_b)
-                    all_flows_b.append(flows_b)
-
 
                 reader.close()
-                if args.use_mask:
-                    msk_name = f_name[:-4] + '_mask.mp4'
-                    no_reader = False
-                    try:
-                        reader = imageio.get_reader(msk_name, "ffmpeg")
-                    except:
-                        no_reader = True
-                        print(f'No mask found for {f_name}, use zeros 1s instead')
-                        # msks = np.zeros((len(imgs), H, W, 1))
-                    for frame_i in range(0, train_video['frame_num'], skip):
-                        if no_reader:
-                            frame = np.zeros((H, W, 3))
-                        else:
-                            reader.set_image_index(frame_i)
-                            frame = reader.get_next_data()
-
-                        # import cv2
-                        # cv2.imwrite(f'debug/read_mask/{frame_i}.png', frame)
-                        msks.append(frame)
-                    reader.close()
-                    # exit(1)
-                    msks = np.array(msks).astype(np.float32) / 255.
 
                 imgs = (np.float32(imgs) / 255.)
                 poses = np.array(poses).astype(np.float32)
@@ -304,11 +191,6 @@ def load_pinf_frame_data(args, basedir, half_res='normal', testskip=1, train_ski
                         imgs_half_res[i] = cv2.resize(img, (W, H), interpolation=cv2.INTER_AREA)
                     imgs = imgs_half_res
 
-                    if args.use_mask:
-                        msks_half_res = np.zeros((msks.shape[0], H, W, msks.shape[-1]))
-                        for i, msk in enumerate(msks):
-                            msks_half_res[i] = cv2.resize(msk, (W, H), interpolation=cv2.INTER_AREA)
-                        msks = msks_half_res
 
                 counts.append(counts[-1] + imgs.shape[0])
                 all_imgs.append(imgs)
@@ -321,10 +203,6 @@ def load_pinf_frame_data(args, basedir, half_res='normal', testskip=1, train_ski
     t_info = np.float32([0.0, 1.0, 0.5, delta_t]) # min t, max t, mean t, delta_t
     i_split = [np.arange(merge_counts[i], merge_counts[i+1]) for i in range(3)]
     imgs = np.concatenate(all_imgs, 0) # n, H, W
-    if args.use_mask:
-        msks = np.concatenate(all_msks, 0)
-    else:
-        msks = None
     poses = np.concatenate(all_poses, 0) # n, 4, 4
     time_steps = np.concatenate(all_time_steps, 0) # n, 1
     hwfs = np.concatenate(all_hwf, 0) # n, 3
@@ -358,33 +236,10 @@ def load_pinf_frame_data(args, basedir, half_res='normal', testskip=1, train_ski
 
 
     extras = {}
-    if use_optical_flow and len(all_flow_masks_b) != 0:
-        flow_masks_b = np.concatenate(all_flow_masks_b, 0)
-        flows_b = np.concatenate(all_flows_b, 0)
-
-        # flows_b = np.moveaxis(flows_b, -1, 0).astype(np.float32)
-        # flow_masks_b = np.moveaxis(flow_masks_b, -1, 0).astype(np.float32)       
-
-        extras['flow_b'] = flows_b
-        extras['flow_mask_b'] = flow_masks_b
-        flow_grids = get_grid(int(H), int(W), flows_b.shape[0], flows_b, flow_masks_b) # [N, H, W, 5]
-
-        extras['flow_grids'] = flow_grids
-        extras['frame_num'] = frame_num
-
-
+   
     return imgs, msks, poses, time_steps, hwfs, render_poses, render_timesteps, i_split, t_info, voxel_tran, voxel_scale, bkg_color, near, far, extras
 
 
-# if __name__=='__main__':
-#     # allres = load_pinf_frame_data("./data/ScalarReal", "quater", testskip=20)
-#     # allres = load_pinf_frame_data("./data/Sphere", "normal", testskip=20)
-#     allres = load_pinf_frame_data("./data/Game", "half", testskip=20)
-#     for a in allres:
-#         if isinstance(a, np.ndarray):
-#             print(a.shape)
-#         else:
-#             print(a)
 
 
 

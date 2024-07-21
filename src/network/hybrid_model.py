@@ -148,17 +148,7 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
     def update_model_type(self, training_stage):
 
         if self.args.use_two_level_density:
-            if training_stage == 1:
-                self.dynamic_model = self.dynamic_model_siren
-            # elif training_stage == 2 or training_stage == 3 or training_stage == 4:
-            elif training_stage == 2 or training_stage == 3:
-                # self.dynamic_model = self.dynamic_model_lagrangian
-                self.dynamic_model = self.dynamic_model_siren
-            elif training_stage == 4:
-                self.dynamic_model = self.dynamic_model_siren
-            else:
-                AssertionError("training stage should be set to 1,2,3,4")
-
+            self.dynamic_model = self.dynamic_model_siren
         else:
             self.dynamic_model = self.dynamic_model_lagrangian
             
@@ -170,39 +160,7 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
         if training_stage == 1:
             if self.args.use_two_level_density:
                 pass
-                # fix dynamic lagrangian grad   
-                # for name, p in self.dynamic_model_lagrangian.named_parameters():
-                    # p.requires_grad = False
-
-        elif training_stage == 2:
-            
-                
-            if not self.single_scene:
-                for name, p in self.static_model.named_parameters():
-                    p.requires_grad = False
-            # if self.args.use_two_level_density:
-            #     for name, p in self.dynamic_model_siren.named_parameters():
-            #         p.requires_grad = False
-            # for name, p in self.dynamic_model_lagrangian.named_parameters():
-            #     p.requires_grad = True
-                # if "position_map" in name or "density_map" in name or 'color_model' in name:
-                #     p.requires_grad = True
-                # else:
-                #     p.requires_grad = False
-
-
-        elif training_stage == 3:
-            if not self.single_scene:
-                for name, p in self.static_model.named_parameters():
-                    p.requires_grad = False
-            if self.args.use_two_level_density:
-                for name, p in self.dynamic_model_siren.named_parameters():
-                    p.requires_grad = False
-            for name, p in self.dynamic_model_lagrangian.named_parameters():
-                p.requires_grad = True
-
-
-        elif training_stage == 4:
+        else:
             if not self.single_scene:
                 for name, p in self.static_model.named_parameters():
                     if self.args.neus_early_terminated:
@@ -214,10 +172,6 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
                     p.requires_grad = True
             for name, p in self.dynamic_model_lagrangian.named_parameters():
                 p.requires_grad = True
-  
-
-        else:
-            AssertionError("training stage should be set to 1,2,3,4")
 
 
 
@@ -237,17 +191,8 @@ def create_model(args, device, bbox_model):
                                     occupancy_grid_static = occupancy_grid_static,
                                     occupancy_grid_dynamic= occupancy_grid_dynamic).to(device)  
     
-    # params_to_train = []
-    # params_to_train.append({'name':'dynamic_model_lagrangian', 'params': list(model.dynamic_model_lagrangian.parameters())})
-    # if args.use_two_level_density:
-    #     # params_to_train += list(model.dynamic_model_siren.parameters())
-    #     params_to_train.append({'name':'dynamic_model_siren', 'params': list(model.dynamic_model_siren.parameters())})
-    # if not model.single_scene:
-    #     # params_to_train += list(model.static_model.parameters())
-    #     params_to_train.append({'name':'static_model', 'params': list(model.static_model.parameters())})
 
     optimizer = torch.optim.Adam(params=model.parameters(), lr=args.lrate, betas=(0.9, 0.999))
-    # optimizer = torch.optim.Adam(params=params_to_train, lr=args.lrate, betas=(0.9, 0.999))
 
     load_model_path = None
 

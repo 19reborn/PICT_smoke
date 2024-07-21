@@ -83,8 +83,8 @@ smoke_recon_delay_start = 0
 smoke_recon_delay_last = 2000
 sdf_loss_delay = 2000
 
-stage2_finish_init_lagrangian = 0
-stage3_finish_init_feature = 0
+
+
 
 density_distillation_delay = 2000
 
@@ -93,7 +93,7 @@ use_scene_scale_before_pe = False
 neus_early_terminated = True
 neus_progressive_pe = True
 
-stage4_train_vel_interval = 1
+stage2_train_vel_interval = 1
 density_mapping_loss_weight = 0.1
 velocity_mapping_loss_weight = 0.0
 color_mapping_loss_weight = 0.001

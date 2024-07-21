@@ -36,15 +36,12 @@ def config_parser():
     parser.add_argument("--feature_regulization_weight", type=float, default=1e-1)
     parser.add_argument("--density_distillation_weight", type=float, default=1.0)
 
-    ## Stage 2
-    parser.add_argument("--stage2_finish_init_lagrangian", type=int, default=0, help="stage 2 total training steps" )
+    # Stage 2
     parser.add_argument("--mapping_frame_range_fading_start", type=int, default=20000, help="frame_range" )
     parser.add_argument("--mapping_frame_range_fading_last", type=int, default=50000, help="frame_range" )
     parser.add_argument("--max_mapping_frame_range", type=int, default=30, help="frame_range" )
     
-    ## Stage 3
-    parser.add_argument("--stage3_finish_init_feature", type=int, default=0, help="stage 2 total training steps" )
-    parser.add_argument("--stage4_train_vel_interval", type=int, default=1, help="stage 2 total training steps" )
+    parser.add_argument("--stage2_train_vel_interval", type=int, default=1, help="stage 2 total training steps" )
     parser.add_argument("--nse_loss_interval", type=int, default=10, help="stage 2 total training steps" )
     parser.add_argument('--neus_early_terminated', action = 'store_true')
     parser.add_argument('--neus_larger_lr_decay', action = 'store_true')
@@ -116,9 +113,6 @@ def config_parser():
                         default=0.05, help='weight for the Boardary constrain loss')
     parser.add_argument("--CurvatureW", type=float,
                         default=0.00, help='weight for the Boardary constrain loss')
-    parser.add_argument("--FlowW", type=float,
-                        default=0.00, help='weight for the Boardary constrain loss')
-    parser.add_argument("--flow_debug", action='store_true')
     parser.add_argument("--train_vel_within_rendering", action='store_true')
     parser.add_argument("--train_vel_uniform_sample", type=int, default = 2)
     parser.add_argument("--inside_sdf", type=float, default = 0.0)
@@ -179,11 +173,6 @@ def config_parser():
                         help='for siren and hybrid models, the step to start learning the velocity.')  
     parser.add_argument("--adaptive_num_rays", action='store_true')
     parser.add_argument("--target_batch_size", type=int, default=2**17)
-    parser.add_argument("--use_mask", action='store_true')
-    parser.add_argument("--use_random_bg", action='store_true')
-    parser.add_argument("--use_mask_loss", action='store_true')
-    parser.add_argument("--mask_loss_weight", type=float, default = 0.1)
-    parser.add_argument("--mask_sample", action='store_true')
 
     # scene options
     parser.add_argument("--scene_scale", type=float, default = 1.0)
@@ -203,14 +192,11 @@ def config_parser():
                         help='test mode')
     parser.add_argument("--output_voxel", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
-    parser.add_argument("--masked_voxel", action='store_true')
     parser.add_argument("--voxel_video", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
     parser.add_argument("--visualize_mapping", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
     parser.add_argument("--visualize_feature", action='store_true', 
-                        help='do not optimize, reload weights and output volumetric density and velocity')
-    parser.add_argument("--evaluate_mapping", action='store_true', 
                         help='do not optimize, reload weights and output volumetric density and velocity')
     parser.add_argument("--vol_output_W", type=int, default=256, 
                         help='In output mode: the output resolution along x; In training mode: the sampling resolution for training')
@@ -243,8 +229,6 @@ def config_parser():
                         help='render the training set instead of render_poses path')
     parser.add_argument("--vis_view", type=int, default=0)
     
-    parser.add_argument("--extract_occ_grid", action='store_true', 
-                        help='render the training set instead of render_poses path')
     parser.add_argument("--preload_gt_den_vol", action='store_true', 
                         help='render the training set instead of render_poses path')
     parser.add_argument("--vis_feature", action='store_true', 

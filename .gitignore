@@ -22,10 +22,7 @@ my_nerfacc
 test*.txt
 *.jpg
 
-data/*.tar.gz
-data/experiments
-data/*/tmp_mask
-data/Cyl_flow_thing
+data/
 
 *.err
 *.out

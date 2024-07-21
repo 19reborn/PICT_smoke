@@ -427,11 +427,6 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             # If the sampling point's sdf < -0.05, we assume it's inside the object : The velocity should be 0.
             _sdf = _sdf.detach()
             _normal = _normal.detach()
-
-            # boundary_sdf = 0.05
-            # boundary_sdf = 0.02 * args.scene_scale
-            # boundary_sdf = 0.00 * args.scene_scale
-            # boundary_sdf = args.inside_sdf
             
             boundary_sdf = 0.005
             boundary_mask = torch.abs(_sdf) < boundary_sdf
@@ -442,7 +437,6 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             _normal_norm_squared = torch.sum(_normal ** 2, dim = -1, keepdim=True)
             boundary_vel_project2normal = boundary_vel_normal[:,None] / (_normal_norm_squared + 1e-6) * boundary_vel
             boundary_loss = torch.sum(boundary_vel_project2normal ** 2) / (boundary_mask.sum() + 1e-6)
-            # boundary_loss = mean_squared_error(boundary_vel_project2normal, torch.zeros_like(boundary_vel_project2normal))
 
             inside_mask = _sdf < 0
             inside_vel = _vel * inside_mask
@@ -461,7 +455,6 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         cycle_loss = None
     
         predict_xyz = vel_middle_output['mapped_xyz']
-        # cycle_loss = smooth_l1_loss(predict_xyz, training_samples[..., :3])
         cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
         vel_loss += args.self_cycle_loss_weight * cycle_loss * cycle_loss_fading
 
@@ -486,7 +479,6 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         predict_xyz_cross = velocity_model.mapping_forward_using_features(mapped_features, cross_training_t) - predict_xyz.detach() + training_samples[..., :3]
         cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
-        # cross_cycle_loss = smooth_l1_loss(cross_features, mapped_features)
         cross_cycle_loss = L1_loss(cross_features, mapped_features)
         vel_loss += args.cross_cycle_loss_weight * cross_cycle_loss * cycle_loss_fading
 
@@ -495,7 +487,6 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             
 
         # density mapping loss to supervise density
-        # density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 50000, 10000) # 
         density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_loss_fading, 10000) # 
 
         density_mapping_loss = None
@@ -509,27 +500,21 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         density_in_xyz = _den
 
         predict_xyzt_cross =  torch.cat([predict_xyz_cross, cross_training_t], dim=-1)
-        # density_in_mapped_xyz = den_model.density(predict_xyzt_cross.detach()) ## todo:: whether detach this
-        density_in_mapped_xyz = den_model.density(predict_xyzt_cross) ## todo:: whether detach this
+        density_in_mapped_xyz = den_model.density(predict_xyzt_cross) 
         
 
-        # density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) # todo:: detach one 
-        density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) # todo:: detach one 
+        density_mapping_loss = smooth_l1_loss(density_in_xyz, density_in_mapped_xyz) 
         
         # vel_loss += 0.05 * density_mapping_loss * density_mapping_fading
         vel_loss += args.density_mapping_loss_weight * density_mapping_loss * density_mapping_fading
         vel_loss_dict['density_mapping_loss'] = density_mapping_loss
         
 
-        # color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + 10000, 10000) # 
         color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_loss_fading, 10000) # 
 
         color_in_xyz = den_model.color(training_samples.detach())
-        # color_in_mapped_xyz = den_model.color(predict_xyzt_cross.detach()) ## todo:: whether detach this
-        color_in_mapped_xyz = den_model.color(predict_xyzt_cross) ## todo:: whether detach this
-        # color_mapping_loss = L1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
-        color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
-        # color_mapping_loss = l2_loss(color_in_xyz, color_in_mapped_xyz) # todo:: detach one
+        color_in_mapped_xyz = den_model.color(predict_xyzt_cross)
+        color_mapping_loss = smooth_l1_loss(color_in_xyz, color_in_mapped_xyz) 
         vel_loss += args.color_mapping_loss_weight * color_mapping_loss * color_mapping_fading
         vel_loss_dict['color_mapping_loss'] = color_mapping_loss
 
@@ -539,7 +524,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         velcotiy_in_xyz = _vel
         velocity_in_mapped_xyz = velocity_model.velocity_mapping_loss(x = training_samples[..., :3], t = training_samples[..., 3:4], mapped_t = cross_training_t) 
         
-        velocity_mapping_loss = smooth_l1_loss(velocity_in_mapped_xyz, velcotiy_in_xyz) ## todo:: detach one 
+        velocity_mapping_loss = smooth_l1_loss(velocity_in_mapped_xyz, velcotiy_in_xyz) 
         vel_loss += args.velocity_mapping_loss_weight * velocity_mapping_loss * velocity_mapping_fading
         vel_loss_dict['velocity_mapping_loss'] = velocity_mapping_loss
 
@@ -555,7 +540,6 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
     
         predict_xyz = vel_middle_output['mapped_xyz']
         cycle_loss = L1_loss(predict_xyz, training_samples[..., :3])
-        # vel_loss += 0.1 * cycle_loss
         vel_loss += args.self_cycle_loss_weight * cycle_loss * cycle_loss_fading
 
         cross_cycle_loss = None
@@ -567,8 +551,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         min_mapping_frame = 3
         max_mapping_frame = args.max_mapping_frame_range
         mapping_frame_range = (max_mapping_frame - min_mapping_frame) * mapping_frame_fading + min_mapping_frame
-        random_warpT = torch.rand_like(training_samples[:,0:1]) * mapping_frame_range * 2 - mapping_frame_range # todo:: change to long term frame
-        # random_warpT = torch.rand_like(training_samples[:,0:1]) * 6.0 - 3.0 # todo:: change to long term frame
+        random_warpT = torch.rand_like(training_samples[:,0:1]) * mapping_frame_range * 2 - mapping_frame_range
 
         cross_delta_t =  random_warpT * 1.0 / args.time_size
 
@@ -577,7 +560,6 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         cross_training_t = torch.clamp(cross_training_t, 0.0, 1.0) # clamp to (0,1)
 
 
-        # predict_xyz_cross = velocity_model.mapping_forward_using_features(mapped_features, cross_training_t)
         predict_xyz_cross = velocity_model.mapping_forward_using_features(mapped_features, cross_training_t) - predict_xyz + training_samples[..., :3]
         cross_features = velocity_model.forward_feature(predict_xyz_cross.detach(), cross_training_t.detach()) # only train feature mapping
 
@@ -606,16 +588,12 @@ def PDE_constraint(f_t, f_x, f_y, f_z,
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
     eqs += [mean_squared_error(feature,0.0)]
-    # eqs += [L1_loss(feature,torch.zeros_like(feature))]
 
     eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
     
     eqs += [L1_loss(U, torch.zeros_like(U))]
 
     eqs += [L1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
-    # eqs += [mean_squared_error(U, 0.0)]
-
-    # eqs += [mean_squared_error(Du_Dt,0.0)]
     
     
     return eqs
@@ -639,7 +617,6 @@ def PDE_constraint_two_layer_density(f_t, f_x, f_y, f_z,
     feature = f_t + (u.detach()*f_x + v.detach()*f_y + w.detach()*f_z) # feature continuous constrain
     
     eqs += [mean_squared_error(feature,0.0)]
-    # eqs += [L1_loss(feature,torch.zeros_like(feature))]
 
     eqs += [mean_squared_error(U_x[:,0] + U_y[:,1] + U_z[:,2],0.0)]
     
@@ -647,7 +624,4 @@ def PDE_constraint_two_layer_density(f_t, f_x, f_y, f_z,
 
     eqs += [L1_loss(Du_Dt,torch.zeros_like(Du_Dt))]
     
-    # eqs += [mean_squared_error(U, 0.0)]
-
-    # eqs += [mean_squared_error(Du_Dt,0.0)]
     return eqs

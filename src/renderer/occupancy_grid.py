@@ -130,23 +130,7 @@ class OccupancyGrid():
         poses = poses.to(count.device)
         intrinsics = intrinsics.to(count.device)
         
-        # if len(intrinsic.shape) == 2:
-        #     intrinsic = intrinsic[0]
-        # fx, fy, cx, cy = intrinsic
-        
-        # X = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-        # Y = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-        # Z = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
 
-        # 5-level loop, forgive me...
-        # for xs in X:
-        #     for ys in Y:
-        #         for zs in Z:
-                    
-        #             # construct points
-        #             xx, yy, zz = custom_meshgrid(xs, ys, zs)
-        #             coords = torch.cat([xx.reshape(-1, 1), yy.reshape(-1, 1), zz.reshape(-1, 1)], dim=-1) # [N, 3], in [0, 128)
-        #             indices = raymarching.morton3D(coords).long() # [N]
         coords = self.grid_coords
         indices = self.morton3D_indices
 
@@ -184,31 +168,6 @@ class OccupancyGrid():
                 uv += torch.stack([cx, cy], dim=-1).unsqueeze(1) # [S, N, 2]
 
 
-                # debug
-                # import cv2
-                # for view in range(uv.shape[0]):
-                #     uv_view = uv[view]
-                #     # image_debug = np.zeros((cx[0].int().item()*2,cy[0].int().item()*2,3),dtype=np.uint8)
-                #     image_debug = np.zeros((cy[0].int().item()*2,cx[0].int().item()*2,3),dtype=np.uint8)
-                # #     # cv2.imwrite(f'debug/real_world_projection/gt_image_{view}.png',image_debug)
-                # #     cv2.imwrite(f'debug/na_projection/gt_image_{view}.png',image_debug)
-                
-                #     # point_color = (0, 0, 255) # BGR
-                #     # thickness = 4 #  0 、4、8
-                # #     # for coor in uv[view].cpu().numpy():
-                #     # cv2.circle(image_debug, (int(coor[0]),int(coor[1])), point_size, point_color, thickness)
-                #     # cv2.imwrite(f'debug/projection/outer_vex_projection_{view}.png',image_debug)
-                #     point_size = 1
-                # #     uv = ori_uv[:,:6890,:]
-                #     point_color = (0, 255, 255)
-                #     thickness = 2 #  0 、4、8
-                #     for coor in uv_view.cpu().numpy():
-                #         cv2.circle(image_debug, (int(coor[1]),int(coor[0])), point_size, point_color, thickness)
-                # #     # cv2.imwrite(f'debug/real_world_projection/smpl_vex_projection_{view}.png',image_debug)
-                #     cv2.imwrite(f'debug/projection_{view}.png',image_debug)
-                # # exit(1)
-                # import pdb
-                # pdb.set_trace()
                 if given_mask is not None:
                     gt_masks = given_mask[head:tail]
                     # query uv in gt_masks
@@ -303,41 +262,6 @@ class OccupancyGrid():
         # full update.
       
         if self.iter_density < 16:
-        # if self.iter_density < 10000: #debug
-        # #if True:
-        #     X = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-        #     Y = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-        #     Z = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-
-        #     for xs in X:
-        #         for ys in Y:
-        #             for zs in Z:
-                        
-        #                 # construct points
-        #                 xx, yy, zz = custom_meshgrid(xs, ys, zs)
-        #                 coords = torch.cat([xx.reshape(-1, 1), yy.reshape(-1, 1), zz.reshape(-1, 1)], dim=-1) # [N, 3], in [0, 128)
-        #                 indices = raymarching.morton3D(coords).long() # [N]
-
-        #                 xyzs = 2 * coords.float() / (self.grid_size - 1) - 1 # [N, 3] in [-1, 1]
-
-        #                 # cascading
-        #                 for cas in range(self.cascade):
-        #                     bound = min(2 ** cas, self.bound)
-        #                     half_grid_size = bound / self.grid_size
-        #                     # scale to current cascade's resolution
-        #                     cas_xyzs = xyzs * (bound - half_grid_size)
-        #                     # add noise in [-hgs, hgs]
-        #                     cas_xyzs += (torch.rand_like(cas_xyzs) * 2 - 1) * half_grid_size
-        #                     # query density
-        #                     sigmas = query_fn(cas_xyzs).reshape(-1).detach()
-        #                     # from `scalbnf(MIN_CONE_STEPSIZE(), 0)`, check `splat_grid_samples_nerf_max_nearest_neighbor`
-        #                     # scale == 2 * sqrt(3) / 1024
-        #                     # sigmas *= self.density_scale * 0.003383
-        #                     sigmas *= self.density_scale
-        #                     # assign 
-        #                     tmp_grid[cas, indices] = sigmas
-
-        #                     del sigmas
 
 
             coords = self.grid_coords
@@ -364,23 +288,8 @@ class OccupancyGrid():
 
                 del sigmas
 
-                # # query sdf
-                # sdf = self.sdf(cas_xyzs).reshape(-1).detach()
-            
-                # if self.opt.use_density_grid:
-                # # sdf grid
-                #     sdf = 1.0 / (torch.abs(sdf)+1e-6)
-                # else:
-                # # density grid
-                #     inv_s = self.deviation(torch.zeros([1, 3], device=sdf.device))[:, :1].clip(1e-6, 1e6)
-                #     sigmoid_sdf = torch.sigmoid(sdf*inv_s)
-                #     sdf = inv_s * sigmoid_sdf * (1 - sigmoid_sdf)
-            
-                # tmp_grid[cas, indices] = sdf.float()
 
         # partial update (half the computation)
-        # TODO: why no need of maxpool ?
-        # elif self.iter_density < 100:
         elif self.iter_density < 10000:
             N = self.grid_size ** 3 // 4 # H * H * H / 2
             for cas in range(self.cascade):
@@ -595,23 +504,6 @@ class OccupancyGridDynamic():
         poses = poses.to(count.device)
         intrinsics = intrinsics.to(count.device)
         
-        # if len(intrinsic.shape) == 2:
-        #     intrinsic = intrinsic[0]
-        # fx, fy, cx, cy = intrinsic
-        
-        # X = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-        # Y = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-        # Z = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-
-        # # 5-level loop, forgive me...
-        # for xs in X:
-        #     for ys in Y:
-        #         for zs in Z:
-                    
-        #             # construct points
-        #             xx, yy, zz = custom_meshgrid(xs, ys, zs)
-        #             coords = torch.cat([xx.reshape(-1, 1), yy.reshape(-1, 1), zz.reshape(-1, 1)], dim=-1) # [N, 3], in [0, 128)
-        #             indices = raymarching.morton3D(coords).long() # [N]
 
         coords = self.grid_coords
         indices = self.morton3D_indices
@@ -650,22 +542,6 @@ class OccupancyGridDynamic():
                     uv += torch.stack([cx, cy], dim=-1).unsqueeze(1) # [S, N, 2]
 
 
-                    # debug
-                    # import cv2
-                    # for view in range(uv.shape[0]):
-                    #     uv_view = uv[view]
-                    #     image_debug = np.zeros((cy[0].int().item()*2,cx[0].int().item()*2,3),dtype=np.uint8)
-                    
-                    #     point_size = 1
-                    #     point_color = (0, 255, 255)
-                    #     thickness = 2 #  0 、4、8
-                    #     for coor in uv_view.cpu().numpy():
-                    #         cv2.circle(image_debug, (int(coor[1]),int(coor[0])), point_size, point_color, thickness)
-
-                    #     cv2.imwrite(f'debug/projection_{view}.png',image_debug)
-                    # exit(1)
-                    # import pdb
-                    # pdb.set_trace()
                     if given_mask is not None:
                         gt_masks = given_mask[t, head:tail]
                         # query uv in gt_masks
@@ -764,21 +640,8 @@ class OccupancyGridDynamic():
  
         # # full update.
         if self.iter_density < 16:
-        # if self.iter_density < 10000: #debug
-        #if True:
-            # X = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-            # Y = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
-            # Z = torch.arange(self.grid_size, dtype=torch.int32, device=self.density_grid.device).split(S)
 
             for t, time in enumerate(self.times):
-                # for xs in X:
-                #     for ys in Y:
-                #         for zs in Z:
-                            
-                #             # construct points
-                #             xx, yy, zz = custom_meshgrid(xs, ys, zs)
-                #             coords = torch.cat([xx.reshape(-1, 1), yy.reshape(-1, 1), zz.reshape(-1, 1)], dim=-1) # [N, 3], in [0, 128)
-                #             indices = raymarching.morton3D(coords).long() # [N]
                 coords = self.grid_coords
                 indices = self.morton3D_indices
                 xyzs = 2 * coords.float() / (self.grid_size - 1) - 1 # [N, 3] in [-1, 1]
@@ -1025,161 +888,3 @@ def bbox2voxels(bbox, steps):
     x, y, z = x * voxel_size[0] + vox_min[0], y * voxel_size[1] + vox_min[1], z * voxel_size[2] + vox_min[2]
     
     return np.stack([x, y, z]).T.astype('float32'), voxel_size
-     
-# https://github1s.com/facebookresearch/NSVF/blob/HEAD/fairnr/modules/encoder.py#L415-L454
-def voxel_mesh(points, keep, voxel_size):
-
-    keep = keep.squeeze(0)
-    voxel_pts = points[keep.bool()]
-
-    # generate polygon for voxels
-    center_coords, residual = discretize_points(voxel_pts, voxel_size / 2)
-
-    offsets = torch.tensor([[-1,-1,-1],[-1,-1,1],[-1,1,-1],[1,-1,-1],[1,1,-1],[1,-1,1],[-1,1,1],[1,1,1]], device=center_coords.device)
-    vertex_coords = center_coords[:, None, :] + offsets[None, :, :]
-    vertex_points = vertex_coords.type_as(residual) * voxel_size / 2 + residual
-    
-    faceidxs = [[1,6,7,5],[7,6,2,4],[5,7,4,3],[1,0,2,6],[1,5,3,0],[0,3,4,2]]
-    all_vertex_keys, all_vertex_idxs  = {}, []
-    for i in range(vertex_coords.shape[0]):
-        for j in range(8):
-            key = " ".join(["{}".format(int(p)) for p in vertex_coords[i,j]])
-            if key not in all_vertex_keys:
-                all_vertex_keys[key] = vertex_points[i,j]
-                all_vertex_idxs += [key]
-    all_vertex_dicts = {key: u for u, key in enumerate(all_vertex_idxs)}
-    all_faces = torch.stack([torch.stack([vertex_coords[:, k] for k in f]) for f in faceidxs]).permute(2,0,1,3).reshape(-1,4,3)
-
-    all_faces_keys = {}
-    for l in range(all_faces.size(0)):
-        key = " ".join(["{}".format(int(p)) for p in all_faces[l].sum(0) // 4])
-        if key not in all_faces_keys:
-            all_faces_keys[key] = all_faces[l]
-
-    vertex = np.array([tuple(all_vertex_keys[key].cpu().tolist()) for key in all_vertex_idxs], dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4')])
-    face = np.array([([all_vertex_dicts["{} {} {}".format(*b)] for b in a.cpu().tolist()],) for a in all_faces_keys.values()],
-        dtype=[('vertex_indices', 'i4', (4,))])
-    return PlyData([PlyElement.describe(vertex, 'vertex'), PlyElement.describe(face, 'face')])
-
-def extract_occ_grid(args, all_models):
-    static_grid = None
-    dynamic_grid = None
-    if args.net_model == "siren":
-        dynamic_grid = model.occupancy_grid_dynamic
-    elif "hybrid_neus" in args.net_model:
-        dynamic_grid = model.occupancy_grid_dynamic
-        static_grid = model.occupancy_grid_static
-
-    
-    # test:
-    grid = static_grid
-
-    grid_points, voxel_size = bbox2voxels(grid.aabb.cpu().numpy(), grid.grid_size)
-
-    density_thresh = min(grid.mean_density, grid.density_thresh)
-    grid_keep_morton_3d = torch.where(grid.density_grid > density_thresh)[1]
-    grid_keep_morton_3d_inverse = raymarching.morton3D_invert(grid_keep_morton_3d).long()
-
-    grid_points = torch.tensor(grid_points, device = grid_keep_morton_3d.device)
-    grid_keep_coord = torch.zeros((grid.grid_size, grid.grid_size, grid.grid_size), device = grid_keep_morton_3d.device)
-    grid_keep_coord[grid_keep_morton_3d_inverse[:,0],grid_keep_morton_3d_inverse[:,1],grid_keep_morton_3d_inverse[:,2]] = 1 
-
-    grid_keep = grid_keep_coord.reshape(-1)
-
-    # grid_keep = grid_keep.squeeze()[raymarching.morton3D_invert(grid.morton3D_indices).long()] # coord inverse mapping
-    # grid_keep = grid_keep.squeeze()[grid.morton3D_indices.long()] # coord inverse mapping
-    
-    # grid_keep = grid.density_grid > 1.0
-
-    # grid = dynamic_grid
-    # gird_id = dynamic_grid.time_size // 2
-
-    # density_thresh = min(grid.mean_density[gird_id], grid.density_thresh)
-    # grid_keep = grid.density_grid[gird_id] > density_thresh
-
-  
-    # grid_keep = static_grid.density_grid > -0.1
-    voxel = voxel_mesh(grid_points, grid_keep, torch.tensor(voxel_size, device = grid_keep.device))
-    # voxel = voxel_mesh(static_grid.grid_coords, grid_keep, static_grid.grid_size)
-
-    return voxel, grid_points[grid_keep.squeeze(0).bool().cpu().numpy()]
-
-def extract_occ_grid_dynamic(args, all_models):
-    static_grid = None
-    dynamic_grid = None
-    if args.net_model == "siren":
-        dynamic_grid = model.occupancy_grid_dynamic
-    elif "hybrid_neus" in args.net_model:
-        dynamic_grid = model.occupancy_grid_dynamic
-        static_grid = model.occupancy_grid_static
-
-    
-    # test:
-    grid = dynamic_grid
-
-    grid_points, voxel_size = bbox2voxels(grid.aabb.cpu().numpy(), grid.grid_size)
-
-    grid_id = 0
-    # grid_id = dynamic_grid.time_size // 2
-
-    density_thresh = min(grid.mean_density[grid_id], grid.density_thresh)
-    grid_keep_morton_3d = torch.where(grid.density_grid[grid_id] > density_thresh)[1]
-    grid_keep_morton_3d_inverse = raymarching.morton3D_invert(grid_keep_morton_3d).long()
-
-    grid_points = torch.tensor(grid_points, device = grid_keep_morton_3d.device)
-    grid_keep_coord = torch.zeros((grid.grid_size, grid.grid_size, grid.grid_size), device = grid_keep_morton_3d.device)
-    grid_keep_coord[grid_keep_morton_3d_inverse[:,0],grid_keep_morton_3d_inverse[:,1],grid_keep_morton_3d_inverse[:,2]] = 1 
-
-    grid_keep = grid_keep_coord.reshape(-1)
-
-    # grid_keep = static_grid.density_grid > -0.1
-    voxel = voxel_mesh(grid_points, grid_keep, torch.tensor(voxel_size, device = grid_keep.device))
-    # voxel = voxel_mesh(static_grid.grid_coords, grid_keep, static_grid.grid_size)
-
-    return voxel, grid_points[grid_keep.squeeze(0).bool().cpu().numpy()]
-
-def extract_dynamic_grid_mask_gt(args, gt_densitys):
-    grid_masks = []
-    total_frame = args.time_size
-    for frame in tqdm(range(total_frame)):
-        gt_density = torch.tensor(gt_densitys[frame], device = 'cuda')
-
-        mean_density = torch.mean(gt_density.clamp(min=0)).item()
-        density_thresh = min(mean_density, 1.0)
-
-        grid_keep = gt_density > density_thresh
-
-        grid_masks.append(grid_keep)
-
-    return grid_masks
-
-def extract_dynamic_grid_mask(args, all_models, poses, intrinsics, target_res = 256):
-    init_occ_grid(args, all_models, poses = poses, intrinsics = intrinsics, given_mask=None)
-    update_occ_grid(args, all_models, eval_mode = True)
-
-    total_frame = args.time_size
-    grids = model.occupancy_grid_dynamic
-    grid_masks = []
-    for frame in tqdm(range(total_frame)):
-
-        density_thresh = min(grids.mean_density[frame], grids.density_thresh)
-        grid_keep_morton_3d = torch.where(grids.density_grid[frame] > density_thresh)[1]
-        grid_keep_morton_3d_inverse = raymarching.morton3D_invert(grid_keep_morton_3d).long()
-
-        grid_keep_coord = torch.zeros((grids.grid_size, grids.grid_size, grids.grid_size), device = grid_keep_morton_3d.device)
-        grid_keep_coord[grid_keep_morton_3d_inverse[:,0],grid_keep_morton_3d_inverse[:,1],grid_keep_morton_3d_inverse[:,2]] = 1 
-
-        # grid_keep = grid_keep_coord.reshape(-1) # [128, 128, 128]
-        grid_keep = grid_keep_coord.squeeze()
-
-
-        ## upsample to target_res
-        grid_keep = grid_keep.unsqueeze(0).unsqueeze(0)
-        grid_keep = F.interpolate(grid_keep, size = target_res, mode = "trilinear", align_corners = False)
-
-        # grid_mask = grid_keep.permute(0, 4, 2, 3, 1).bool()
-        grid_mask = grid_keep.squeeze().unsqueeze(0).unsqueeze(-1).bool()
-        grid_masks.append(grid_mask)
-
-    return grid_masks
-
