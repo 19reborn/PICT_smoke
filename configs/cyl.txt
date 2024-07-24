@@ -1,4 +1,4 @@
-expname = cyl/test
+expname = code_release/cyl
 basedir = ./log
 
 ### data info
@@ -25,7 +25,6 @@ N_importance = 0
 N_rand = 512
 train_vel_grid_size = 32
 i_embed = -1
-train_warp = True
 vol_output_W = 256
 
 ### train params - iterations
@@ -61,7 +60,7 @@ i_img = 1000
 i_test = 50000
 i_weights = 10000
 i_video = 200000
-N_iter = 200000
+N_iter = 150000
 
 cuda_ray = True
 # cuda_ray = False
@@ -111,8 +110,3 @@ coarse_transport_weight = 10
 fine_transport_weight = 0.01
 
 mapping_loss_fading = 10000
-
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1129_v1/060000.tar
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1202_v2_larger_smoke_reg/040000.tar
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1213_v1_larger_coarse_tranpsport/050000.tar
-model_path = /cluster/project/tang/yiming/project/pinf_clean/log/cyl/1213_v3_less_color_mapping/060000.tar

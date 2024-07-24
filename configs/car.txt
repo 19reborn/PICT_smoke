@@ -1,6 +1,5 @@
-expname = Car/1210_v2_larger_mapping_loss
-# basedir = ./log
-basedir = /mnt/sda/workspace/PINF_Project/our_output/
+expname = code_release/car
+basedir = ./log
 
 ### data info
 datadir = ./data/Car_new
@@ -21,7 +20,6 @@ N_samples = 64
 N_importance = 0
 N_rand = 512
 i_embed = -1
-train_warp = True
 vol_output_W = 256
 train_vel_grid_size = 24
 
@@ -123,11 +121,3 @@ coarse_transport_weight = 100
 fine_transport_weight = 0.01
 
 feature_regulization_weight = 0.005
-
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1205_v3_less_smoke_alpha_reg/100000.tar
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1201_v6_512_rand/110000.tar
-
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/Car/1206_v3_original_smoke_reg/030000.tar
-# model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1208_v4_from_start/030000.tar
-
-model_path = /home/yiming/Documents/workspace/Project_PINF/pinf_clean/log/sda_output/Car/1209_v3_study_recon/100000.tar
