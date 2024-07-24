@@ -194,11 +194,8 @@ def train(args):
         target = images[img_i]
         target = torch.Tensor(target).to(device)
         
-        if args.use_mask:
-            target_mask = masks[img_i]
-            target_mask = torch.Tensor(target_mask).to(device)
-        else:
-            target_mask = None
+  
+        target_mask = None
 
         pose = poses[img_i, :3,:4]
         time_locate = time_steps[img_i].to(device) 
@@ -546,7 +543,7 @@ def train(args):
                 imageio.mimwrite(moviebase + 'velrgb.mp4', np.stack(vel_rgbs,axis=0).astype(np.uint8), fps=30, quality=8)
             model.train()
 
-        if global_step % args.i_visualize==0:
+        if global_step % args.i_visualize==0 and trainVel:
             resX = args.vol_output_W
             resY = int(args.vol_output_W*float(voxel_scale[1])/voxel_scale[0]+0.5)
             resZ = int(args.vol_output_W*float(voxel_scale[2])/voxel_scale[0]+0.5)

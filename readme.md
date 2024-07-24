@@ -30,7 +30,8 @@ Take the Cylinder scene as an example:
 
 
 ```
-python train.py --config configs/cyl.txt
+python train.py --config configs/base.txt
+<!-- python train.py --config configs/cyl.txt -->
 ```
 
 ### Testing

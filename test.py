@@ -56,7 +56,7 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     
     mapping_xyz = voxel_writer.vis_mapping_voxel(frame_list, t_list, model, change_feature_interval = change_feature_interval, sample_pts = sample_pts)
 
-    
+    print('[debug] mapping_xyz.shape', mapping_xyz.shape)
     draw_mapping_3d_animation(os.path.join(testsavedir, f'vis_map_3d_animation_interval{change_feature_interval}.gif'), mapping_xyz.permute(1,0,2).cpu().numpy())
     
     draw_mapping_3d(os.path.join(testsavedir, f'vis_map_3d_interval{change_feature_interval}.png'), mapping_xyz.permute(1,0,2).cpu().numpy())
@@ -453,7 +453,6 @@ def test(args):
     # some loss terms 
     
 
-    # init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None if not args.use_mask else masks[i_train])
     init_occ_grid(args, model, poses = poses[i_train], intrinsics = torch.tensor(Ks)[i_train], given_mask=None)
 
     model.iter_step = global_step

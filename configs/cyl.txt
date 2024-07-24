@@ -1,6 +1,5 @@
-expname = cyl/1213_v4_larger_vel_map_loss
+expname = cyl/test
 basedir = ./log
-# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Cyl

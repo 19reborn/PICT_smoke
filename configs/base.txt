@@ -1,6 +1,5 @@
-expname = cyl/1213_v4_larger_vel_map_loss
+expname = cyl/test
 basedir = ./log
-# basedir = /mnt/sda/workspace/PINF_Project/our_output/
 
 ### data info
 datadir = ./data/Cyl
@@ -17,7 +16,6 @@ density_map_first_omega = 30
 position_map_first_omega = 30
 
 lagrangian_density_activation = softplus
-# density_activation = relu
 
 
 ### train params - sampling
@@ -26,7 +24,6 @@ N_importance = 0
 N_rand = 512
 train_vel_grid_size = 32
 i_embed = -1
-train_warp = True
 vol_output_W = 256
 
 ### train params - iterations
@@ -65,7 +62,6 @@ i_video = 200000
 N_iter = 200000
 
 cuda_ray = True
-# cuda_ray = False
 scene_scale = 0.33
 density_thresh = 2.0
 density_thresh_static = 5
@@ -74,16 +70,12 @@ SmokeInsideSDFW = 0.5
 SmokeAlphaReguW = 0.5
 SmokeAlphaReguW_warmup = 0.05
 
-
-# boundary_delay = 10000
-
+## stage 1: recon
 stage1_finish_recon = 50000
 uniform_sample_step = 50000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 2000
 sdf_loss_delay = 2000
-
-
 
 
 density_distillation_delay = 2000
@@ -93,6 +85,7 @@ use_scene_scale_before_pe = False
 neus_early_terminated = True
 neus_progressive_pe = True
 
+# stage 2: velocity training
 stage2_train_vel_interval = 1
 density_mapping_loss_weight = 0.1
 velocity_mapping_loss_weight = 0.0

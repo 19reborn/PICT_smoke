@@ -202,18 +202,10 @@ def get_rendering_loss(args, model, rgb, acc, gt_rgb, bg_color, extras, time_loc
             else:
                 img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW 
                 
-            # img_loss += (extras['acch2'] * (((gt_rgb - bg_color).abs().sum(-1) < 1e-2)).float()).mean() * args.SmokeAlphaReguW  + extras['acch2'].mean() * args.SmokeAlphaReguW * 0.1
-                
-            # img_loss += extras['acch2'].mean() * args.SmokeAlphaReguW
         else:
             # if global_step >= 200000:
             img_loss += (acc * (((gt_rgb - bg_color).abs().sum(-1) < 1e-4)).float()).mean() * args.SmokeAlphaReguW 
 
-    if args.use_mask:
-    # if args.use_mask and global_step <= 20000:
-        # img_loss += (extras['acch1'] * (target_mask[:,0].float())).mean() * 0.05
-        img_loss += (extras['acch1'] * (target_mask[:,0].float())).mean() * 0.2
-        # if provide static scene mask
     
     if not model.single_scene and args.smokeMaskW > 0.0:
         smoke_acc = extras['acch2'].detach()
@@ -449,7 +441,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
 
         ## cycle loss for lagrangian feature
-        cycle_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature, 10000) # 
+        cycle_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon , 10000) # 
         
         # add cycle loss for lagrangian mapping
         cycle_loss = None
@@ -462,7 +454,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
         mapped_features = vel_middle_output['mapped_features']
         
-        mapping_frame_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_frame_range_fading_start, args.mapping_frame_range_fading_last) # 
+        mapping_frame_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.mapping_frame_range_fading_start, args.mapping_frame_range_fading_last) # 
 
         min_mapping_frame = 3
         max_mapping_frame = args.max_mapping_frame_range
@@ -487,7 +479,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
             
 
         # density mapping loss to supervise density
-        density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_loss_fading, 10000) # 
+        density_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon  + args.mapping_loss_fading, 10000) # 
 
         density_mapping_loss = None
         if args.use_two_level_density:
@@ -510,7 +502,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         vel_loss_dict['density_mapping_loss'] = density_mapping_loss
         
 
-        color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_loss_fading, 10000) # 
+        color_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon  + args.mapping_loss_fading, 10000) # 
 
         color_in_xyz = den_model.color(training_samples.detach())
         color_in_mapped_xyz = den_model.color(predict_xyzt_cross)
@@ -519,7 +511,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
         vel_loss_dict['color_mapping_loss'] = color_mapping_loss
 
 
-        velocity_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_loss_fading, 10000)
+        velocity_mapping_fading = fade_in_weight(global_step, args.stage1_finish_recon  + args.mapping_loss_fading, 10000)
         
         velcotiy_in_xyz = _vel
         velocity_in_mapped_xyz = velocity_model.velocity_mapping_loss(x = training_samples[..., :3], t = training_samples[..., 3:4], mapped_t = cross_training_t) 
@@ -532,7 +524,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
     else:
         
-        cycle_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature, 10000) # 
+        cycle_loss_fading = fade_in_weight(global_step, args.stage1_finish_recon , 10000) # 
 
         _vel, vel_middle_output = velocity_model.forward_with_middle_output(training_samples, need_vorticity=False)
         
@@ -546,7 +538,7 @@ def get_velocity_loss(args, model, training_samples, training_stage, local_step,
 
         mapped_features = vel_middle_output['mapped_features']
         
-        mapping_frame_fading = fade_in_weight(global_step, args.stage1_finish_recon + args.stage2_finish_init_lagrangian + args.stage3_finish_init_feature + args.mapping_frame_range_fading_start, args.mapping_frame_range_fading_last) # 
+        mapping_frame_fading = fade_in_weight(global_step, args.stage1_finish_recon  + args.mapping_frame_range_fading_start, args.mapping_frame_range_fading_last) # 
 
         min_mapping_frame = 3
         max_mapping_frame = args.max_mapping_frame_range

@@ -167,11 +167,11 @@ class Lagrangian_Hybrid_NeuS(nn.Module):
                         p.requires_grad = False
                     else:
                         p.requires_grad = True
-            if self.args.use_two_level_density:
-                for name, p in self.dynamic_model_siren.named_parameters():
-                    p.requires_grad = True
-            for name, p in self.dynamic_model_lagrangian.named_parameters():
-                p.requires_grad = True
+            # if self.args.use_two_level_density:
+            #     for name, p in self.dynamic_model_siren.named_parameters():
+            #         p.requires_grad = True
+            # for name, p in self.dynamic_model_lagrangian.named_parameters():
+            #     p.requires_grad = True
 
 
 

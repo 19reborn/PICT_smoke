@@ -500,13 +500,13 @@ class Voxel_Tool(object):
         
         pts_num = sample_pts
         pts_flat = pts_flat[density_0.squeeze(-1) >= density_mean]
-        sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
-        pts_sampled = pts_flat[sample_id].reshape(-1,3)
-
-        
-        # sort the density
-        # pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
-        # pts_sampled = pts_flat[:sample_pts]
+        if len(pts_flat) == 0:
+            # sort the density
+            pts_flat = pts_flat[density_0.squeeze(-1).argsort(descending=True)]
+            pts_sampled = pts_flat[:sample_pts]
+        else:
+            sample_id = np.random.randint(0, pts_flat.shape[0], pts_num)
+            pts_sampled = pts_flat[sample_id].reshape(-1,3)
 
         all_xyz = []
         
@@ -531,8 +531,8 @@ class Voxel_Tool(object):
                 
             all_xyz.append(mapped_xyz.detach().cpu().numpy())
 
-        write_ply(np.array(all_xyz).reshape(-1,3),'vis_mapping.ply')
-
+        all_xyz = np.array(all_xyz)
+        write_ply(all_xyz.reshape(-1,3),'vis_mapping.ply')
 
         return torch.tensor(all_xyz)
 
