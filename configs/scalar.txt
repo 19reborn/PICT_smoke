@@ -77,19 +77,12 @@ max_mapping_frame_range = 50
 mapping_frame_range_fading_start = 0
 mapping_frame_range_fading_last = 20000
 
-# model_path = /root/data/wym/workspace/pinf_clean/log/sda_output/scalar/1118_v1/200000.tar
 
-# mapping_loss_fading = 100000
 density_activation = exp
 lagrangian_density_activation = exp
 
-
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/200000.tar
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1202_v4_larger_ghost_loss/300000.tar
 
 coarse_transport_weight = 100
 fine_transport_weight = 0.1
 feature_regulization_weight = 0.000
 stage2_train_vel_interval = 1
-
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/scalar/1208_v1/300000.tar

@@ -63,7 +63,6 @@ i_video = 200000
 N_iter = 150000
 
 cuda_ray = True
-# cuda_ray = False
 scene_scale = 0.33
 density_thresh = 2.0
 density_thresh_static = 5
@@ -72,8 +71,6 @@ SmokeInsideSDFW = 0.5
 SmokeAlphaReguW = 0.5
 SmokeAlphaReguW_warmup = 0.05
 
-
-# boundary_delay = 10000
 
 stage1_finish_recon = 50000
 uniform_sample_step = 50000

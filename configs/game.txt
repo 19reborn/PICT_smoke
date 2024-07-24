@@ -74,13 +74,9 @@ inside_sdf = 0.00
 
 stage1_finish_recon = 90000
 uniform_sample_step = 40000
-
-#stage1_finish_recon = 50000
-#uniform_sample_step = 30000
 smoke_recon_delay_start = 0
 smoke_recon_delay_last = 10000
 sdf_loss_delay = 2000
-
 
 
 
@@ -105,6 +101,5 @@ mapping_frame_range_fading_last = 20000
 boundaryW = 1.0
 train_vel_uniform_sample = 2
 
-# model_path = /cluster/project/tang/yiming/project/pinf_clean/log/game/1201_v5_check_occ_grid/300000.tar
 
 

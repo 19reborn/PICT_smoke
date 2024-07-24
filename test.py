@@ -35,22 +35,12 @@ def visualize_mapping(args, model, testsavedir, voxel_writer, t_info):
     frame_N = args.time_size
     delta_T = 1.0 / frame_N
     
-    # if args.full_vol_output:
-    #     frame_list = range(0,frame_N, 1)
-    #     testsavedir += "_full_frame"
-    # else:
-    frame_list = range(0,frame_N, 1)
-    # frame_list = range(0,120, 1)
-    # frame_list = range(0,150, 1)
-        
     
-    # frame_list = range(30,frame_N, 1)
+    frame_list = range(0,frame_N, 1)
     
     os.makedirs(testsavedir, exist_ok=True)
 
     
-    # change_feature_interval = 50
-    # sample_pts = 32
     change_feature_interval = 50
     sample_pts = 128
     
