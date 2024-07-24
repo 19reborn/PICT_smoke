@@ -6,6 +6,8 @@
 
 > SIGGRAPH 2024
 
+<img src="assets/teaser1.png" height="342"/>
+
 
 
 ## Setup
@@ -30,6 +32,8 @@ pip install -e .
 python env_test.py
 
 ```
+
+**The dataset used in the paper can be downloaded from [Goolge Drive](https://drive.google.com/drive/folders/1q77zZ4U5T3KlmGZfcll7HLddVfH2WE_k?usp=drive_link).**
 
 
 ## Run
