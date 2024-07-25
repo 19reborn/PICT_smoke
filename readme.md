@@ -40,10 +40,16 @@ python env_test.py
 
 ### Training
 
-Take the Cylinder scene as an example:
+A `base.txt` config is provided for hybrid scene training.
 
 ```
-python train.py --config configs/cyl.txt
+python train.py --config configs/base.txt
+```
+
+The scalar real world dataset can be trained with the `scalar.txt` config.
+
+```
+python train.py --config configs/scalar.txt
 ```
 
 ### Testing

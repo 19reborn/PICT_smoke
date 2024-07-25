@@ -39,13 +39,13 @@ def config_parser():
     # Stage 2
     parser.add_argument("--mapping_frame_range_fading_start", type=int, default=20000, help="frame_range" )
     parser.add_argument("--mapping_frame_range_fading_last", type=int, default=50000, help="frame_range" )
-    parser.add_argument("--max_mapping_frame_range", type=int, default=30, help="frame_range" )
+    parser.add_argument("--max_mapping_frame_range", type=int, default=50, help="frame_range" )
     
     parser.add_argument("--stage2_train_vel_interval", type=int, default=1, help="stage 2 total training steps" )
     parser.add_argument("--nse_loss_interval", type=int, default=10, help="stage 2 total training steps" )
     parser.add_argument('--neus_early_terminated', action = 'store_true')
     parser.add_argument('--neus_larger_lr_decay', action = 'store_true')
-    parser.add_argument("--mapping_loss_fading", type=int, default=50000, help="frame_range" )
+    parser.add_argument("--mapping_loss_fading", type=int, default=10000, help="frame_range" )
 
 
     # network model
@@ -56,9 +56,9 @@ def config_parser():
     
     parser.add_argument("--feature_map_first_omega", type=int, default=30, 
                         help='Lagrangian feature dimension')   
-    parser.add_argument("--position_map_first_omega", type=int, default=1, 
+    parser.add_argument("--position_map_first_omega", type=int, default=30, 
                         help='Lagrangian feature dimension')   
-    parser.add_argument("--density_map_first_omega", type=int, default=1, 
+    parser.add_argument("--density_map_first_omega", type=int, default=30, 
                         help='Lagrangian feature dimension')   
     parser.add_argument("--density_activation", type=str,
                         default='identity', help='activation function for density')
@@ -96,7 +96,7 @@ def config_parser():
     parser.add_argument("--d2vW", type=float,
                         default=-0.0, help='weight for the d2v loss')
     parser.add_argument("--nseW", type=float,
-                        default=0.001, help='velocity model, training weight for the physical equations')
+                        default=0.01, help='velocity model, training weight for the physical equations')
     parser.add_argument("--ekW", type=float,
                         default=0.0, help='weight for the Ekinoal loss')
     parser.add_argument("--boundaryW", type=float,
@@ -117,21 +117,21 @@ def config_parser():
     parser.add_argument("--train_vel_uniform_sample", type=int, default = 2)
     parser.add_argument("--inside_sdf", type=float, default = 0.0)
     parser.add_argument("--vel_regulization_weight", type=float,
-                        default=1, help='weight for the Boardary constrain loss')
+                        default=0.1, help='weight for the Boardary constrain loss')
     parser.add_argument("--coarse_transport_weight", type=float,
-                        default=1, help='weight for the Boardary constrain loss')
+                        default=10, help='weight for the Boardary constrain loss')
     parser.add_argument("--fine_transport_weight", type=float,
                         default=0.1, help='weight for the Boardary constrain loss')
     parser.add_argument("--feature_transport_weight", type=float,
                         default=1, help='weight for the Boardary constrain loss')
     ## Lagrangian Feature loss
     parser.add_argument("--self_cycle_loss_weight", type=float, default = 1.0)
-    parser.add_argument("--cross_cycle_loss_weight", type=float, default = 0.1)
+    parser.add_argument("--cross_cycle_loss_weight", type=float, default = 1.0)
     
     ## Lagrangian mapping loss
-    parser.add_argument("--density_mapping_loss_weight", type=float, default = 0.05)
+    parser.add_argument("--density_mapping_loss_weight", type=float, default = 0.01)
     parser.add_argument("--velocity_mapping_loss_weight", type=float, default = 0.01)
-    parser.add_argument("--color_mapping_loss_weight", type=float, default = 0.0)
+    parser.add_argument("--color_mapping_loss_weight", type=float, default = 0.001)
 
 
     parser.add_argument("--net_model", type=str, default='nerf',
