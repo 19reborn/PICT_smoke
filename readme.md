@@ -1,6 +1,6 @@
 # Physics-Informed Learning of Characteristic Trajectories for Smoke Reconstruction
 
-### [[Project]](https://19reborn.github.io/PICT_Smoke.github.io/)[ [Paper]](https://arxiv.org/abs/2407.09679)
+### [[Project]](https://19reborn.github.io/PICT_Smoke.github.io/) [[Paper]](https://dl.acm.org/doi/10.1145/3641519.3657483) [[arXiv]](https://arxiv.org/abs/2407.09679) [[Video]](https://www.youtube.com/watch?v=DXQO4E-ShbI&feature=youtu.be)
 
 > [Yiming Wang](https://19reborn.github.io/), [Siyu Tang](https://vlg.inf.ethz.ch/team/Prof-Dr-Siyu-Tang.html), [Mengyu Chu](https://rachelcmy.github.io/)
 
