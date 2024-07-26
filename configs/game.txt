@@ -1,8 +1,8 @@
-expname = code_release/base
+expname = code_release/game
 basedir = ./log
 
 ### data info
-datadir = ./data/Cyl
+datadir = ./data/Game
 dataset_type = pinf_data
 no_batching = True
 half_res = normal
@@ -12,8 +12,7 @@ testskip = 20
 ### network arch
 net_model = hybrid_neus
 use_two_level_density = True
-use_scene_scale_before_pe = False
-neus_early_terminated = True
+use_scene_scale_before_pe = True
 neus_progressive_pe = True
 
 ### train params - volume rendering sampling
@@ -38,11 +37,11 @@ i_img = 1000
 i_test = 50000
 i_weights = 10000
 i_video = 200000
-N_iter = 150000
-stage1_finish_recon = 50000
-uniform_sample_step = 50000
+N_iter = 400000
+stage1_finish_recon = 90000
+uniform_sample_step = 40000
 smoke_recon_delay_start = 0
-smoke_recon_delay_last = 2000
+smoke_recon_delay_last = 10000
 sdf_loss_delay = 2000
 density_distillation_delay = 2000
 
@@ -52,25 +51,19 @@ vggW = 0.000 # [0.001 - 0.01]
 ghostW = 0.00 # [0.001 - 0.005 ]
 overlayW = 0.000
 d2vW = 0.0  # [0.0 - 4.0, larger values are good for buoyancy driven smoke]
-SmokeAlphaReguW = 0.5
-SmokeAlphaReguW_warmup = 0.05
+SmokeInsideSDFW = 0.5
+SmokeAlphaReguW = 0.08
+SmokeAlphaReguW_warmup = 0.08
 
 ### scene params
-bbox_min = 0.0
-bbox_max = 1.0
+bbox_min = 0.0,-0.1,-0.1
+bbox_max = 1.2,0.9,1.35
 scene_scale = 0.33
 
 ### NeuS params
 ekW = 0.1
-i_weights = 5000
 i_embed_neus = 0
-multires_neus = 6
-anneal_end = 30000
+multires_neus = 8
+anneal_end = 5000
 
-
-### boundary loss
-SmokeInsideSDFW = 0.1
-boundaryW = 1.0
-inside_sdf = 0.0
-SmokeInsideSDFW = 0.5
 

@@ -100,13 +100,13 @@ def config_parser():
     parser.add_argument("--ekW", type=float,
                         default=0.0, help='weight for the Ekinoal loss')
     parser.add_argument("--boundaryW", type=float,
-                        default=0.0, help='weight for the Boardary constrain loss')
+                        default=0.5, help='weight for the Boardary constrain loss')
     parser.add_argument("--hardW", type=float,
                         default=0.0, help='weight for the Boardary constrain loss')
     parser.add_argument("--MinusDensityW", type=float,
                         default=0.0, help='weight for the Boardary constrain loss')
     parser.add_argument("--SmokeInsideSDFW", type=float,
-                        default=0.0, help='weight for the Boardary constrain loss')
+                        default=0.5, help='weight for the Boardary constrain loss')
     parser.add_argument("--SmokeAlphaReguW", type=float,
                         default=0.05, help='weight for the Boardary constrain loss')
     parser.add_argument("--SmokeAlphaReguW_warmup", type=float,
