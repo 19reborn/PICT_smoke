@@ -39,7 +39,7 @@ i_img = 1000
 i_test = 50000
 i_weights = 10000
 i_video = 200000
-N_iter = 150000
+N_iter = 200000
 stage1_finish_recon = 50000
 uniform_sample_step = 50000
 smoke_recon_delay_start = 0
@@ -56,7 +56,7 @@ d2vW = 0.0  # [0.0 - 4.0, larger values are good for buoyancy driven smoke]
 SmokeAlphaReguW = 0.10
 SmokeAlphaReguW_warmup = 0.02
 coarse_transport_weight = 100
-color_mapping_loss_weight = 10.0
+color_mapping_loss_weight = 100.0
 
 ### scene params
 bbox_min = 0.05,-0.05,0.05
